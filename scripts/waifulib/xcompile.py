@@ -21,12 +21,12 @@ import sys
 
 ANDROID_NDK_ENVVARS = ['ANDROID_NDK_HOME', 'ANDROID_NDK']
 # add r28 support
-ANDROID_NDK_SUPPORTED = [10, 16, 19, 20, 28]
+ANDROID_NDK_SUPPORTED = [10, 16, 19, 20, 26, 28]
 ANDROID_NDK_HARDFP_MAX = 11 # latest version that supports hardfp
 ANDROID_NDK_GCC_MAX = 17 # latest NDK that ships with GCC
 ANDROID_NDK_UNIFIED_SYSROOT_MIN = 15
 ANDROID_NDK_SYSROOT_FLAG_MAX = 19 # latest NDK that need --sysroot flag
-ANDROID_NDK_API_MIN = { 10: 3, 16: 16, 19: 16, 20: 16, 28: 16 } # minimal API level ndk revision supports
+ANDROID_NDK_API_MIN = { 10: 3, 16: 16, 19: 16, 20: 16, 26: 16, 28: 16 } # minimal API level ndk revision supports
 ANDROID_64BIT_API_MIN = 21 # minimal API level that supports 64-bit targets
 
 # This class does support r10e, r19c/r20 and r28 NDK
@@ -294,7 +294,7 @@ class Android:
 		linkflags = []
 		if not self.is_host():
 			linkflags += ['--gcc-toolchain=%s' % self.gen_gcc_toolchain_path()]
-			linkflags += ['-resource-dir=%s/lib/clang/18' % self.gen_gcc_toolchain_path()]
+			linkflags += ['-resource-dir=%s/lib/clang/17' % self.gen_gcc_toolchain_path()]
 		if self.ndk_rev <= ANDROID_NDK_SYSROOT_FLAG_MAX:
 			linkflags += ['--sysroot=%s' % (self.sysroot())]
 		elif self.is_host():
@@ -372,7 +372,7 @@ def configure(conf):
 		# library search path for libc++
 		conf.env.STLIBPATH += [os.path.abspath(os.path.join(android.ndk_home, 'sources','cxx-stl','llvm-libc++','libs',stlarch))]
 		# link static libc++ by default for cross-builds
-		conf.env.LDFLAGS += ['-lc++_static']
+		conf.env.LDFLAGS += ['-lc++']
 
 		conf.env.HAVE_M = True
 		if android.is_hardfp():
