@@ -372,7 +372,7 @@ def configure(conf):
 		# library search path for libc++
 		conf.env.STLIBPATH += [os.path.abspath(os.path.join(android.ndk_home, 'sources','cxx-stl','llvm-libc++','libs',stlarch))]
 		# link static libc++ by default for cross-builds
-		conf.env.LDFLAGS += ['-lc++']
+		conf.env.LDFLAGS += ['-lc++_static']
 
 		conf.env.HAVE_M = True
 		if android.is_hardfp():
