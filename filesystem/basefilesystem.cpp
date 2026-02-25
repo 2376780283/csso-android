@@ -122,7 +122,13 @@ CBaseFileSystem *BaseFileSystem()
 	return g_pBaseFileSystem;
 }
 
-ConVar filesystem_buffer_size( "filesystem_buffer_size", "0", 0, "Size of per file buffers. 0 for none" );
+ConVar filesystem_buffer_size( "filesystem_buffer_size", 
+#if defined(LINUX) || defined(ANDROID)
+	"262144",  // 256KB for Linux/Android
+#else
+	"0",       // Default (32KB on Windows)
+#endif
+	0, "Size of per file buffers. 0 for default" );
 
 #if defined( TRACK_BLOCKING_IO )
 
@@ -3893,13 +3899,7 @@ bool CBaseFileSystem::IsDirectory( const char *pFileName, const char *pathID )
 			pSearchPath->GetPackedStore()->GetFileAndDirLists( outDir, outFile, false );
 			FOR_EACH_VEC( outDir, i )
 			{
-				// PiMoN: hack for folders with only subfolders inside (no files)
-				// those files are ignored by vpklib because in order for it
-				// to build an array of folders, it looks for files only
-				// so if there isn't a file in a folder, it will ignore it
-				// even if there is a subfolder
-				//if ( !Q_stricmp( outDir[i], pFileName ) )
-				if ( !Q_strncmp( outDir[i], pFileName, V_strlen( pFileName ) ) )
+				if ( !Q_stricmp( outDir[i], pFileName ) )
 					return true;
 			}
 

@@ -190,7 +190,7 @@ def define_platform(conf):
 	conf.env.OPUS = conf.options.OPUS
 
 	arch32 = conf.run_test(CPP_32BIT_CHECK, 'Testing 32bit support')
-	arch64 = True#conf.run_test(CPP_64BIT_CHECK, 'Testing 64bit support')
+	arch64 = conf.run_test(CPP_64BIT_CHECK, 'Testing 64bit support')
 
 	if not (arch32 ^ arch64):
 		conf.fatal('Your compiler sucks')
@@ -423,7 +423,7 @@ def check_deps(conf):
 			conf.check(lib='unwind', uselib_store='UNWIND')
 			conf.check(lib='crypto', uselib_store='CRYPTO')
 			conf.check(lib='ssl', uselib_store='SSL')
-		#conf.check(lib='android_support', uselib_store='ANDROID_SUPPORT')
+		conf.check(lib='android_support', uselib_store='ANDROID_SUPPORT')
 		conf.check(lib='opus', uselib_store='OPUS')
 
 	if conf.env.DEST_OS == 'win32':
@@ -496,9 +496,6 @@ def configure(conf):
 			'-Wno-unused-value',
 			'-Wno-unused-variable',
 			'-faligned-new',
-			'-fno-strict-aliasing',
-			'-fno-vectorize',
-			'-fno-slp-vectorize',
 		]
 
 	c_compiler_optional_flags = [
@@ -526,10 +523,7 @@ def configure(conf):
 			'-I'+os.path.abspath('.')+'/thirdparty/fontconfig',
 			'-I'+os.path.abspath('.')+'/thirdparty/freetype/include',
 			'-llog',
-			'-lz',
-			'-Wl,--no-gc-sections',
-			'-Wl,-z,norelro',
-			'-Wl,-z,lazy',
+			'-lz'
 		]
 
 		flags += ['-funwind-tables', '-g']
