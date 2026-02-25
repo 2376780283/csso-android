@@ -2186,12 +2186,9 @@ CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 {
 	CGameMenu *menu = new CGameMenu(this, datafile->GetName());
 
-	wchar_t *pString = g_pVGuiLocalize->Find( "#GameUI_Console" );
-
-	if( pString )
-		menu->AddMenuItem("Console", V_wcsupr(pString), "OpenConsole", this);
-	else
-		menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this);
+	if (CommandLine()->CheckParm( "-console" )){	     		
+	    menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this); 
+    }
 
 	bool bFoundServerBrowser = false;
 
