@@ -56,6 +56,7 @@ using namespace vgui;
 #include "LoadGameDialog.h"
 #include "SaveGameDialog.h"
 #include "OptionsDialog.h"
+#include "ExtraManagerPanel.h" 
 #include "ModOptionsDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
@@ -2718,6 +2719,10 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	{
 		OnOpenLoadCommentaryDialog();	
 	}
+	else if ( !Q_stricmp( command, "Extra_manager" ) )
+	{
+		ShowExtraManager();
+	}
 	else if ( !Q_stricmp( command, "OpenLoadSingleplayerCommentaryDialog" ) )
 	{
 		OpenLoadSingleplayerCommentaryDialog();	
@@ -4034,6 +4039,26 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 		PositionDialog(m_hAchievementsDialog);
 	}
 	m_hAchievementsDialog->Activate();
+}
+
+void CBaseModPanel::ShowExtraManager()
+{
+
+    if ( !m_hExtraDialog.Get() )
+	{
+	   m_hExtraDialog = new ExtraManagerPanel(this);
+		PositionDialog( m_hExtraDialog );
+		m_hExtraDialog->MoveToCenterOfScreen(); 
+	}
+     m_hExtraDialog->Activate();     
+}
+
+void CC_ShowExtraManager(const CCommand &args)
+{
+    if (g_pBasePanel)
+    {
+        g_pBasePanel->ShowExtraManager();
+    }
 }
 
 //-----------------------------------------------------------------------------

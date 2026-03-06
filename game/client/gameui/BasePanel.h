@@ -302,6 +302,7 @@ public:
 	void OnOpenChangeGameDialog();
 	void OnOpenPlayerListDialog();
 	void OnOpenBenchmarkDialog();
+	void ShowExtraManager();
 	void OnOpenOptionsDialog();
 	void OnOpenModOptionsDialog();
 	void OnOpenOptionsDialog_Xbox();
@@ -462,6 +463,7 @@ private:
 	vgui::DHANDLE<vgui::Frame> m_hBenchmarkDialog;
 	vgui::DHANDLE<vgui::Frame> m_hLoadCommentaryDialog;
 	vgui::DHANDLE<vgui::Frame> m_hAchievementsDialog;
+    vgui::DHANDLE<vgui::Frame> m_hExtraDialog;
 
 	// Xbox 360
 	vgui::DHANDLE<vgui::Frame> m_hMatchmakingBasePanel;
