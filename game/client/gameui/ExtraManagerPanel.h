@@ -1,5 +1,4 @@
-#pragma once
-
+//#pragma once
 #include "vgui/ISurface.h"
 #include "GameUI_Interface.h"
 #include "vgui/ISystem.h"

@@ -56,7 +56,7 @@ using namespace vgui;
 #include "LoadGameDialog.h"
 #include "SaveGameDialog.h"
 #include "OptionsDialog.h"
-#include "ExtraManagerPanel.h" 
+// #include "ExtraManagerPanel.h" // unh?
 #include "ModOptionsDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
@@ -4041,16 +4041,20 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 	m_hAchievementsDialog->Activate();
 }
 
+// -------
+// unh i will delete the shit func motherfuck 
+// -------
 void CBaseModPanel::ShowExtraManager()
 {
-
-    if ( !m_hExtraDialog.Get() )
+ 
+/*    if ( !m_hExtraDialog.Get() )
 	{
-	   m_hExtraDialog = new ExtraManagerPanel(this);
+	    m_hExtraDialog = new ExtraManagerPanel(this);
 		PositionDialog( m_hExtraDialog );
 		m_hExtraDialog->MoveToCenterOfScreen(); 
 	}
-     m_hExtraDialog->Activate();     
+    m_hExtraDialog->Activate();   */
+  
 }
 
 void CC_ShowExtraManager(const CCommand &args)

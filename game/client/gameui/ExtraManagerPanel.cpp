@@ -7,8 +7,8 @@
 #include "vgui_controls/Controls.h"
 
 // STB 库实现
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
+// #define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 
@@ -469,8 +469,8 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     m_pModListPage = new ExtraListPage(m_pTabSheet, "ExtraListPage");
 
     m_pTabSheet->AddPage(m_pModListPage, "installed mods");
-//    m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
-//    m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
+    m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
+    m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
 
     m_pRightPanel = new vgui::EditablePanel(this, "RightFloatingPanel");
     m_pDetailsLabel = new vgui::Label(m_pRightPanel, "DetailsLabel", "Information");
