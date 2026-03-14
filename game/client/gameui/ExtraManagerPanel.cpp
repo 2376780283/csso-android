@@ -7,9 +7,19 @@
 #include "vgui_controls/Controls.h"
 
 #include "CreateMultiplayerGameServerPage.h"
+#include "CreateMultiplayerGameGameplayPage.h"
+#include "CreateMultiplayerGameBotPage.h"
+#include "EngineInterface.h"
+#include "ModInfo.h"
+#include "GameUI_Interface.h"
+#include "vgui/ILocalize.h"
+#include "gametypes.h"
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include <tier0/memdbgon.h>
 
 using namespace vgui;
 
@@ -129,9 +139,9 @@ static VersionInfo_t g_VersionData[] = {
              "sensitivity in zoom (e.g., Crossbow)."}};
 
 // =========================================================
-// ModCardPanel 实现 (含延迟加载逻辑)
+// MapCardPanel 实现 (含延迟加载逻辑)
 // =========================================================
-ModCardPanel::ModCardPanel(vgui::Panel *parent, const char *name, const char *title) : BaseClass(parent, name) {
+MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *title) : BaseClass(parent, name) {
     m_nTextureID = -1;
     m_bAttemptedLoad = false;
     m_szImagePath[0] = '\0';
@@ -160,16 +170,16 @@ ModCardPanel::ModCardPanel(vgui::Panel *parent, const char *name, const char *ti
     SetSize(iImageSize + m_iMargin, iImageSize + iLabelHeight + m_iMargin);
 }
 
-void ModCardPanel::SetImagePath(const char *path) {
+void MapCardPanel::SetImagePath(const char *path) {
     if (path) { Q_strncpy(m_szImagePath, path, sizeof(m_szImagePath)); }
 }
 
-void ModCardPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
+void MapCardPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
     BaseClass::ApplySchemeSettings(pScheme);
     m_pTitle->SetFont(pScheme->GetFont("DefaultVerySmall", IsProportional()));
 }
 
-void ModCardPanel::Paint() {
+void MapCardPanel::Paint() {
     BaseClass::Paint();
 
     // --- 性能优化：延迟加载逻辑 ---
@@ -209,7 +219,7 @@ void ModCardPanel::Paint() {
     vgui::surface()->DrawFilledRect(drawX, labelY, drawX + contentW, labelY + labelH);
 }
 
-void ModCardPanel::PerformLayout() {
+void MapCardPanel::PerformLayout() {
     BaseClass::PerformLayout();
     int w, h;
     GetSize(w, h);
@@ -225,15 +235,15 @@ void ModCardPanel::PerformLayout() {
     m_pTitle->SetBounds(drawX, labelY, contentW, labelH);
 }
 
-void ModCardPanel::OnCursorEntered() {
+void MapCardPanel::OnCursorEntered() {
     SetBgColor(m_clrBgHover);
 }
-void ModCardPanel::OnCursorExited() {
+void MapCardPanel::OnCursorExited() {
     SetBgColor(m_clrBgNormal);
 }
 
-void ModCardPanel::OnMousePressed(vgui::MouseCode code) {
-    if (code == MOUSE_LEFT) { PostActionSignal(new KeyValues("ModCardSelected", "panelName", GetName())); }
+void MapCardPanel::OnMousePressed(vgui::MouseCode code) {
+    if (code == MOUSE_LEFT) { PostActionSignal(new KeyValues("MapCardSelected", "panelName", GetName())); }
 }
 
 // =========================================================
@@ -415,24 +425,26 @@ int ExtraListPage::CreateTextureFromPNG(const char *fullPath) {
 void ExtraListPage::RefreshList() {
     m_pModListPanel->DeleteAllItems();
     FileFindHandle_t findHandle;
-    const char *pFileName = g_pFullFileSystem->FindFirst("custom/*", &findHandle);
+    const char *pFileName = g_pFullFileSystem->FindFirst("maps/*.bsp", &findHandle);
 
     while (pFileName) {
         if (Q_strcmp(pFileName, ".") != 0 && Q_strcmp(pFileName, "..") != 0) {
-            if (g_pFullFileSystem->FindIsDirectory(findHandle)) {
-                char szIconPath[MAX_PATH];
-                Q_snprintf(szIconPath, sizeof(szIconPath), "custom/%s/icon.png", pFileName);
+            char szMapName[64];
+            Q_strncpy(szMapName, pFileName, sizeof(szMapName));
+            char *pExt = Q_strrchr(szMapName, '.');
+            if (pExt) *pExt = '\0';
 
-                // 只创建面板，不在此处加载图片 I/O
-                ModCardPanel *pCard = new ModCardPanel(m_pModListPanel, pFileName, pFileName);
-                if (g_pFullFileSystem->FileExists(szIconPath, "MOD")) { pCard->SetImagePath(szIconPath); }
+            char szIconPath[MAX_PATH];
+            Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", szMapName);
 
-                vgui::Panel *pTarget = GetParent();
-                while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { pTarget = pTarget->GetParent(); }
-                if (pTarget) pCard->AddActionSignalTarget(pTarget);
+            MapCardPanel *pCard = new MapCardPanel(m_pModListPanel, szMapName, szMapName);
+            if (g_pFullFileSystem->FileExists(szIconPath, "GAME")) { pCard->SetImagePath(szIconPath); }
 
-                m_pModListPanel->AddItem(nullptr, pCard);
-            }
+            vgui::Panel *pTarget = GetParent();
+            while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { pTarget = pTarget->GetParent(); }
+            if (pTarget) pCard->AddActionSignalTarget(pTarget);
+
+            m_pModListPanel->AddItem(nullptr, pCard);
         }
         pFileName = g_pFullFileSystem->FindNext(findHandle);
     }
@@ -463,19 +475,67 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     SetSizeable(false);
     SetCloseButtonVisible(false);
     
-    // initilze things
-    int nGameType = 0;
+    // create KeyValues object to load/save config options
+	m_pSavedData = new KeyValues( "ServerConfig" );
+	
+	int nGameType = 0;
 	int nGameMode = 0;
 	bool bAllMaps = false;
+	// load the config data
+	if (m_pSavedData)
+	{
+		m_pSavedData->LoadFromFile( g_pFullFileSystem, "ServerConfig.vdf", "GAME" ); // this is game-specific data, so it should live in GAME, not CONFIG
+		
+		nGameType = m_pSavedData->GetInt( "game_type" );
+		nGameMode = m_pSavedData->GetInt( "game_mode" );
+		bAllMaps = m_pSavedData->GetBool( "all_maps" );
+	}
 
     m_pLeftPanel = new vgui::EditablePanel(this, "LeftFloatingPanel");
     m_pTabSheet = new PropertySheet(m_pLeftPanel, "ExtraTabs");
     m_pModListPage = new ExtraListPage(m_pTabSheet, "ExtraListPage");
     
     m_pServerPage = new CCreateMultiplayerGameServerPage(this, "ServerPage", nGameType, nGameMode, bAllMaps);
-    m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
+    m_pGameplayPage = new CCreateMultiplayerGameGameplayPage(this, "GameplayPage");
+    m_pBotPage = NULL;
 
-    m_pTabSheet->AddPage(m_pModListPage, "installed mods");
+    m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
+    m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
+
+    m_pServerPage->UpdateGameplayPage(); // do it AFTER m_pGameplayPage has been added
+
+    if ( ModInfo().UseBots() )
+	{
+		m_pBotPage = new CCreateMultiplayerGameBotPage( m_pTabSheet, "BotPage", m_pSavedData );
+		m_pTabSheet->AddPage( m_pBotPage, "#GameUI_CPUPlayerOptions" );
+		m_pServerPage->EnableBots( m_pSavedData );
+	}
+
+    if ( m_pSavedData )
+	{
+		const char *startMap = m_pSavedData->GetString("map", "");
+		if (startMap[0])
+		{
+			m_pServerPage->SetMap(startMap);
+		}
+		const char *hostname = m_pSavedData->GetString("hostname", "");
+		if (hostname[0])
+		{
+			m_pServerPage->SetHostName(hostname);
+		}
+		const char *maxplayers = m_pSavedData->GetString("maxplayers", "");
+		if (maxplayers[0])
+		{
+			m_pServerPage->SetMaxPlayers(maxplayers);
+		}
+		const char *sv_password = m_pSavedData->GetString("sv_password", "");
+		if (sv_password[0])
+		{
+			m_pServerPage->SetPassword(sv_password);
+		}
+	}
+
+    m_pTabSheet->AddPage(m_pModListPage, "Maps");
     m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
     m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
 
@@ -494,21 +554,84 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     m_pTelegramBtn = new ImageUrlButton(m_pRightPanel, "TeleBtn", "materials/vgui/social/telegram_logo.png", "https://t.me/nillerusr_source");
 
     m_pRefreshButton = new vgui::Button(m_pRightPanel, "RefreshBtn", "#GameUI_Refresh", this, "RefreshList");
+    m_pStartButton = new vgui::Button(m_pRightPanel, "StartBtn", "#GameUI_Start", this, "StartGame");
     m_pCloseButton = new Button(this, "CloseBtn", "#GameUI_Close", this, "Close");
 
     m_pVersionCombo->ActivateItemByRow(0);
 }
 
-void ExtraManagerPanel::OnModCardSelected(KeyValues *data) {
+ExtraManagerPanel::~ExtraManagerPanel() {
+	if (m_pSavedData)
+	{
+		m_pSavedData->deleteThis();
+		m_pSavedData = NULL;
+	}
+}
+
+void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
     if (!data) return;
     const char *pPanelName = data->GetString("panelName", "");
+    if (m_pServerPage) {
+        m_pServerPage->SetMap(pPanelName);
+    }
     if (m_pDescriptionText) {
         m_pDescriptionText->SetText("");
         m_pDescriptionText->InsertColorChange(Color(0, 255, 128, 255));
-        m_pDescriptionText->InsertString(">>> selected mod : ");
+        m_pDescriptionText->InsertString(">>> selected map : ");
         m_pDescriptionText->InsertString(pPanelName);
-        m_pDescriptionText->InsertString("\n\nStatus: Locally installed.");
     }
+}
+
+void ExtraManagerPanel::StartGame() {
+    // reset server enforced cvars
+    if (g_pCVar) {
+        g_pCVar->RevertFlaggedConVars(FCVAR_REPLICATED);
+        g_pCVar->RevertFlaggedConVars(FCVAR_CHEAT);
+    }
+
+    DevMsg("FCVAR_CHEAT cvars reverted to defaults.\n");
+
+    // get these values from m_pServerPage and store them temporarily
+    char szMapName[64], szHostName[64], szPassword[64];
+    int iGameTypeID = m_pServerPage->GetGameTypeID();
+    int iGameModeID = m_pServerPage->GetGameModeID();
+    int iMaxPlayers = m_pServerPage->GetMaxPlayers();
+    Q_strncpy(szMapName, m_pServerPage->GetMapName(), sizeof(szMapName));
+    Q_strncpy(szHostName, m_pServerPage->GetHostName(), sizeof(szHostName));
+    Q_strncpy(szPassword, m_pServerPage->GetPassword(), sizeof(szPassword));
+
+    // save the config data
+    if (m_pSavedData) {
+        if (m_pServerPage->IsRandomMapSelected()) {
+            // it's set to random map, just save an
+            m_pSavedData->SetString("map", "");
+        } else {
+            m_pSavedData->SetString("map", szMapName);
+        }
+
+        m_pSavedData->SetInt("game_type", iGameTypeID);
+        m_pSavedData->SetInt("game_mode", iGameModeID);
+        m_pSavedData->SetBool("all_maps", m_pServerPage->IsAllMaps());
+        m_pSavedData->SetString("hostname", szHostName);
+        m_pSavedData->SetInt("maxplayers", iMaxPlayers);
+        m_pSavedData->SetString("sv_password", szPassword);
+
+        // save config to a file
+        m_pSavedData->SaveToFile(g_pFullFileSystem, "ServerConfig.vdf", "GAME");
+    }
+
+    char szMapCommand[1024];
+
+    // create the command to execute
+    Q_snprintf(szMapCommand, sizeof(szMapCommand),
+               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\ngame_type "
+               "%d\ngame_mode %d\ngame_online 0\nmap %s\n",
+               iMaxPlayers, szPassword, szHostName, iGameTypeID, iGameModeID, szMapName);
+
+    // exec
+    engine->ClientCmd_Unrestricted(szMapCommand);
+
+    Close();
 }
 
 void ExtraManagerPanel::InitVersionCombo() {

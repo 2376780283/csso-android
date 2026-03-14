@@ -18,6 +18,8 @@
 #include "vgui_controls/ComboBox.h"
 
 #include "CreateMultiplayerGameServerPage.h"
+#include "CreateMultiplayerGameGameplayPage.h"
+#include "CreateMultiplayerGameBotPage.h"
 
 #ifdef ANDROID
 #include <SDL_misc.h>
@@ -27,12 +29,12 @@
 #include "utlmap.h"
 
 // ---------------------------------------------------------
-// 模组卡片控件：支持延迟加载
+// 地图卡片控件：支持延迟加载
 // ---------------------------------------------------------
-class ModCardPanel : public vgui::EditablePanel {
-    DECLARE_CLASS_SIMPLE(ModCardPanel, vgui::EditablePanel);
+class MapCardPanel : public vgui::EditablePanel {
+    DECLARE_CLASS_SIMPLE(MapCardPanel, vgui::EditablePanel);
 public:
-    ModCardPanel(vgui::Panel *parent, const char *name, const char *title);
+    MapCardPanel(vgui::Panel *parent, const char *name, const char *title);
     
     void SetImagePath(const char *path);
     virtual void PerformLayout() override;
@@ -88,7 +90,7 @@ public:
     virtual void PerformLayout() override;
     void RefreshList(); 
 
-    // 提供给 ModCardPanel 调用的纹理加载接口
+    // 提供给 MapCardPanel 调用的纹理加载接口
     int GetTextureForPath(const char *fullPath);
 
 private:
@@ -129,7 +131,7 @@ class ExtraManagerPanel : public vgui::Frame {
     DECLARE_CLASS_SIMPLE(ExtraManagerPanel, vgui::Frame);
 public:
     ExtraManagerPanel(vgui::Panel *parent);
-    virtual ~ExtraManagerPanel() {}
+    virtual ~ExtraManagerPanel();
 
     virtual void Activate() override;
     virtual void OnCommand(const char *command) override;
@@ -137,8 +139,9 @@ public:
     virtual void PerformLayout() override;
     virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 
+    void StartGame();
     MESSAGE_FUNC_PTR(OnVersionSelected, "TextChanged", panel);
-    MESSAGE_FUNC_PARAMS( OnModCardSelected, "ModCardSelected", data );
+    MESSAGE_FUNC_PARAMS( OnMapCardSelected, "MapCardSelected", data );
 
 private:
     void InitVersionCombo();
@@ -160,9 +163,15 @@ private:
     
     vgui::Button        *m_pRefreshButton;
     vgui::Button        *m_pCloseButton;
-    
+    vgui::Button        *m_pStartButton;
+
     // tabs
-    CCreateMultiplayerGameServerPage *m_pServerPage;
+    CCreateMultiplayerGameServerPage   *m_pServerPage;
+    CCreateMultiplayerGameGameplayPage *m_pGameplayPage;
+    CCreateMultiplayerGameBotPage      *m_pBotPage;
+
+    // for loading/saving game config
+    KeyValues *m_pSavedData;
 };
 
 
