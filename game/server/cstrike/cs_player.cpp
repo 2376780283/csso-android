@@ -4661,8 +4661,47 @@ void CCSPlayer::Blind( float holdTime, float fadeTime, float startingAlpha )
 		// The previous flashbang is still going strong - only extend the duration
 		float remainingDuration = oldBlindStartTime + m_flFlashDuration - gpGlobals->curtime;
 
-			m_flFlashDuration = MAX( remainingDuration, fadeTime );
-			m_flFlashMaxAlpha = MAX( m_flFlashMaxAlpha, startingAlpha );
+		/*	m_flFlashDuration = MAX( remainingDuration, fadeTime );
+			m_flFlashMaxAlpha = MAX( m_flFlashMaxAlpha, startingAlpha );*/
+		float flNewDuration = Max( remainingDuration, fadeTime );
+
+		// The flashbang client effect runs off a network var change callback... Make sure the bits for duration get
+		// sent by changing it a tiny bit whenever these end up being equal.
+		if ( m_flFlashDuration == flNewDuration )
+			flNewDuration += 0.01f;
+
+		m_flFlashDuration = flNewDuration;
+		m_flFlashMaxAlpha = Max( m_flFlashMaxAlpha.Get(), startingAlpha );
+	}
+
+	if ( m_bUseNewAnimstate && m_PlayerAnimStateCSGO )
+	{
+		// Magic numbers to reduce the fade time to within 'perceptible' range.
+		// Players can see well enough to shoot back somewhere around 50% white plus burn-in effect.
+		// Varies by player and amount of panic ;)
+		// So this makes raised arm goes down earlier, making it a better representation of actual blindness.
+		float flAdjustedHold = holdTime * 0.45f;
+		float flAdjustedEnd = fadeTime * 0.7f;
+
+		//DevMsg( "Flashing. Time is: %f. Params: holdTime: %f, fadeTime: %f, alpha: %f\n", gpGlobals->curtime, holdTime, fadeTime, m_flFlashMaxAlpha );
+
+		m_PlayerAnimStateCSGO->m_flFlashedAmountEaseOutStart = gpGlobals->curtime + flAdjustedHold;
+		m_PlayerAnimStateCSGO->m_flFlashedAmountEaseOutEnd = gpGlobals->curtime + flAdjustedEnd;
+
+		// This check moves the ease-out start and end to account for a non-255 starting alpha.
+		// However it looks like starting alpha is ALWAYS 255, since no current code path seems to ever pass in less.
+		if ( m_flFlashMaxAlpha < 255 )
+		{
+			float flScaleBack = 1.0f - (( flAdjustedEnd / 255.0f ) * m_flFlashMaxAlpha);
+			m_PlayerAnimStateCSGO->m_flFlashedAmountEaseOutStart -= flScaleBack;
+			m_PlayerAnimStateCSGO->m_flFlashedAmountEaseOutEnd -= flScaleBack;
+		}
+
+		// when fade out time is very soon, don't pull the arm up all the way. It looks silly and robotic.
+		if ( flAdjustedEnd < 1.5f )
+		{
+			m_PlayerAnimStateCSGO->m_flFlashedAmountEaseOutStart -= 1.0f;
+		}	
 	}
 
 	// allow bots to react
@@ -7542,8 +7581,8 @@ void CCSPlayer::State_Enter_WELCOME()
 
 	PhysObjectSleep();
 
-	const ConVar *hostname = cvar->FindVar( "hostname" );
-	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
+	/* const ConVar *hostname = cvar->FindVar( "hostname" );
+	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY"; */
 
 	// Show info panel (if it's not a simple demo map).
 	if ( !CSGameRules()->IsLogoMap() )
@@ -7554,7 +7593,7 @@ void CCSPlayer::State_Enter_WELCOME()
 		}
 		else
 		{
-			KeyValues *data = new KeyValues("data");
+		/*	KeyValues *data = new KeyValues("data");
 			data->SetString( "title", title );		// info panel title
 			data->SetString( "type", "1" );			// show userdata from stringtable entry
 			data->SetString( "msg",	"motd" );		// use this stringtable entry
@@ -7563,7 +7602,10 @@ void CCSPlayer::State_Enter_WELCOME()
 
 			ShowViewPortPanel( PANEL_INFO, true, data );
 
-			data->deleteThis();
+			data->deleteThis();*/
+			
+			// Skip MOTD - go directly to team selection
+			engine->ClientCommand( edict(), "chooseteam\n" );
 		}
 	}
 }
