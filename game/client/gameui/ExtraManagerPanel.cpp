@@ -583,6 +583,11 @@ void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
 }
 
 void ExtraManagerPanel::StartGame() {
+    // 1. 调用所有页面的应用更改逻辑 (类似 PropertyDialog::OnOK)
+    if (m_pServerPage) m_pServerPage->OnApplyChanges();
+    if (m_pGameplayPage) m_pGameplayPage->OnApplyChanges();
+    if (m_pBotPage) m_pBotPage->OnApplyChanges();
+
     // reset server enforced cvars
     if (g_pCVar) {
         g_pCVar->RevertFlaggedConVars(FCVAR_REPLICATED);
@@ -603,7 +608,6 @@ void ExtraManagerPanel::StartGame() {
     // save the config data
     if (m_pSavedData) {
         if (m_pServerPage->IsRandomMapSelected()) {
-            // it's set to random map, just save an
             m_pSavedData->SetString("map", "");
         } else {
             m_pSavedData->SetString("map", szMapName);
@@ -623,9 +627,9 @@ void ExtraManagerPanel::StartGame() {
     char szMapCommand[1024];
 
     // create the command to execute
+    // 增加一些必要的等待和初始化命令，确保 ConVars 已经应用
     Q_snprintf(szMapCommand, sizeof(szMapCommand),
-               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\ngame_type "
-               "%d\ngame_mode %d\ngame_online 0\nmap %s\n",
+               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\ngame_type %d\ngame_mode %d\ngame_online 0\nmap %s\n",
                iMaxPlayers, szPassword, szHostName, iGameTypeID, iGameModeID, szMapName);
 
     // exec
