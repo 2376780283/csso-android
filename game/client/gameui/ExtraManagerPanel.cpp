@@ -711,6 +711,7 @@ void ExtraManagerPanel::PerformLayout() {
     int btnY = panelH - rInnerPad - btnH;
     
     m_pRefreshButton->SetBounds(rInnerPad, btnY, btnW, btnH);
+    m_pStartButton->SetBounds(rInnerPad + btnW + PROPVAL(10), btnY, btnW, btnH);
     m_pCloseButton->SetBounds(sw - iPadding - rInnerPad - btnW, sh - iPadding - rInnerPad - btnH, btnW, btnH);
 
     int textBottomY = currentY + textHeight;
@@ -753,6 +754,8 @@ void ExtraManagerPanel::OnCommand(const char *command) {
         Close();
     else if (!Q_stricmp(command, "RefreshList") && m_pModListPage)
         m_pModListPage->RefreshList();
+    else if (!Q_stricmp(command, "StartGame"))
+        StartGame();
     else
         BaseClass::OnCommand(command);
 }
