@@ -182,16 +182,17 @@ do { \
         array.capacity = 0; \
 } while(0)
 
-#define plutovg_array_ensure(array, count) \
-    do { \
-        if(array.size + count > array.capacity) { \
-            int capacity = array.size + count; \
-            int newcapacity = array.capacity == 0 ? 8 : array.capacity; \
-            while(newcapacity < capacity) { newcapacity *= 2; } \
-            array.data = realloc(array.data, newcapacity * sizeof(array.data[0])); \
-            array.capacity = newcapacity; \
-    } \
-} while(0)
+#ifdef __cplusplus
+template <typename T>
+static inline T* plutovg_realloc_typed(T* ptr, size_t size)
+{
+    return (T*)realloc(ptr, size);
+}
+#else
+#define plutovg_realloc_typed(ptr, size) realloc((ptr), (size))
+#endif
+
+#define plutovg_array_ensure(array, count) do { if ((array).size + (count) > (array).capacity) { int capacity = (array).size + (count); int newcapacity = (array).capacity == 0 ? 8 : (array).capacity; while (newcapacity < capacity) { newcapacity *= 2; } (array).data = plutovg_realloc_typed((array).data, (size_t)newcapacity * sizeof(*(array).data)); (array).capacity = newcapacity; } } while (0)
 
 #define plutovg_array_clear(array) (array.size = 0)
 #define plutovg_array_destroy(array) free(array.data)

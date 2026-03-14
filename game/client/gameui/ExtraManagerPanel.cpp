@@ -6,9 +6,8 @@
 #include "vgui/ISurface.h"
 #include "vgui_controls/Controls.h"
 
-// STB 库实现
-// #define STB_IMAGE_IMPLEMENTATION
-// #define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "CreateMultiplayerGameServerPage.h"
+
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 
@@ -463,10 +462,18 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     SetMoveable(false);
     SetSizeable(false);
     SetCloseButtonVisible(false);
+    
+    // initilze things
+    int nGameType = 0;
+	int nGameMode = 0;
+	bool bAllMaps = false;
 
     m_pLeftPanel = new vgui::EditablePanel(this, "LeftFloatingPanel");
     m_pTabSheet = new PropertySheet(m_pLeftPanel, "ExtraTabs");
     m_pModListPage = new ExtraListPage(m_pTabSheet, "ExtraListPage");
+    
+    m_pServerPage = new CCreateMultiplayerGameServerPage(this, "ServerPage", nGameType, nGameMode, bAllMaps);
+    m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
 
     m_pTabSheet->AddPage(m_pModListPage, "installed mods");
     m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");

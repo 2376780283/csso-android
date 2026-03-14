@@ -17,6 +17,8 @@
 #include "vgui_controls/RichText.h"
 #include "vgui_controls/ComboBox.h"
 
+#include "CreateMultiplayerGameServerPage.h"
+
 #ifdef ANDROID
 #include <SDL_misc.h>
 #endif
@@ -158,6 +160,9 @@ private:
     
     vgui::Button        *m_pRefreshButton;
     vgui::Button        *m_pCloseButton;
+    
+    // tabs
+    CCreateMultiplayerGameServerPage *m_pServerPage;
 };
 
 
