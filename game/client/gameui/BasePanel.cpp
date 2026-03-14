@@ -56,7 +56,7 @@ using namespace vgui;
 #include "LoadGameDialog.h"
 #include "SaveGameDialog.h"
 #include "OptionsDialog.h"
-// #include "ExtraManagerPanel.h" // unh?
+#include "ExtraManagerPanel.h" // unh?
 #include "ModOptionsDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
@@ -4047,13 +4047,13 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 void CBaseModPanel::ShowExtraManager()
 {
  
-/*    if ( !m_hExtraDialog.Get() )
+    if ( !m_hExtraDialog.Get() )
 	{
 	    m_hExtraDialog = new ExtraManagerPanel(this);
 		PositionDialog( m_hExtraDialog );
 		m_hExtraDialog->MoveToCenterOfScreen(); 
 	}
-    m_hExtraDialog->Activate();   */
+    m_hExtraDialog->Activate();  
   
 }
 
@@ -4064,6 +4064,8 @@ void CC_ShowExtraManager(const CCommand &args)
         g_pBasePanel->ShowExtraManager();
     }
 }
+
+static ConCommand Extra_manager("Extra_manager", CC_ShowExtraManager, "Open Extra Manager dialog", FCVAR_NONE);
 
 //-----------------------------------------------------------------------------
 // Purpose: 
