@@ -583,18 +583,18 @@ void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
 }
 
 void ExtraManagerPanel::StartGame() {
-    // 1. 调用选项卡的 ApplyChanges，这会触发所有 Page 的 OnApplyChanges (受保护成员无法直接调用)
-    if (m_pTabSheet) {
-        m_pTabSheet->ApplyChanges();
-    }
-
-    // reset server enforced cvars
+    // 1. 先重置所有被修改的 ConVars，这样 ApplyChanges 才能覆盖它们
     if (g_pCVar) {
         g_pCVar->RevertFlaggedConVars(FCVAR_REPLICATED);
         g_pCVar->RevertFlaggedConVars(FCVAR_CHEAT);
     }
 
     DevMsg("FCVAR_CHEAT cvars reverted to defaults.\n");
+
+    // 2. 调用选项卡的 ApplyChanges，这会触发所有 Page 的 OnApplyChanges
+    if (m_pTabSheet) {
+        m_pTabSheet->ApplyChanges();
+    }
 
     // get these values from m_pServerPage and store them temporarily
     char szMapName[64], szHostName[64], szPassword[64];
@@ -604,6 +604,8 @@ void ExtraManagerPanel::StartGame() {
     Q_strncpy(szMapName, m_pServerPage->GetMapName(), sizeof(szMapName));
     Q_strncpy(szHostName, m_pServerPage->GetHostName(), sizeof(szHostName));
     Q_strncpy(szPassword, m_pServerPage->GetPassword(), sizeof(szPassword));
+
+    int iBotQuota = 0;
 
     // save the config data
     if (m_pSavedData) {
@@ -620,6 +622,12 @@ void ExtraManagerPanel::StartGame() {
         m_pSavedData->SetInt("maxplayers", iMaxPlayers);
         m_pSavedData->SetString("sv_password", szPassword);
 
+        // 获取机器人数量并保存
+        iBotQuota = m_pSavedData->GetInt("bot_quota", 0);
+        // 如果难度选择为 0 (通常是 "无机器人" 选项)，则强制数量为 0
+        if (m_pSavedData->GetInt("custom_bot_difficulty", 0) == 0)
+            iBotQuota = 0;
+
         // save config to a file
         m_pSavedData->SaveToFile(g_pFullFileSystem, "ServerConfig.vdf", "GAME");
     }
@@ -628,9 +636,10 @@ void ExtraManagerPanel::StartGame() {
 
     // create the command to execute
     // 增加一些必要的等待和初始化命令，确保 ConVars 已经应用
+    // 显式在命令中设置 bot_quota 以确保生效
     Q_snprintf(szMapCommand, sizeof(szMapCommand),
-               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\ngame_type %d\ngame_mode %d\ngame_online 0\nmap %s\n",
-               iMaxPlayers, szPassword, szHostName, iGameTypeID, iGameModeID, szMapName);
+               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nbot_quota %i\nprogress_enable\ngame_type %d\ngame_mode %d\ngame_online 0\nmap %s\n",
+               iMaxPlayers, szPassword, szHostName, iBotQuota, iGameTypeID, iGameModeID, szMapName);
 
     // exec
     engine->ClientCmd_Unrestricted(szMapCommand);
