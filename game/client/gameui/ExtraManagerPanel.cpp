@@ -145,6 +145,7 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     m_nTextureID = -1;
     m_bAttemptedLoad = false;
     m_szImagePath[0] = '\0';
+    Q_strncpy(m_szUIMapName, title ? title : "", sizeof(m_szUIMapName));
 
     SetPaintBackgroundEnabled(true);
     SetPaintBorderEnabled(false);
@@ -154,12 +155,12 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     m_clrBgNormal = Color(0, 0, 0, 0);
     m_clrBgHover = Color(89, 221, 242, 200);
 
-    m_pImagePanelPlaceholder = new vgui::ImagePanel(this, "ModImage");
+    m_pImagePanelPlaceholder = new vgui::ImagePanel(this, "MapImage");
     m_pImagePanelPlaceholder->SetShouldScaleImage(true);
     m_pImagePanelPlaceholder->SetMouseInputEnabled(false);
     m_pImagePanelPlaceholder->SetVisible(false);
 
-    m_pTitle = new vgui::Label(this, "ModTitle", title);
+    m_pTitle = new vgui::Label(this, "MapTitle", title);
     m_pTitle->SetPaintBackgroundEnabled(false);
     m_pTitle->SetFgColor(Color(255, 255, 255, 255));
     m_pTitle->SetContentAlignment(vgui::Label::a_center);
@@ -243,7 +244,12 @@ void MapCardPanel::OnCursorExited() {
 }
 
 void MapCardPanel::OnMousePressed(vgui::MouseCode code) {
-    if (code == MOUSE_LEFT) { PostActionSignal(new KeyValues("MapCardSelected", "panelName", GetName())); }
+    if (code == MOUSE_LEFT) { 
+        KeyValues *msg = new KeyValues("MapCardSelected");
+        msg->SetString("panelName", GetName());
+        msg->SetString("uiMapName", m_szUIMapName);
+        PostActionSignal(msg); 
+    }
 }
 
 // =========================================================
@@ -356,10 +362,10 @@ void DevPage::PerformLayout() {
 // ExtraListPage 实现 (含纹理缓存)
 // =========================================================
 ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseClass(parent, panelName) {
-    m_pModListPanel = new vgui::PanelListPanel(this, "ModListPanel");
-    m_pModListPanel->SetFirstColumnWidth(0);
-    m_pModListPanel->SetNumColumns(4);
-    m_pModListPanel->SetVerticalBufferPixels(PROPVAL(12));
+    m_pMapListPanel = new vgui::PanelListPanel(this, "MapListPanel");
+    m_pMapListPanel->SetFirstColumnWidth(0);
+    m_pMapListPanel->SetNumColumns(4);
+    m_pMapListPanel->SetVerticalBufferPixels(PROPVAL(12));
 
     m_TextureCache.SetLessFunc(DefLessFunc(unsigned int));
 }
@@ -423,32 +429,48 @@ int ExtraListPage::CreateTextureFromPNG(const char *fullPath) {
 }
 
 void ExtraListPage::RefreshList() {
-    m_pModListPanel->DeleteAllItems();
-    FileFindHandle_t findHandle;
-    const char *pFileName = g_pFullFileSystem->FindFirst("maps/*.bsp", &findHandle);
+    m_pMapListPanel->DeleteAllItems();
 
-    while (pFileName) {
-        if (Q_strcmp(pFileName, ".") != 0 && Q_strcmp(pFileName, "..") != 0) {
-            char szMapName[64];
-            Q_strncpy(szMapName, pFileName, sizeof(szMapName));
-            char *pExt = Q_strrchr(szMapName, '.');
-            if (pExt) *pExt = '\0';
-
-            char szIconPath[MAX_PATH];
-            Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", szMapName);
-
-            MapCardPanel *pCard = new MapCardPanel(m_pModListPanel, szMapName, szMapName);
-            if (g_pFullFileSystem->FileExists(szIconPath, "GAME")) { pCard->SetImagePath(szIconPath); }
-
-            vgui::Panel *pTarget = GetParent();
-            while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { pTarget = pTarget->GetParent(); }
-            if (pTarget) pCard->AddActionSignalTarget(pTarget);
-
-            m_pModListPanel->AddItem(nullptr, pCard);
-        }
-        pFileName = g_pFullFileSystem->FindNext(findHandle);
+    // 向上寻找 ExtraManagerPanel 以获取 ServerPage
+    vgui::Panel *pTarget = GetParent();
+    while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { 
+        pTarget = pTarget->GetParent(); 
     }
-    g_pFullFileSystem->FindClose(findHandle);
+    
+    if (!pTarget) return;
+    ExtraManagerPanel *pMain = static_cast<ExtraManagerPanel *>(pTarget);
+    CCreateMultiplayerGameServerPage *pServerPage = pMain->GetServerPage();
+    if (!pServerPage) return;
+
+    vgui::ListPanel *pMapList = pServerPage->GetMapList();
+    if (!pMapList) return;
+
+    // 遍历 ServerPage 的地图列表，确保过滤和名称一致
+    for (int i = 0; i < pMapList->GetItemCount(); i++)
+    {
+        int itemID = pMapList->GetItemIDFromRow(i);
+        KeyValues *kv = pMapList->GetItem(itemID);
+        if (!kv) continue;
+
+        const char *szMapName = kv->GetString("mapname", "");
+        const char *szUIMapName = kv->GetString("uimapname", "");
+
+        // 过滤掉 "随机地图" 选项 (定义见 CreateMultiplayerGameServerPage.cpp)
+        if (!Q_stricmp(szMapName, "#GameUI_RandomMap"))
+            continue;
+
+        char szIconPath[MAX_PATH];
+        Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", szMapName);
+
+        // 使用 szUIMapName 作为显示标题，它通常是本地化的
+        MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, szMapName, szUIMapName);
+        if (g_pFullFileSystem->FileExists(szIconPath, "GAME")) { 
+            pCard->SetImagePath(szIconPath); 
+        }
+
+        pCard->AddActionSignalTarget(pMain);
+        m_pMapListPanel->AddItem(nullptr, pCard);
+    }
 }
 
 void ExtraListPage::PerformLayout() {
@@ -456,7 +478,7 @@ void ExtraListPage::PerformLayout() {
     int w, h;
     GetSize(w, h);
     int margin = PROPVAL(8);
-    m_pModListPanel->SetBounds(margin, margin, w - (margin * 2), h - (margin * 2));
+    m_pMapListPanel->SetBounds(margin, margin, w - (margin * 2), h - (margin * 2));
 }
 
 // =========================================================
@@ -493,7 +515,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 
     m_pLeftPanel = new vgui::EditablePanel(this, "LeftFloatingPanel");
     m_pTabSheet = new PropertySheet(m_pLeftPanel, "ExtraTabs");
-    m_pModListPage = new ExtraListPage(m_pTabSheet, "ExtraListPage");
+    m_pMapListPage = new ExtraListPage(m_pTabSheet, "MapListPage");
     
     m_pServerPage = new CCreateMultiplayerGameServerPage(this, "ServerPage", nGameType, nGameMode, bAllMaps);
     m_pGameplayPage = new CCreateMultiplayerGameGameplayPage(this, "GameplayPage");
@@ -535,7 +557,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 		}
 	}
 
-    m_pTabSheet->AddPage(m_pModListPage, "Maps");
+    m_pTabSheet->AddPage(m_pMapListPage, "Maps");
     m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
     m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
 
@@ -571,6 +593,8 @@ ExtraManagerPanel::~ExtraManagerPanel() {
 void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
     if (!data) return;
     const char *pPanelName = data->GetString("panelName", "");
+    const char *pUIMapName = data->GetString("uiMapName", "");
+
     if (m_pServerPage) {
         m_pServerPage->SetMap(pPanelName);
     }
@@ -578,7 +602,18 @@ void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
         m_pDescriptionText->SetText("");
         m_pDescriptionText->InsertColorChange(Color(0, 255, 128, 255));
         m_pDescriptionText->InsertString(">>> selected map : ");
+        
+        // 尝试本地化友好名称
+        wchar_t *pLocalized = g_pVGuiLocalize->Find(pUIMapName);
+        if (pLocalized) {
+            m_pDescriptionText->InsertString(pLocalized);
+        } else {
+            m_pDescriptionText->InsertString(pUIMapName);
+        }
+
+        m_pDescriptionText->InsertString(" (");
         m_pDescriptionText->InsertString(pPanelName);
+        m_pDescriptionText->InsertString(")");
     }
 }
 
@@ -765,8 +800,8 @@ void ExtraManagerPanel::PerformLayout() {
 void ExtraManagerPanel::OnCommand(const char *command) {
     if (!Q_stricmp(command, "Close"))
         Close();
-    else if (!Q_stricmp(command, "RefreshList") && m_pModListPage)
-        m_pModListPage->RefreshList();
+    else if (!Q_stricmp(command, "RefreshList") && m_pMapListPage)
+        m_pMapListPage->RefreshList();
     else if (!Q_stricmp(command, "StartGame"))
         StartGame();
     else
@@ -775,7 +810,58 @@ void ExtraManagerPanel::OnCommand(const char *command) {
 
 void ExtraManagerPanel::Activate() {
     BaseClass::Activate();
-    if (m_pModListPage) m_pModListPage->RefreshList();
+    if (m_pMapListPage) m_pMapListPage->RefreshList();
+}
+
+void ExtraManagerPanel::OnKeyCodePressed( vgui::KeyCode code )
+{
+	// Handle close here, CBasePanel parent doesn't support "DialogClosing" command
+	ButtonCode_t nButtonCode = GetBaseButtonCode( code );
+
+	if ( nButtonCode == KEY_XBUTTON_B )
+	{
+		OnCommand( "Close" );
+	}
+	else if ( nButtonCode == KEY_XBUTTON_A || nButtonCode == STEAMCONTROLLER_A )
+	{
+		StartGame();
+	}
+	else if ( nButtonCode == KEY_XBUTTON_UP || 
+			  nButtonCode == KEY_XSTICK1_UP ||
+			  nButtonCode == KEY_XSTICK2_UP ||
+			  nButtonCode == STEAMCONTROLLER_DPAD_UP ||
+			  nButtonCode == KEY_UP )
+	{
+		if (m_pServerPage && m_pServerPage->GetMapList())
+		{
+			int nItem = m_pServerPage->GetMapList()->GetSelectedItem(0) - 1;
+			if ( nItem < 0 )
+			{
+				nItem = m_pServerPage->GetMapList()->GetItemCount() - 1;
+			}
+			m_pServerPage->GetMapList()->SetSingleSelectedItem( nItem );
+		}
+	}
+	else if ( nButtonCode == KEY_XBUTTON_DOWN || 
+			  nButtonCode == KEY_XSTICK1_DOWN ||
+			  nButtonCode == KEY_XSTICK2_DOWN || 
+			  nButtonCode == STEAMCONTROLLER_DPAD_DOWN ||
+			  nButtonCode == KEY_DOWN )
+	{
+		if (m_pServerPage && m_pServerPage->GetMapList())
+		{
+			int nItem = m_pServerPage->GetMapList()->GetSelectedItem(0) + 1;
+			if ( nItem >= m_pServerPage->GetMapList()->GetItemCount() )
+			{
+				nItem = 0;
+			}
+			m_pServerPage->GetMapList()->SetSingleSelectedItem( nItem );
+		}
+	}
+	else
+	{
+		BaseClass::OnKeyCodePressed( code );
+	}
 }
 
 void ExtraManagerPanel::OnClose() {

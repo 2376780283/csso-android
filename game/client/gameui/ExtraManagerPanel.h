@@ -55,6 +55,7 @@ private:
     int m_iMargin; 
     int m_nTextureID; 
     char m_szImagePath[MAX_PATH];
+    char m_szUIMapName[MAX_PATH];
     bool m_bAttemptedLoad; // 是否尝试过加载，防止失败后死循环
 };
 
@@ -97,7 +98,7 @@ private:
     int CreateTextureFromPNG(const char *fullPath);
     void CleanUpTextures();
 
-    vgui::PanelListPanel *m_pModListPanel; 
+    vgui::PanelListPanel *m_pMapListPanel; 
 
     // 纹理缓存：Key 是路径哈希或字符串，Value 是 TextureID
     CUtlMap<unsigned int, int> m_TextureCache; 
@@ -138,17 +139,20 @@ public:
     virtual void OnClose() override;
     virtual void PerformLayout() override;
     virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+    virtual void OnKeyCodePressed(vgui::KeyCode code) override;
 
     void StartGame();
     MESSAGE_FUNC_PTR(OnVersionSelected, "TextChanged", panel);
     MESSAGE_FUNC_PARAMS( OnMapCardSelected, "MapCardSelected", data );
+
+    CCreateMultiplayerGameServerPage *GetServerPage() { return m_pServerPage; }
 
 private:
     void InitVersionCombo();
 
     vgui::EditablePanel *m_pLeftPanel;   
     vgui::PropertySheet *m_pTabSheet;
-    ExtraListPage       *m_pModListPage;
+    ExtraListPage       *m_pMapListPage;
 
     vgui::EditablePanel *m_pRightPanel;  
     vgui::Label         *m_pDetailsLabel;
