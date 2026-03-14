@@ -17,6 +17,10 @@
 #include "filesystem.h"
 #include "checksum_crc.h"
 #include "qlimits.h"
+// #define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb/stb_image.h"
+#include "stb/stb_image_resize.h"
 
 // cl_avatar is defined in engine/client.cpp with FCVAR_USERINFO for proper custom file upload
 extern ConVar cl_avatar;
@@ -42,7 +46,54 @@ static CRC32_t s_nVTFAvatarCRC = 0;
 DECLARE_BUILD_FACTORY( CAvatarImagePanel );
 
 //-----------------------------------------------------------------------------
-// Purpose: Load avatar image data from a VTF file
+// Purpose: Load image data from a buffer (supports VTF and STB formats)
+//-----------------------------------------------------------------------------
+static bool AvatarImage_LoadImageFromBuffer( CUtlBuffer &buf, byte **ppRGBA, int *pWidth, int *pHeight )
+{
+	if ( !ppRGBA || !pWidth || !pHeight )
+		return false;
+
+	*ppRGBA = NULL;
+	*pWidth = 0;
+	*pHeight = 0;
+
+	// Try VTF first
+	IVTFTexture *pVTFTexture = CreateVTFTexture();
+	if ( pVTFTexture )
+	{
+		if ( pVTFTexture->Unserialize( buf ) )
+		{
+			pVTFTexture->ConvertImageFormat( IMAGE_FORMAT_RGBA8888, false );
+			*pWidth = pVTFTexture->Width();
+			*pHeight = pVTFTexture->Height();
+			int nBufferSize = *pWidth * *pHeight * 4;
+			*ppRGBA = new byte[nBufferSize];
+			Q_memcpy( *ppRGBA, pVTFTexture->ImageData( 0, 0, 0 ), nBufferSize );
+			DestroyVTFTexture( pVTFTexture );
+			return true;
+		}
+		DestroyVTFTexture( pVTFTexture );
+	}
+
+	// Try STB (PNG, JPG, etc)
+	int width, height, channels;
+	unsigned char *data = stbi_load_from_memory( (const unsigned char *)buf.Base(), buf.TellPut(), &width, &height, &channels, 4 );
+	if ( data )
+	{
+		*pWidth = width;
+		*pHeight = height;
+		int nBufferSize = width * height * 4;
+		*ppRGBA = new byte[nBufferSize];
+		Q_memcpy( *ppRGBA, data, nBufferSize );
+		stbi_image_free( data );
+		return true;
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Load avatar image data from a file (supports VTF and PNG via stb)
 // Returns: true if successful, caller must free *ppRGBA with delete[]
 //-----------------------------------------------------------------------------
 bool AvatarImage_LoadVTFAvatarImage( const char *szFilePath, byte **ppRGBA, int *pWidth, int *pHeight )
@@ -66,72 +117,20 @@ bool AvatarImage_LoadVTFAvatarImage( const char *szFilePath, byte **ppRGBA, int 
         Q_snprintf( szFullPath, sizeof(szFullPath), "%s.vtf", szFilePath );
     }
 
-    // Read the VTF file in binary mode (critical for VTF files)
-    CUtlBuffer buf( 0, 0, 0 ); // Binary mode - no text translation
+    CUtlBuffer buf( 0, 0, 0 );
     if ( !g_pFullFileSystem->ReadFile( szFullPath, "GAME", buf ) )
     {
-        Warning( "AvatarImage_LoadVTFAvatarImage: Failed to read file '%s'\n", szFullPath );
-        return false;
+        // Try without extension
+        char szNoExt[MAX_PATH];
+        Q_strncpy( szNoExt, szFilePath, sizeof(szNoExt) );
+        char *pExt = Q_strrchr( szNoExt, '.' );
+        if ( pExt ) *pExt = '\0';
+        
+        if ( !g_pFullFileSystem->ReadFile( szNoExt, "GAME", buf ) )
+             return false;
     }
 
-    // Create and load VTF texture
-    IVTFTexture *pVTFTexture = CreateVTFTexture();
-    if ( !pVTFTexture )
-    {
-        Warning( "AvatarImage_LoadVTFAvatarImage: Failed to create VTF texture\n" );
-        return false;
-    }
-
-    if ( !pVTFTexture->Unserialize( buf ) )
-    {
-        Warning( "AvatarImage_LoadVTFAvatarImage: Failed to unserialize VTF '%s'\n", szFullPath );
-        DestroyVTFTexture( pVTFTexture );
-        return false;
-    }
-
-    // Get dimensions
-    int nWidth = pVTFTexture->Width();
-    int nHeight = pVTFTexture->Height();
-
-    if ( nWidth <= 0 || nHeight <= 0 )
-    {
-        Warning( "AvatarImage_LoadVTFAvatarImage: Invalid dimensions in '%s'\n", szFullPath );
-        DestroyVTFTexture( pVTFTexture );
-        return false;
-    }
-
-    // Convert to RGBA8888 format
-    pVTFTexture->ConvertImageFormat( IMAGE_FORMAT_RGBA8888, false );
-
-    // Allocate output buffer
-    int nBufferSize = nWidth * nHeight * 4;
-    byte *pRGBA = new byte[nBufferSize];
-    if ( !pRGBA )
-    {
-        DestroyVTFTexture( pVTFTexture );
-        return false;
-    }
-
-    // Copy image data
-    byte *pSrcData = pVTFTexture->ImageData( 0, 0, 0 );
-    if ( pSrcData )
-    {
-        Q_memcpy( pRGBA, pSrcData, nBufferSize );
-    }
-    else
-    {
-        delete[] pRGBA;
-        DestroyVTFTexture( pVTFTexture );
-        return false;
-    }
-
-    DestroyVTFTexture( pVTFTexture );
-
-    *ppRGBA = pRGBA;
-    *pWidth = nWidth;
-    *pHeight = nHeight;
-
-    return true;
+    return AvatarImage_LoadImageFromBuffer( buf, ppRGBA, pWidth, pHeight );
 }
 
 
@@ -311,7 +310,22 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
         if ( iTexIndex == s_AvatarImageCache.InvalidIndex() )
         {
                 m_iTextureID = vgui::surface()->CreateNewTextureID( true );
-                vgui::surface()->DrawSetTextureRGBA( m_iTextureID, rgba, width, height, false, false );
+                
+                // Scale to 256x256 power-of-two for better filtering and compatibility
+                // Also prevents purple/black artifacts at edges by being power-of-two
+                int targetW = 256;
+                int targetH = 256;
+                byte *pResizedRGBA = new byte[targetW * targetH * 4];
+                if ( stbir_resize_uint8( rgba, width, height, width * 4, pResizedRGBA, targetW, targetH, targetW * 4, 4 ) )
+                {
+                        vgui::surface()->DrawSetTextureRGBA( m_iTextureID, pResizedRGBA, targetW, targetH, true, false );
+                }
+                else
+                {
+                        vgui::surface()->DrawSetTextureRGBA( m_iTextureID, rgba, width, height, true, false );
+                }
+                delete[] pResizedRGBA;
+
                 iTexIndex = s_AvatarImageCache.Insert( AvatarImagePair_t( m_SteamID, iAvatar ) );
                 s_AvatarImageCache[ iTexIndex ] = m_iTextureID;
         }
@@ -336,7 +350,21 @@ void CAvatarImage::InitFromRGBA_VTF( const byte *rgba, int width, int height, CR
         {
                 // Create new texture for VTF avatar
                 m_iTextureID = vgui::surface()->CreateNewTextureID( true );
-                vgui::surface()->DrawSetTextureRGBA( m_iTextureID, rgba, width, height, false, false );
+                
+                // Scale to 256x256 power-of-two for better filtering and compatibility
+                // Also prevents purple/black artifacts at edges by being power-of-two
+                int targetW = 256;
+                int targetH = 256;
+                byte *pResizedRGBA = new byte[targetW * targetH * 4];
+                if ( stbir_resize_uint8( rgba, width, height, width * 4, pResizedRGBA, targetW, targetH, targetW * 4, 4 ) )
+                {
+                        vgui::surface()->DrawSetTextureRGBA( m_iTextureID, pResizedRGBA, targetW, targetH, true, false );
+                }
+                else
+                {
+                        vgui::surface()->DrawSetTextureRGBA( m_iTextureID, rgba, width, height, true, false );
+                }
+                delete[] pResizedRGBA;
                 
                 // Cache it
                 s_iVTFAvatarTextureID = m_iTextureID;
@@ -348,8 +376,8 @@ void CAvatarImage::InitFromRGBA_VTF( const byte *rgba, int width, int height, CR
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Load avatar from a VTF file using CRC-based path (like sprays)
-// The avatar VTF is uploaded via sv_allowupload and stored in user_custom/ folder
+// Purpose: Load avatar from a VTF/PNG file using CRC-based path (like sprays)
+// The avatar image is uploaded via sv_allowupload and stored in user_custom/ folder
 // Returns: true if successful
 //-----------------------------------------------------------------------------
 bool CAvatarImage::SetAvatarFromCRC( CRC32_t crc )
@@ -373,7 +401,7 @@ bool CAvatarImage::SetAvatarFromCRC( CRC32_t crc )
         // Build path from CRC using same format as engine spray system
         CAvatarCustomFilename customFile( crc );
         
-        // Read the custom file (it's a VTF stored as .dat)
+        // Read the custom file (it's a VTF/PNG stored as .dat)
         CUtlBuffer buf( 0, 0, 0 );
         if ( !g_pFullFileSystem->ReadFile( customFile.m_Filename, "GAME", buf ) )
         {
@@ -386,45 +414,14 @@ bool CAvatarImage::SetAvatarFromCRC( CRC32_t crc )
                 }
         }
         
-        // Create and load VTF texture from buffer
-        IVTFTexture *pVTFTexture = CreateVTFTexture();
-        if ( !pVTFTexture )
-                return false;
-                
-        if ( !pVTFTexture->Unserialize( buf ) )
+        byte *pRGBA = NULL;
+        int nWidth = 0, nHeight = 0;
+        
+        if ( !AvatarImage_LoadImageFromBuffer( buf, &pRGBA, &nWidth, &nHeight ) )
         {
-                Warning( "Avatar: Failed to unserialize VTF from %s\n", customFile.m_Filename );
-                DestroyVTFTexture( pVTFTexture );
+                Warning( "Avatar: Failed to load image from %s\n", customFile.m_Filename );
                 return false;
         }
-        
-        int nWidth = pVTFTexture->Width();
-        int nHeight = pVTFTexture->Height();
-        
-        if ( nWidth <= 0 || nHeight <= 0 )
-        {
-                DestroyVTFTexture( pVTFTexture );
-                return false;
-        }
-        
-        pVTFTexture->ConvertImageFormat( IMAGE_FORMAT_RGBA8888, false );
-        
-        int nBufferSize = nWidth * nHeight * 4;
-        byte *pRGBA = new byte[nBufferSize];
-        
-        byte *pSrcData = pVTFTexture->ImageData( 0, 0, 0 );
-        if ( pSrcData )
-        {
-                Q_memcpy( pRGBA, pSrcData, nBufferSize );
-        }
-        else
-        {
-                delete[] pRGBA;
-                DestroyVTFTexture( pVTFTexture );
-                return false;
-        }
-        
-        DestroyVTFTexture( pVTFTexture );
         
         ClearAvatarSteamID();
         InitFromRGBA_VTF( pRGBA, nWidth, nHeight, crc );
