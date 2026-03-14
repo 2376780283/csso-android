@@ -583,10 +583,10 @@ void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
 }
 
 void ExtraManagerPanel::StartGame() {
-    // 1. 调用所有页面的应用更改逻辑 (类似 PropertyDialog::OnOK)
-    if (m_pServerPage) m_pServerPage->OnApplyChanges();
-    if (m_pGameplayPage) m_pGameplayPage->OnApplyChanges();
-    if (m_pBotPage) m_pBotPage->OnApplyChanges();
+    // 1. 调用选项卡的 ApplyChanges，这会触发所有 Page 的 OnApplyChanges (受保护成员无法直接调用)
+    if (m_pTabSheet) {
+        m_pTabSheet->ApplyChanges();
+    }
 
     // reset server enforced cvars
     if (g_pCVar) {
