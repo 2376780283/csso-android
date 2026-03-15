@@ -523,13 +523,6 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     
     m_pServerPage->UpdateGameplayPage(); // do it AFTER m_pGameplayPage has been added
 
-    if ( ModInfo().UseBots() )
-	{
-		m_pBotPage = new CCreateMultiplayerGameBotPage( m_pTabSheet, "BotPage", m_pSavedData );
-		m_pTabSheet->AddPage( m_pBotPage, "#GameUI_CPUPlayerOptions" );
-		m_pServerPage->EnableBots( m_pSavedData );
-	}
-
     if ( m_pSavedData )
 	{
 		const char *startMap = m_pSavedData->GetString("map", "");
@@ -554,9 +547,17 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 		}
 	}
 
-    m_pTabSheet->AddPage(m_pMapListPage, "Maps");
+    m_pTabSheet->AddPage(m_pMapListPage, "#GameUI_Map");
     
     m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
+    
+        if ( ModInfo().UseBots() )
+	{
+		m_pBotPage = new CCreateMultiplayerGameBotPage( m_pTabSheet, "BotPage", m_pSavedData );
+		m_pTabSheet->AddPage( m_pBotPage, "#GameUI_CPUPlayerOptions" );
+		m_pServerPage->EnableBots( m_pSavedData );
+	}
+    
     m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
 
     m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
