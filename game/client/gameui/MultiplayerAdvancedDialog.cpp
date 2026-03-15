@@ -44,7 +44,14 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 CMultiplayerAdvancedDialog::CMultiplayerAdvancedDialog(vgui::Panel *parent) : BaseClass(NULL, "MultiplayerAdvancedDialog")
 {
-	SetBounds(0, 0, 372, 160);
+    int w = 372;
+    int h = 160;
+    if (IsProportional())
+	{
+		w = scheme()->GetProportionalScaledValueEx(GetScheme(), w);
+		h = scheme()->GetProportionalScaledValueEx(GetScheme(), h);
+	}
+	SetBounds(0, 0, w, h);
 	SetSizeable( false );
 
 	SetTitle("#GameUI_MultiplayerAdvanced", true);
