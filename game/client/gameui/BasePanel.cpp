@@ -3916,12 +3916,19 @@ void CBaseModPanel::OnOpenDemoDialog()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenCreateMultiplayerGameDialog()
 {
-	if (!m_hCreateMultiplayerGameDialog.Get())
+/*	if (!m_hCreateMultiplayerGameDialog.Get())
 	{
 		m_hCreateMultiplayerGameDialog = new CCreateMultiplayerGameDialog(this);
 		PositionDialog(m_hCreateMultiplayerGameDialog);
 	}
-	m_hCreateMultiplayerGameDialog->Activate();
+	m_hCreateMultiplayerGameDialog->Activate();*/
+    if ( !m_hExtraDialog.Get() )
+	{
+	    m_hExtraDialog = new ExtraManagerPanel(this);
+		PositionDialog( m_hExtraDialog );
+		m_hExtraDialog->MoveToCenterOfScreen(); 
+	}
+    m_hExtraDialog->Activate();  
 }
 
 //-----------------------------------------------------------------------------
@@ -4045,24 +4052,23 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 // unh i will delete the shit func motherfuck 
 // -------
 void CBaseModPanel::ShowExtraManager()
-{
- 
-    if ( !m_hExtraDialog.Get() )
+{ 
+/*    if ( !m_hExtraDialog.Get() )
 	{
 	    m_hExtraDialog = new ExtraManagerPanel(this);
 		PositionDialog( m_hExtraDialog );
 		m_hExtraDialog->MoveToCenterOfScreen(); 
 	}
-    m_hExtraDialog->Activate();  
+    m_hExtraDialog->Activate(); */  
   
 }
 
 void CC_ShowExtraManager(const CCommand &args)
 {
-    if (g_pBasePanel)
+/*    if (g_pBasePanel)
     {
         g_pBasePanel->ShowExtraManager();
-    }
+    } */
 }
 
 static ConCommand Extra_manager("Extra_manager", CC_ShowExtraManager, "Open Extra Manager dialog", FCVAR_NONE);
