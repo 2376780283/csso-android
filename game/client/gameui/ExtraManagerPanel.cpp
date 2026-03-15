@@ -520,10 +520,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     m_pServerPage = new CCreateMultiplayerGameServerPage(this, "ServerPage", nGameType, nGameMode, bAllMaps);
     m_pGameplayPage = new CCreateMultiplayerGameGameplayPage(this, "GameplayPage");
     m_pBotPage = NULL;
-
-    m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
-    m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
-
+    
     m_pServerPage->UpdateGameplayPage(); // do it AFTER m_pGameplayPage has been added
 
     if ( ModInfo().UseBots() )
@@ -558,6 +555,10 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 	}
 
     m_pTabSheet->AddPage(m_pMapListPage, "Maps");
+    
+    m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
+    m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
+
     m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
     m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
 
