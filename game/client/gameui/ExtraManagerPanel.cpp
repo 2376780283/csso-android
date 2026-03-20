@@ -236,6 +236,34 @@ void MapCardPanel::OnMousePressed(vgui::MouseCode code) {
 // ExtraListPage 实现 (含纹理缓存)
 // =========================================================
 ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseClass(parent, panelName) {
+    // 创建过滤控件
+    m_pFilterLabel = new vgui::Label(this, "FilterLabel", "#GameUI_Filter");
+    m_pFilterLabel->SetContentAlignment(vgui::Label::a_west);
+    
+    m_pGameTypeCombo = new vgui::ComboBox(this, "GameTypeCombo", 10, false);
+    m_pGameTypeCombo->AddActionSignalTarget(this);
+    
+    m_pGameModeCombo = new vgui::ComboBox(this, "GameModeCombo", 10, false);
+    m_pGameModeCombo->AddActionSignalTarget(this);
+    
+    m_pAllMapsCheck = new vgui::CheckButton(this, "AllMapsCheck", "#GameUI_ShowAllMaps");
+    m_pAllMapsCheck->AddActionSignalTarget(this);
+    
+    // 初始化游戏类型列表
+    int iGameTypeCount = g_pGameTypes->GetGameTypesCount();
+    m_pGameTypeCombo->AddItem("#GameUI_All", new KeyValues("data", "game_type", -1));
+    for (int i = 0; i < iGameTypeCount; i++) {
+        const char* pszGameTypeNameID = g_pGameTypes->GetGameTypeNameID(i);
+        if (pszGameTypeNameID) {
+            m_pGameTypeCombo->AddItem(pszGameTypeNameID, new KeyValues("data", "game_type", i));
+        }
+    }
+    m_pGameTypeCombo->ActivateItem(0);
+    
+    // 初始化游戏模式列表
+    UpdateGameModeList();
+    
+    // 地图列表面板
     m_pMapListPanel = new vgui::PanelListPanel(this, "MapListPanel");
     m_pMapListPanel->SetFirstColumnWidth(0);
     m_pMapListPanel->SetNumColumns(4);
@@ -254,6 +282,34 @@ void ExtraListPage::CleanUpTextures() {
         if (vgui::surface()->IsTextureIDValid(id)) { vgui::surface()->DeleteTextureByID(id); }
     }
     m_TextureCache.RemoveAll();
+}
+
+//-------------------------------------------------------------------------
+// Purpose: 更新游戏模式列表
+//-------------------------------------------------------------------------
+void ExtraListPage::UpdateGameModeList()
+{
+    m_pGameModeCombo->DeleteAllItems();
+    
+    int nSelectedGameType = -1;
+    KeyValues *pkvData = m_pGameTypeCombo->GetActiveItemUserData();
+    if (pkvData) {
+        nSelectedGameType = pkvData->GetInt("game_type", -1);
+    }
+    
+    m_pGameModeCombo->AddItem("#GameUI_All", new KeyValues("data", "game_mode", -1));
+    
+    if (nSelectedGameType >= 0) {
+        int iGameModeCount = g_pGameTypes->GetGameModesCount(nSelectedGameType);
+        for (int i = 0; i < iGameModeCount; i++) {
+            const char* pszGameModeNameID = g_pGameTypes->GetGameModeNameID(nSelectedGameType, i);
+            if (pszGameModeNameID) {
+                m_pGameModeCombo->AddItem(pszGameModeNameID, new KeyValues("data", "game_mode", i));
+            }
+        }
+    }
+    
+    m_pGameModeCombo->ActivateItem(0);
 }
 
 int ExtraListPage::GetTextureForPath(const char *fullPath) {
@@ -316,35 +372,98 @@ void ExtraListPage::RefreshList() {
     CCreateMultiplayerGameServerPage *pServerPage = pMain->GetServerPage();
     if (!pServerPage) return;
 
-    vgui::ListPanel *pMapList = pServerPage->GetMapList();
-    if (!pMapList) return;
+    // 获取过滤条件
+    int nFilterGameType = -1;
+    int nFilterGameMode = -1;
+    bool bShowAllMaps = m_pAllMapsCheck->IsSelected();
+    
+    KeyValues *pkvGameTypeData = m_pGameTypeCombo->GetActiveItemUserData();
+    if (pkvGameTypeData) {
+        nFilterGameType = pkvGameTypeData->GetInt("game_type", -1);
+    }
+    
+    KeyValues *pkvGameModeData = m_pGameModeCombo->GetActiveItemUserData();
+    if (pkvGameModeData) {
+        nFilterGameMode = pkvGameModeData->GetInt("game_mode", -1);
+    }
+    
+    const char *pszFilterGameType = (nFilterGameType >= 0) ? g_pGameTypes->GetGameTypeFromInt(nFilterGameType) : NULL;
+    const char *pszFilterGameMode = (nFilterGameMode >= 0) ? g_pGameTypes->GetGameModeFromInt(nFilterGameType, nFilterGameMode) : NULL;
 
-    // 遍历 ServerPage 的地图列表，确保过滤和名称一致
-    for (int i = 0; i < pMapList->GetItemCount(); i++)
+    // 直接从文件系统加载地图
+    FileFindHandle_t findHandle = NULL;
+    KeyValues *hiddenMaps = ModInfo().GetHiddenMaps();
+    
+    const char *pszFilename = g_pFullFileSystem->FindFirstEx("maps/*.bsp", "MOD", &findHandle);
+    
+    while (pszFilename)
     {
-        int itemID = pMapList->GetItemIDFromRow(i);
-        KeyValues *kv = pMapList->GetItem(itemID);
-        if (!kv) continue;
+        char mapname[256];
+        char *ext, *str;
+        const char *szUIMapName;
 
-        const char *szMapName = kv->GetString("mapname", "");
-        const char *szUIMapName = kv->GetString("uimapname", "");
+        // 从文件名中提取地图名
+        str = Q_strstr(pszFilename, "maps");
+        if (str)
+        {
+            Q_strncpy(mapname, str + 5, sizeof(mapname) - 1);
+        }
+        else
+        {
+            Q_strncpy(mapname, pszFilename, sizeof(mapname) - 1);
+        }
+        ext = Q_strstr(mapname, ".bsp");
+        if (ext)
+        {
+            *ext = 0;
+        }
 
-        // 过滤掉 "随机地图" 选项 (定义见 CreateMultiplayerGameServerPage.cpp)
-        if (!Q_stricmp(szMapName, "#GameUI_RandomMap"))
+        // 过滤掉隐藏的地图
+        if (hiddenMaps && hiddenMaps->GetInt(mapname, 0))
+        {
+            pszFilename = g_pFullFileSystem->FindNext(findHandle);
             continue;
+        }
+
+        // 应用过滤条件
+        if (!bShowAllMaps && pszFilterGameType && !g_pGameTypes->IsValidMapForTypeAndMode(mapname, pszFilterGameType, pszFilterGameMode))
+        {
+            pszFilename = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+
+        szUIMapName = g_pGameTypes->GetMapNameID(mapname);
+        if (!szUIMapName || !szUIMapName[0])
+        {
+            szUIMapName = mapname;
+        }
 
         char szIconPath[MAX_PATH];
-        Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", szMapName);
+        Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", mapname);
 
-        // 使用 szUIMapName 作为显示标题，它通常是本地化的
-        MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, szMapName, szUIMapName);
-        if (g_pFullFileSystem->FileExists(szIconPath, "GAME")) { 
-            pCard->SetImagePath(szIconPath); 
+        // 使用 szUIMapName 作为显示标题
+        MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, mapname, szUIMapName);
+        if (g_pFullFileSystem->FileExists(szIconPath, "GAME"))
+        {
+            pCard->SetImagePath(szIconPath);
         }
 
         pCard->AddActionSignalTarget(pMain);
         m_pMapListPanel->AddItem(nullptr, pCard);
+
+        pszFilename = g_pFullFileSystem->FindNext(findHandle);
     }
+    
+    g_pFullFileSystem->FindClose(findHandle);
+}
+
+void ExtraListPage::ApplySchemeSettings(vgui::IScheme *pScheme) {
+    BaseClass::ApplySchemeSettings(pScheme);
+    
+    if (m_pFilterLabel) m_pFilterLabel->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
+    if (m_pGameTypeCombo) m_pGameTypeCombo->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
+    if (m_pGameModeCombo) m_pGameModeCombo->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
+    if (m_pAllMapsCheck) m_pAllMapsCheck->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
 }
 
 void ExtraListPage::PerformLayout() {
@@ -352,7 +471,24 @@ void ExtraListPage::PerformLayout() {
     int w, h;
     GetSize(w, h);
     int margin = PROPVAL(8);
-    m_pMapListPanel->SetBounds(margin, margin, w - (margin * 2), h - (margin * 2));
+    int iFilterHeight = PROPVAL(24);
+    int iSpacing = PROPVAL(6);
+    
+    // 布局过滤控件
+    int currentY = margin;
+    m_pFilterLabel->SetBounds(margin, currentY, PROPVAL(50), iFilterHeight);
+    
+    int iComboX = margin + PROPVAL(55);
+    int iComboWidth = (w - iComboX - margin - iSpacing) / 2;
+    m_pGameTypeCombo->SetBounds(iComboX, currentY, iComboWidth, iFilterHeight);
+    m_pGameModeCombo->SetBounds(iComboX + iComboWidth + iSpacing, currentY, iComboWidth, iFilterHeight);
+    
+    currentY += iFilterHeight + iSpacing;
+    m_pAllMapsCheck->SetBounds(margin, currentY, w - margin * 2, iFilterHeight);
+    
+    currentY += iFilterHeight + iSpacing;
+    int iListTop = currentY;
+    m_pMapListPanel->SetBounds(margin, iListTop, w - (margin * 2), h - iListTop - margin);
 }
 
 // =========================================================
@@ -649,4 +785,28 @@ void ExtraManagerPanel::OnKeyCodePressed( vgui::KeyCode code )
 void ExtraManagerPanel::OnClose() {
     BaseClass::OnClose();
     MarkForDeletion();
+}
+
+//-------------------------------------------------------------------------
+// Purpose: ExtraListPage 消息处理
+//-------------------------------------------------------------------------
+void ExtraListPage::OnTextChanged(Panel *panel)
+{
+    if (panel == m_pGameTypeCombo)
+    {
+        UpdateGameModeList();
+        RefreshList();
+    }
+    else if (panel == m_pGameModeCombo)
+    {
+        RefreshList();
+    }
+}
+
+void ExtraListPage::OnCheckButtonChecked(Panel *panel)
+{
+    if (panel == m_pAllMapsCheck)
+    {
+        RefreshList();
+    }
 }

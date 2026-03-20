@@ -69,19 +69,31 @@ public:
     virtual ~ExtraListPage(); 
 
     virtual void PerformLayout() override;
+    virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
     void RefreshList(); 
 
     // 提供给 MapCardPanel 调用的纹理加载接口
     int GetTextureForPath(const char *fullPath);
 
 private:
+    void UpdateGameModeList();
+    void ApplyMapFilters();
     int CreateTextureFromPNG(const char *fullPath);
     void CleanUpTextures();
 
+    // 过滤控件
+    vgui::Label *m_pFilterLabel;
+    vgui::ComboBox *m_pGameTypeCombo;
+    vgui::ComboBox *m_pGameModeCombo;
+    vgui::CheckButton *m_pAllMapsCheck;
+    
     vgui::PanelListPanel *m_pMapListPanel; 
 
     // 纹理缓存：Key 是路径哈希或字符串，Value 是 TextureID
     CUtlMap<unsigned int, int> m_TextureCache; 
+    
+    MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
+    MESSAGE_FUNC_PTR(OnCheckButtonChecked, "CheckButtonChecked", panel);
 };
 
 // ---------------------------------------------------------
