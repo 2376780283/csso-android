@@ -61,6 +61,11 @@ CLoadingDialog::CLoadingDialog( vgui::Panel *parent ) : Frame(parent, "LoadingDi
 	m_flSecondaryProgressStartTime = 0.0f;
 	m_bExtendedServerInfoLoaded = false;
 
+	// Initialize fade-in animation
+	m_flFadeInStartTime = 0.0f;
+	m_flFadeInDuration = 0.3f;  // 300ms fade-in duration
+	m_bFadeInActive = false;
+
 	m_pProgress = new ProgressBar( this, "Progress" );
 	m_pProgress2 = new ProgressBar( this, "Progress2" );
 	m_pInfoLabel = new Label( this, "InfoLabel", "" );
@@ -255,6 +260,11 @@ void CLoadingDialog::Open()
 
 	HideOtherDialogs( true );
 	BaseClass::Activate();
+
+	// Start fade-in animation
+	m_flFadeInStartTime = engine->Time();
+	m_bFadeInActive = true;
+	SetAlpha( 0 );
 
 	if ( !m_bConsoleStyle )
 	{
@@ -502,7 +512,19 @@ void CLoadingDialog::OnThink()
 		}
 	}
 
-	SetAlpha( 255 );
+	// Handle fade-in animation
+	if ( m_bFadeInActive )
+	{
+		float elapsed = engine->Time() - m_flFadeInStartTime;
+		float t = clamp( elapsed / m_flFadeInDuration, 0.0f, 1.0f );
+		int alpha = (int)(t * 255.0f);
+		SetAlpha( alpha );
+		
+		if ( t >= 1.0f )
+		{
+			m_bFadeInActive = false;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

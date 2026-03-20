@@ -288,6 +288,9 @@ public:
 	void OnGameUIActivated();
 
 	// game dialogs
+	// Helper function to activate dialog with fade-in animation
+	void ActivateDialogWithFade( vgui::Frame *pDialog );
+
 	void OnOpenNewGameDialog( const char *chapter = NULL );
 	void OnOpenBonusMapsDialog();
 	void OnOpenLoadGameDialog();

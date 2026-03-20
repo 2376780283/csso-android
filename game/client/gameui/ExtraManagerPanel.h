@@ -45,6 +45,12 @@ public:
     virtual void OnCursorExited() override;
     virtual void OnMousePressed(vgui::MouseCode code) override;
 
+    // 异步加载接口
+    void QueueForLoad();
+    void ExecuteLoad();
+    bool IsQueuedForLoad() const { return m_bQueuedForLoad; }
+    bool IsLoadComplete() const { return m_bAttemptedLoad; }
+
 private:
     vgui::ImagePanel *m_pImagePanelPlaceholder; 
     vgui::Label      *m_pTitle;
@@ -57,6 +63,7 @@ private:
     char m_szImagePath[MAX_PATH];
     char m_szUIMapName[MAX_PATH];
     bool m_bAttemptedLoad; // 是否尝试过加载，防止失败后死循环
+    bool m_bQueuedForLoad; // 是否已在加载队列中
 };
 
 // ---------------------------------------------------------
@@ -70,10 +77,14 @@ public:
 
     virtual void PerformLayout() override;
     virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+    virtual void OnTick() override;
     void RefreshList(); 
 
     // 提供给 MapCardPanel 调用的纹理加载接口
     int GetTextureForPath(const char *fullPath);
+    // 异步加载队列管理
+    void QueueCardForLoad(MapCardPanel *pCard);
+    void ProcessLoadQueue();
 
 private:
     void UpdateGameModeList();
@@ -91,6 +102,10 @@ private:
 
     // 纹理缓存：Key 是路径哈希或字符串，Value 是 TextureID
     CUtlMap<unsigned int, int> m_TextureCache; 
+
+    // 异步加载队列：每帧只加载少量纹理避免卡顿
+    CUtlVector<MapCardPanel*> m_LoadQueue;
+    static const int MAX_LOADS_PER_FRAME = 2; // 每帧最多加载2个纹理
     
     MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
     MESSAGE_FUNC_PTR(OnCheckButtonChecked, "CheckButtonChecked", panel);

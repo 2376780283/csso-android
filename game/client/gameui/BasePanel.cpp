@@ -3712,6 +3712,22 @@ void CBaseModPanel::OnOpenDisconnectConfirmationDialog()
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Helper function to activate dialog with fade-in animation
+//-----------------------------------------------------------------------------
+void CBaseModPanel::ActivateDialogWithFade( vgui::Frame *pDialog )
+{
+	if ( !pDialog )
+		return;
+
+	// Start with transparent and fade in
+	pDialog->SetAlpha( 0 );
+	pDialog->Activate();
+
+	// Request think to animate the fade-in
+	pDialog->RequestFocus();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenNewGameDialog(const char *chapter )

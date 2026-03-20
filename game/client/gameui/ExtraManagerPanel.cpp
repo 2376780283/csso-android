@@ -120,6 +120,7 @@ private:
 MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *title) : BaseClass(parent, name) {
     m_nTextureID = -1;
     m_bAttemptedLoad = false;
+    m_bQueuedForLoad = false;
     m_szImagePath[0] = '\0';
     Q_strncpy(m_szUIMapName, title ? title : "", sizeof(m_szUIMapName));
 
@@ -159,19 +160,6 @@ void MapCardPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
 void MapCardPanel::Paint() {
     BaseClass::Paint();
 
-    // --- 性能优化：延迟加载逻辑 ---
-    if (m_nTextureID == -1 && !m_bAttemptedLoad && m_szImagePath[0] != '\0') {
-        // 向上寻找 ExtraListPage 以调用其缓存加载器
-        vgui::Panel *pPage = GetParent();
-        while (pPage && !dynamic_cast<ExtraListPage *>(pPage)) { pPage = pPage->GetParent(); }
-
-        if (pPage) {
-            ExtraListPage *pListPage = static_cast<ExtraListPage *>(pPage);
-            m_nTextureID = pListPage->GetTextureForPath(m_szImagePath);
-            m_bAttemptedLoad = true; // 无论成功失败，只尝试一次，避免每帧磁盘访问
-        }
-    }
-
     int w, h;
     GetSize(w, h);
     int iMargin = PROPVAL(6);
@@ -194,6 +182,37 @@ void MapCardPanel::Paint() {
     int labelH = PROPVAL(26);
     vgui::surface()->DrawSetColor(0, 0, 0, 150);
     vgui::surface()->DrawFilledRect(drawX, labelY, drawX + contentW, labelY + labelH);
+}
+
+// --- 异步加载：加入加载队列 ---
+void MapCardPanel::QueueForLoad() {
+    if (m_bQueuedForLoad || m_bAttemptedLoad || m_szImagePath[0] == '\0') return;
+    m_bQueuedForLoad = true;
+
+    // 向上寻找 ExtraListPage 并加入加载队列
+    vgui::Panel *pPage = GetParent();
+    while (pPage && !dynamic_cast<ExtraListPage *>(pPage)) { pPage = pPage->GetParent(); }
+
+    if (pPage) {
+        ExtraListPage *pListPage = static_cast<ExtraListPage *>(pPage);
+        pListPage->QueueCardForLoad(this);
+    }
+}
+
+// --- 执行实际的纹理加载 ---
+void MapCardPanel::ExecuteLoad() {
+    if (m_bAttemptedLoad || m_szImagePath[0] == '\0') return;
+    
+    // 向上寻找 ExtraListPage 以调用其缓存加载器
+    vgui::Panel *pPage = GetParent();
+    while (pPage && !dynamic_cast<ExtraListPage *>(pPage)) { pPage = pPage->GetParent(); }
+
+    if (pPage) {
+        ExtraListPage *pListPage = static_cast<ExtraListPage *>(pPage);
+        m_nTextureID = pListPage->GetTextureForPath(m_szImagePath);
+        m_bAttemptedLoad = true;
+        m_bQueuedForLoad = false;
+    }
 }
 
 void MapCardPanel::PerformLayout() {
@@ -248,6 +267,9 @@ ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseC
     
     m_pAllMapsCheck = new vgui::CheckButton(this, "AllMapsCheck", "#GameUI_AllMaps");
     m_pAllMapsCheck->AddActionSignalTarget(this);
+
+    // 注册tick信号以驱动异步加载队列
+    vgui::ivgui()->AddTickSignal(GetVPanel());
     
     // 初始化游戏类型列表
     int iGameTypeCount = g_pGameTypes->GetGameTypesCount();
@@ -273,6 +295,7 @@ ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseC
 }
 
 ExtraListPage::~ExtraListPage() {
+    vgui::ivgui()->RemoveTickSignal(GetVPanel());
     CleanUpTextures();
 }
 
@@ -359,6 +382,9 @@ int ExtraListPage::CreateTextureFromPNG(const char *fullPath) {
 }
 
 void ExtraListPage::RefreshList() {
+    // 清空加载队列
+    m_LoadQueue.RemoveAll();
+    
     m_pMapListPanel->DeleteAllItems();
 
     // 向上寻找 ExtraManagerPanel 以获取 ServerPage 引用
@@ -458,10 +484,12 @@ void ExtraListPage::RefreshList() {
             // 创建并配置卡片
             MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, mapname, szUIMapName);
             
-            // 检查预览图是否存在
+            // 检查预览图是否存在 - 仅设置路径，不立即加载
             if (g_pFullFileSystem->FileExists(szIconPath, "GAME"))
             {
                 pCard->SetImagePath(szIconPath);
+                // 加入加载队列而不是立即加载
+                pCard->QueueForLoad();
             }
 
             pCard->AddActionSignalTarget(pMain);
@@ -473,6 +501,35 @@ void ExtraListPage::RefreshList() {
     }
     
     g_pFullFileSystem->FindClose(findHandle);
+}
+
+// --- OnTick: 每帧处理加载队列 ---
+void ExtraListPage::OnTick() {
+    BaseClass::OnTick();
+    ProcessLoadQueue();
+}
+
+// --- 将卡片加入加载队列 ---
+void ExtraListPage::QueueCardForLoad(MapCardPanel *pCard) {
+    if (!pCard) return;
+    m_LoadQueue.AddToTail(pCard);
+}
+
+// --- 处理加载队列：每帧只加载少量 ---
+void ExtraListPage::ProcessLoadQueue() {
+    if (m_LoadQueue.IsEmpty()) return;
+
+    // 每帧只处理少量，避免卡顿
+    int loadsThisFrame = 0;
+    while (!m_LoadQueue.IsEmpty() && loadsThisFrame < MAX_LOADS_PER_FRAME) {
+        MapCardPanel *pCard = m_LoadQueue[0];
+        m_LoadQueue.Remove(0);
+
+        if (pCard && !pCard->IsLoadComplete() && pCard->IsQueuedForLoad()) {
+            pCard->ExecuteLoad();
+        }
+        loadsThisFrame++;
+    }
 }
 
 void ExtraListPage::ApplySchemeSettings(vgui::IScheme *pScheme) {
