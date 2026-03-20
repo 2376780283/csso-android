@@ -237,7 +237,7 @@ void MapCardPanel::OnMousePressed(vgui::MouseCode code) {
 // =========================================================
 ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseClass(parent, panelName) {
     // 创建过滤控件
-    m_pFilterLabel = new vgui::Label(this, "FilterLabel", "#GameUI_Filter");
+    m_pFilterLabel = new vgui::Label(this, "FilterLabel", "#GameUI_Filtering_Mode");
     m_pFilterLabel->SetContentAlignment(vgui::Label::a_west);
     
     m_pGameTypeCombo = new vgui::ComboBox(this, "GameTypeCombo", 10, false);
@@ -246,12 +246,12 @@ ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseC
     m_pGameModeCombo = new vgui::ComboBox(this, "GameModeCombo", 10, false);
     m_pGameModeCombo->AddActionSignalTarget(this);
     
-    m_pAllMapsCheck = new vgui::CheckButton(this, "AllMapsCheck", "#GameUI_ShowAllMaps");
+    m_pAllMapsCheck = new vgui::CheckButton(this, "AllMapsCheck", "#GameUI_AllMaps");
     m_pAllMapsCheck->AddActionSignalTarget(this);
     
     // 初始化游戏类型列表
     int iGameTypeCount = g_pGameTypes->GetGameTypesCount();
-    m_pGameTypeCombo->AddItem("#GameUI_All", new KeyValues("data", "game_type", -1));
+    m_pGameTypeCombo->AddItem("#GameUI_AllMaps", new KeyValues("data", "game_type", -1));
     for (int i = 0; i < iGameTypeCount; i++) {
         const char* pszGameTypeNameID = g_pGameTypes->GetGameTypeNameID(i);
         if (pszGameTypeNameID) {
@@ -297,7 +297,7 @@ void ExtraListPage::UpdateGameModeList()
         nSelectedGameType = pkvData->GetInt("game_type", -1);
     }
     
-    m_pGameModeCombo->AddItem("#GameUI_All", new KeyValues("data", "game_mode", -1));
+    m_pGameModeCombo->AddItem("#GameUI_AllMaps", new KeyValues("data", "game_mode", -1));
     
     if (nSelectedGameType >= 0) {
         int iGameModeCount = g_pGameTypes->GetGameModesCount(nSelectedGameType);
@@ -561,7 +561,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     
     m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
     
-        if ( ModInfo().UseBots() )
+    if ( ModInfo().UseBots() )
 	{
 		m_pBotPage = new CCreateMultiplayerGameBotPage( m_pTabSheet, "BotPage", m_pSavedData );
 		m_pTabSheet->AddPage( m_pBotPage, "#GameUI_CPUPlayerOptions" );
