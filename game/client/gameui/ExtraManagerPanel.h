@@ -60,26 +60,6 @@ private:
 };
 
 // ---------------------------------------------------------
-// 开发者列表项：扁平化布局
-// ---------------------------------------------------------
-class DevItemPanel : public vgui::EditablePanel {
-    DECLARE_CLASS_SIMPLE(DevItemPanel, vgui::EditablePanel);
-public:
-    // 增加一个构造函数参数或修改逻辑，使其能接收 TextureID
-    DevItemPanel(vgui::Panel *parent, const char *name, const char *nick, const char *desc, int nTextureID);
-    
-    virtual void PerformLayout() override;
-    virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
-    virtual void Paint() override;
-
-private:
-    vgui::ImagePanel *m_pIcon;
-    vgui::Label      *m_pNameLabel;
-    vgui::Label      *m_pDescLabel;
-    int               m_nTextureID; // 存储生成的纹理ID
-};
-
-// ---------------------------------------------------------
 // 列表页面：管理纹理生命周期
 // ---------------------------------------------------------
 class ExtraListPage : public vgui::PropertyPage {
@@ -104,27 +84,6 @@ private:
     CUtlMap<unsigned int, int> m_TextureCache; 
 };
 
-// 占位页面
-class ModelPreviewPage : public vgui::PropertyPage {
-    DECLARE_CLASS_SIMPLE(ModelPreviewPage, vgui::PropertyPage);
-public:
-    ModelPreviewPage(vgui::Panel *parent, const char *panelName) : BaseClass(parent, panelName) {}
-};
-
-// ---------------------------------------------------------
-// 开发者页面：管理开发者列表
-// ---------------------------------------------------------
-class DevPage : public vgui::PropertyPage {
-    DECLARE_CLASS_SIMPLE(DevPage, vgui::PropertyPage);
-public:
-    DevPage(vgui::Panel *parent, const char *panelName);
-    virtual void PerformLayout() override;
-
-private:
-    void PopulateDevList();
-    vgui::PanelListPanel *m_pDevList;
-};
-
 // ---------------------------------------------------------
 // 主窗口
 // ---------------------------------------------------------
@@ -142,13 +101,9 @@ public:
     virtual void OnKeyCodePressed(vgui::KeyCode code) override;
 
     void StartGame();
-    MESSAGE_FUNC_PTR(OnVersionSelected, "TextChanged", panel);
     MESSAGE_FUNC_PARAMS( OnMapCardSelected, "MapCardSelected", data );
 
     CCreateMultiplayerGameServerPage *GetServerPage() { return m_pServerPage; }
-
-private:
-    void InitVersionCombo();
 
     vgui::EditablePanel *m_pLeftPanel;   
     vgui::PropertySheet *m_pTabSheet;
@@ -156,14 +111,6 @@ private:
 
     vgui::EditablePanel *m_pRightPanel;  
     vgui::Label         *m_pDetailsLabel;
-    vgui::Label         *m_pVersionTitleLabel; 
-    vgui::RichText      *m_pDescriptionText;
-    vgui::ComboBox      *m_pVersionCombo;
-    
-    class ImageUrlButton *m_pDiscordBtn;
-    class ImageUrlButton *m_pGithubBtn;
-    class ImageUrlButton *m_pTwitterBtn;
-    class ImageUrlButton *m_pTelegramBtn;
     
     vgui::Button        *m_pRefreshButton;
     vgui::Button        *m_pCloseButton;

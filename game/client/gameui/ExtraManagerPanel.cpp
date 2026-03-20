@@ -112,31 +112,7 @@ private:
     const char *m_szUrl;
 };
 
-// =========================================================
-// 版本维护数据
-// =========================================================
-struct VersionInfo_t {
-    const char *szVersion;
-    const char *szDescription;
-};
 
-static VersionInfo_t g_VersionData[] = {
-    {"1.18.4", "- Fixed GamePadUI alignment issues at high resolutions."},
-    {"1.18.3", " (2025/08/14)\n- Fixed GamePadUI tab misalignment.\n- Added support for PNG textures in Touch UI.\n- Performance optimizations."},
-    {"1.18.0", " (2025/01/26)\n- Fixed GamePadUI issues.\n- Added support for Entropy : Zero 2 mod.\n- Full support for PNG loading.\n- Integrated features "
-               "from the HL2 20th Anniversary update."},
-    {"1.17.26", " (2024/01/26)\n- Fixed smoke rendering and touch controls.\n- Fixed launcher issues for all ports.\n- Added GamePadUI support and touch grid "
-                "color customization.\n- Enabled LTO (Link Time Optimization) for certain components."},
-    {"1.17.25", " (2024/01/24)\n- Fixed crashes related to IsMapValid and spec_goto.\n- Resolved black screen and VSync issues after minimizing on Android.\n- "
-                "Audio now runs in a separate thread.\n- Improved touch responsiveness."},
-    {"1.16", " (2023/02/17)\n- Fixed touch texture issues and maintained 64-bit stability.\n- Added multi-threaded optimizations for the material system.\n- "
-             "Unlocked -tickrate parameter for CSS, TF, and DOD.\n- Added Discord, GitHub, and Telegram buttons to main menu."},
-    {"1.14", " (2022/09/19)\n- Fixed font issues for various languages and added Thai support.\n- Fixed touch button bugs (spawnmenu now works).\n- Fixed "
-             "particle bugs in HL2."},
-    {"1.13", " (2022/09/17)\n- Ported to 64-bit (Fixes 'Out of Memory' on 4GB+ RAM devices).\n- Added PBR (Physically Based Rendering) and VTF 7.5 support.\n- "
-             "Added Chinese, Japanese, and Korean font support.\n- Fixed players sticking to physical props."},
-    {"1.09", " (2022/03/02)\n- Fixed 'Black Textures' and all scenes in HL2 (Alyx, Dog, Eli).\n- Added voice recording with Opus codec support.\n- Fixed touch "
-             "sensitivity in zoom (e.g., Crossbow)."}};
 
 // =========================================================
 // MapCardPanel 实现 (含延迟加载逻辑)
@@ -252,111 +228,9 @@ void MapCardPanel::OnMousePressed(vgui::MouseCode code) {
     }
 }
 
-// =========================================================
-// DevItemPanel 实现
-// =========================================================
-DevItemPanel::DevItemPanel(vgui::Panel *parent, const char *name, const char *nick, const char *desc, int nTextureID) : BaseClass(parent, name) {
-    m_nTextureID = nTextureID;
-    
-    SetPaintBackgroundEnabled(true);
-    SetBgColor(Color(0, 0, 0, 100));
 
-    // 依然保留图标容器位置，但不使用 ImagePanel 的图片加载功能
-    m_pIcon = new vgui::ImagePanel(this, "DevIcon");
-    m_pIcon->SetShouldScaleImage(true);
-    m_pIcon->SetVisible(false); // 隐藏它，我们自己在 Paint 里画
 
-    m_pNameLabel = new vgui::Label(this, "DevName", nick);
-    m_pNameLabel->SetFgColor(Color(255, 210, 0, 255));
 
-    m_pDescLabel = new vgui::Label(this, "DevDesc", desc);
-    m_pDescLabel->SetFgColor(Color(200, 200, 200, 255));
-    m_pDescLabel->SetContentAlignment(vgui::Label::a_northwest);
-
-    SetSize(PROPVAL(300), PROPVAL(64));
-}
-
-void DevItemPanel::Paint() {
-    BaseClass::Paint();
-
-    // 手动绘制 PNG 头像
-    if (m_nTextureID != -1 && vgui::surface()->IsTextureIDValid(m_nTextureID)) {
-        int ix, iy, iw, ih;
-        m_pIcon->GetBounds(ix, iy, iw, ih);
-        
-        vgui::surface()->DrawSetColor(255, 255, 255, 255);
-        vgui::surface()->DrawSetTexture(m_nTextureID);
-        vgui::surface()->DrawTexturedRect(ix, iy, ix + iw, iy + ih);
-    }
-
-    // 绘制底部装饰线
-    vgui::surface()->DrawSetColor(255, 255, 255, 10);
-    vgui::surface()->DrawFilledRect(0, GetTall() - 1, GetWide(), GetTall());
-}
-
-void DevItemPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
-    BaseClass::ApplySchemeSettings(pScheme);
-    m_pNameLabel->SetFont(pScheme->GetFont("DefaultBold", IsProportional()));
-    m_pDescLabel->SetFont(pScheme->GetFont("DefaultVerySmall", IsProportional()));
-}
-
-void DevItemPanel::PerformLayout() {
-    BaseClass::PerformLayout();
-    int w, h;
-    GetSize(w, h);
-    int iPadding = PROPVAL(8);
-    int iIconSize = h - (iPadding * 2);    
-    m_pIcon->SetBounds(iPadding, iPadding, iIconSize, iIconSize);    
-    int iTextX = iPadding * 2 + iIconSize;
-    int iTextW = w - iTextX - iPadding;
-    m_pNameLabel->SetBounds(iTextX, iPadding, iTextW, PROPVAL(20));
-    m_pDescLabel->SetBounds(iTextX, iPadding + PROPVAL(22), iTextW, h - iPadding * 2 - PROPVAL(22));
-}
-
-// =========================================================
-// DevPage 实现
-// =========================================================
-DevPage::DevPage(vgui::Panel *parent, const char *panelName) : BaseClass(parent, panelName) {
-    m_pDevList = new vgui::PanelListPanel(this, "DevList");
-    m_pDevList->SetFirstColumnWidth(0);
-
-    PopulateDevList();
-}
-
-void DevPage::PopulateDevList() {
-    m_pDevList->DeleteAllItems();
-    
-    struct DevData_t {
-        const char *name;
-        const char *desc;
-        const char *iconPath;
-    };
-
-    DevData_t devs[] = {
-        {"nillerusr", "port leader", "vgui/social/gabe.png"},
-        {"er2", "programming", "vgui/social/my_avatar.png"},
-        {"itz", "programming", "vgui/social/default_dev.png"},
-        {"zzh", "programming", "vgui/social/default_dev.png"}
-    };
-
-    for (int i = 0; i < ARRAYSIZE(devs); i++) {
-        // 调用我们刚刚定义的 Helper
-        int textureID = CreatePNGTextureHelper(devs[i].iconPath);
-
-        // 使用更新后的构造函数
-        DevItemPanel *pItem = new DevItemPanel(m_pDevList, "dev_item", devs[i].name, devs[i].desc, textureID);
-        m_pDevList->AddItem(nullptr, pItem);
-    }
-}
-
-void DevPage::PerformLayout() {
-    BaseClass::PerformLayout();
-    int w, h;
-    GetSize(w, h);
-    int margin = PROPVAL(10);
-    int listW = w * 0.7;
-    m_pDevList->SetBounds(margin, margin, listW, h - (margin * 2));
-}
 
 // =========================================================
 // ExtraListPage 实现 (含纹理缓存)
@@ -560,28 +434,12 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     
     m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
 
-    m_pTabSheet->AddPage(new ModelPreviewPage(m_pTabSheet, "ModelPreviewPage"), "PREVIEW");
-    m_pTabSheet->AddPage(new DevPage(m_pTabSheet, "DevPage"), "CREDITS");
-
     m_pRightPanel = new vgui::EditablePanel(this, "RightFloatingPanel");
     m_pDetailsLabel = new vgui::Label(m_pRightPanel, "DetailsLabel", "Information");
-    m_pVersionTitleLabel = new vgui::Label(m_pRightPanel, "VersionTitleLabel", "Update History:");
-    m_pDescriptionText = new vgui::RichText(m_pRightPanel, "DescriptionText");
-    m_pVersionCombo = new vgui::ComboBox(m_pRightPanel, "VersionCombo", 6, false);
-    m_pVersionCombo->AddActionSignalTarget(this);
-
-    InitVersionCombo();
     
-    m_pDiscordBtn = new ImageUrlButton(m_pRightPanel, "DiscordBtn", "materials/vgui/social/discord_logo.png", "https://discord.gg/hZRB7WMgGw");
-    m_pGithubBtn = new ImageUrlButton(m_pRightPanel, "GithubBtn", "materials/vgui/social/github_logo.png", "https://github.com/nillerusr/source-engine");
-    m_pTwitterBtn = new ImageUrlButton(m_pRightPanel, "TwiiBtn", "materials/vgui/social/twitter_logo.png", "https://twitter.com/nillerusr");
-    m_pTelegramBtn = new ImageUrlButton(m_pRightPanel, "TeleBtn", "materials/vgui/social/telegram_logo.png", "https://t.me/nillerusr_source");
-
     m_pRefreshButton = new vgui::Button(m_pRightPanel, "RefreshBtn", "#GameUI_Refresh", this, "RefreshList");
     m_pStartButton = new vgui::Button(m_pRightPanel, "StartBtn", "#GameUI_Start", this, "StartGame");
     m_pCloseButton = new Button(this, "CloseBtn", "#GameUI_Close", this, "Close");
-
-    m_pVersionCombo->ActivateItemByRow(0);
 }
 
 ExtraManagerPanel::~ExtraManagerPanel() {
@@ -595,27 +453,9 @@ ExtraManagerPanel::~ExtraManagerPanel() {
 void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
     if (!data) return;
     const char *pPanelName = data->GetString("panelName", "");
-    const char *pUIMapName = data->GetString("uiMapName", "");
 
     if (m_pServerPage) {
         m_pServerPage->SetMap(pPanelName);
-    }
-    if (m_pDescriptionText) {
-        m_pDescriptionText->SetText("");
-        m_pDescriptionText->InsertColorChange(Color(0, 255, 128, 255));
-        m_pDescriptionText->InsertString(">>> selected map : ");
-        
-        // 尝试本地化友好名称
-        wchar_t *pLocalized = g_pVGuiLocalize->Find(pUIMapName);
-        if (pLocalized) {
-            m_pDescriptionText->InsertString(pLocalized);
-        } else {
-            m_pDescriptionText->InsertString(pUIMapName);
-        }
-
-        m_pDescriptionText->InsertString(" (");
-        m_pDescriptionText->InsertString(pPanelName);
-        m_pDescriptionText->InsertString(")");
     }
 }
 
@@ -684,29 +524,9 @@ void ExtraManagerPanel::StartGame() {
     Close();
 }
 
-void ExtraManagerPanel::InitVersionCombo() {
-    for (int i = 0; i < (int)ARRAYSIZE(g_VersionData); i++) { m_pVersionCombo->AddItem(g_VersionData[i].szVersion, nullptr); }
-}
 
-void ExtraManagerPanel::OnVersionSelected(vgui::Panel *panel) {
-    if (panel == m_pVersionCombo) {
-        char szText[64];
-        m_pVersionCombo->GetText(szText, sizeof(szText));
-        m_pDescriptionText->SetText("");
-        m_pDescriptionText->InsertColorChange(Color(255, 210, 0, 255));
-        m_pDescriptionText->InsertString("Version ");
-        m_pDescriptionText->InsertString(szText);
-        m_pDescriptionText->InsertString(" Features:\n\n");
-        m_pDescriptionText->InsertColorChange(Color(255, 255, 255, 255));
 
-        for (int i = 0; i < (int)ARRAYSIZE(g_VersionData); i++) {
-            if (!Q_strcmp(szText, g_VersionData[i].szVersion)) {
-                m_pDescriptionText->InsertString(g_VersionData[i].szDescription);
-                break;
-            }
-        }
-    }
-}
+
 
 void ExtraManagerPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
     BaseClass::ApplySchemeSettings(pScheme);
@@ -726,8 +546,6 @@ void ExtraManagerPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
     }
 
     if (m_pDetailsLabel) m_pDetailsLabel->SetFont(pScheme->GetFont("DefaultLarge", IsProportional()));
-    if (m_pVersionTitleLabel) m_pVersionTitleLabel->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
-    if (m_pDescriptionText) m_pDescriptionText->SetFont(pScheme->GetFont("DefaultSmall", IsProportional()));
     if (m_pCloseButton) m_pCloseButton->SetFont(pScheme->GetFont("DefaultLarge", IsProportional()));
 }
 
@@ -746,57 +564,19 @@ void ExtraManagerPanel::PerformLayout() {
     int tPadding = PROPVAL(12);
     m_pTabSheet->SetBounds(tPadding, tPadding, leftW - (tPadding * 2), panelH - (tPadding * 2));
 
-    int rInnerPad = PROPVAL(15), currentY = rInnerPad;
-    m_pDetailsLabel->SetBounds(rInnerPad, currentY, rightW - (rInnerPad * 2), PROPVAL(30));
-    currentY += PROPVAL(45);
-    m_pVersionTitleLabel->SetBounds(rInnerPad, currentY, rightW - (rInnerPad * 2), PROPVAL(15));
-    currentY += PROPVAL(20);
-    m_pVersionCombo->SetBounds(rInnerPad, currentY, rightW - (rInnerPad * 2), PROPVAL(24));
-    currentY += PROPVAL(35);
+    int rInnerPad = PROPVAL(15);
+    m_pDetailsLabel->SetBounds(rInnerPad, rInnerPad, rightW - (rInnerPad * 2), PROPVAL(30));
 
-    int textHeight = panelH / 2.2;
-    m_pDescriptionText->SetBounds(rInnerPad, currentY, rightW - (rInnerPad * 2), textHeight);
-
+    // Arrange buttons vertically at the bottom right
     int btnW = PROPVAL(110), btnH = PROPVAL(28);
-    int btnY = panelH - rInnerPad - btnH;
+    int btnGap = PROPVAL(10);
+    int totalBtnHeight = (btnH * 3) + (btnGap * 2);
+    int startY = panelH - rInnerPad - totalBtnHeight;
     
-    m_pRefreshButton->SetBounds(rInnerPad, btnY, btnW, btnH);
-    m_pStartButton->SetBounds(rInnerPad + btnW + PROPVAL(10), btnY, btnW, btnH);
+    // Vertical arrangement: Refresh at top, Start in middle, Close at bottom
+    m_pRefreshButton->SetBounds(rInnerPad, startY, btnW, btnH);
+    m_pStartButton->SetBounds(rInnerPad, startY + btnH + btnGap, btnW, btnH);
     m_pCloseButton->SetBounds(sw - iPadding - rInnerPad - btnW, sh - iPadding - rInnerPad - btnH, btnW, btnH);
-
-    int textBottomY = currentY + textHeight;
-    int bottomBtnTopY = btnY;
-    
-    int availableH = bottomBtnTopY - textBottomY;
-    
-    int socialSize = PROPVAL(32); 
-    int socialGap = PROPVAL(10);
-
-    if (availableH > socialSize) {
-        int socialY = textBottomY + (availableH - socialSize) / 2;
-        int currentSocialX = rInnerPad;
-        
-        if (m_pDiscordBtn) {
-            m_pDiscordBtn->SetBounds(currentSocialX, socialY, socialSize, socialSize);
-            currentSocialX += socialSize + socialGap;
-        }
-        if (m_pGithubBtn) {
-            m_pGithubBtn->SetBounds(currentSocialX, socialY, socialSize, socialSize);
-            currentSocialX += socialSize + socialGap;
-        }
-        if (m_pTwitterBtn) {
-            m_pTwitterBtn->SetBounds(currentSocialX, socialY, socialSize, socialSize);
-            currentSocialX += socialSize + socialGap;
-        }
-        if (m_pTelegramBtn) {
-            m_pTelegramBtn->SetBounds(currentSocialX, socialY, socialSize, socialSize);
-        }
-    } else {
-        if (m_pDiscordBtn) m_pDiscordBtn->SetVisible(false);
-        if (m_pGithubBtn) m_pGithubBtn->SetVisible(false);
-        if (m_pTwitterBtn) m_pTwitterBtn->SetVisible(false);
-        if (m_pTelegramBtn) m_pTelegramBtn->SetVisible(false);
-    }
 }
 
 void ExtraManagerPanel::OnCommand(const char *command) {
