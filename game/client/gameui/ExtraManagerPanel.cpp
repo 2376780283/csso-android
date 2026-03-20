@@ -361,7 +361,7 @@ int ExtraListPage::CreateTextureFromPNG(const char *fullPath) {
 void ExtraListPage::RefreshList() {
     m_pMapListPanel->DeleteAllItems();
 
-    // 向上寻找 ExtraManagerPanel 以获取 ServerPage
+    // 向上寻找 ExtraManagerPanel 以获取 ServerPage 引用
     vgui::Panel *pTarget = GetParent();
     while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { 
         pTarget = pTarget->GetParent(); 
@@ -372,7 +372,7 @@ void ExtraListPage::RefreshList() {
     CCreateMultiplayerGameServerPage *pServerPage = pMain->GetServerPage();
     if (!pServerPage) return;
 
-    // 获取过滤条件
+    // --- 1. 获取并预处理过滤条件 ---
     int nFilterGameType = -1;
     int nFilterGameMode = -1;
     bool bShowAllMaps = m_pAllMapsCheck->IsSelected();
@@ -387,22 +387,23 @@ void ExtraListPage::RefreshList() {
         nFilterGameMode = pkvGameModeData->GetInt("game_mode", -1);
     }
     
+    // 安全获取字符串标识，如果索引为 -1 则返回 NULL
     const char *pszFilterGameType = (nFilterGameType >= 0) ? g_pGameTypes->GetGameTypeFromInt(nFilterGameType) : NULL;
-    const char *pszFilterGameMode = (nFilterGameMode >= 0) ? g_pGameTypes->GetGameModeFromInt(nFilterGameType, nFilterGameMode) : NULL;
+    const char *pszFilterGameMode = (nFilterGameType >= 0 && nFilterGameMode >= 0) ? g_pGameTypes->GetGameModeFromInt(nFilterGameType, nFilterGameMode) : NULL;
 
-    // 直接从文件系统加载地图
+    // --- 2. 扫描地图文件 ---
     FileFindHandle_t findHandle = NULL;
     KeyValues *hiddenMaps = ModInfo().GetHiddenMaps();
     
-    const char *pszFilename = g_pFullFileSystem->FindFirstEx("maps/*.bsp", "MOD", &findHandle);
+    // 修改：使用 "GAME" 路径以搜索所有挂载的搜索路径，而不仅仅是 mod 文件夹
+    const char *pszFilename = g_pFullFileSystem->FindFirstEx("maps/*.bsp", "GAME", &findHandle);
     
     while (pszFilename)
     {
         char mapname[256];
         char *ext, *str;
-        const char *szUIMapName;
 
-        // 从文件名中提取地图名
+        // 提取地图名逻辑
         str = Q_strstr(pszFilename, "maps");
         if (str)
         {
@@ -418,39 +419,56 @@ void ExtraListPage::RefreshList() {
             *ext = 0;
         }
 
-        // 过滤掉隐藏的地图
+        // 过滤隐藏地图
         if (hiddenMaps && hiddenMaps->GetInt(mapname, 0))
         {
-            pszFilename = g_pFullFileSystem->FindNext(findHandle);
-            continue;
+            goto nextFile;
         }
 
-        // 应用过滤条件
-        if (!bShowAllMaps && pszFilterGameType && !g_pGameTypes->IsValidMapForTypeAndMode(mapname, pszFilterGameType, pszFilterGameMode))
+        // --- 3. 核心过滤判断 ---
+        if (!bShowAllMaps) 
         {
-            pszFilename = g_pFullFileSystem->FindNext(findHandle);
-            continue;
+            // 如果 pszFilterGameType 为 NULL (选择了“全部”), 
+            // 则应检查该地图是否【至少支持任何一种】已知的游戏模式，或者根据你的需求决定是否放行。
+            // 这里对齐 ServerPage 的逻辑：如果指定了特定类型，则强制校验。
+            if (pszFilterGameType)
+            {
+                if (!g_pGameTypes->IsValidMapForTypeAndMode(mapname, pszFilterGameType, pszFilterGameMode))
+                    goto nextFile;
+            }
+            else
+            {
+                // 当用户选择“全部游戏类型”且未勾选“显示所有地图”时：
+                // 建议：此处可以调用一个通用的校验，确保该地图不是背景地图(background)或无效地图
+                if (Q_stristr(mapname, "background") || Q_stristr(mapname, "vactest"))
+                    goto nextFile;
+            }
         }
 
-        szUIMapName = g_pGameTypes->GetMapNameID(mapname);
-        if (!szUIMapName || !szUIMapName[0])
         {
-            szUIMapName = mapname;
+            const char *szUIMapName = g_pGameTypes->GetMapNameID(mapname);
+            if (!szUIMapName || !szUIMapName[0])
+            {
+                szUIMapName = mapname;
+            }
+
+            char szIconPath[MAX_PATH];
+            Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", mapname);
+
+            // 创建并配置卡片
+            MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, mapname, szUIMapName);
+            
+            // 检查预览图是否存在
+            if (g_pFullFileSystem->FileExists(szIconPath, "GAME"))
+            {
+                pCard->SetImagePath(szIconPath);
+            }
+
+            pCard->AddActionSignalTarget(pMain);
+            m_pMapListPanel->AddItem(nullptr, pCard);
         }
 
-        char szIconPath[MAX_PATH];
-        Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", mapname);
-
-        // 使用 szUIMapName 作为显示标题
-        MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, mapname, szUIMapName);
-        if (g_pFullFileSystem->FileExists(szIconPath, "GAME"))
-        {
-            pCard->SetImagePath(szIconPath);
-        }
-
-        pCard->AddActionSignalTarget(pMain);
-        m_pMapListPanel->AddItem(nullptr, pCard);
-
+    nextFile:
         pszFilename = g_pFullFileSystem->FindNext(findHandle);
     }
     
