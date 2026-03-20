@@ -39,9 +39,9 @@ public:
         char m_Filename[MAX_OSPATH];
 };
 
-// Cache for VTF avatar texture ID (keyed by CRC)
-static int s_iVTFAvatarTextureID = -1;
-static CRC32_t s_nVTFAvatarCRC = 0;
+// Cache for VTF avatar textures keyed by CRC - supports multiple cached avatars
+static CUtlMap<CRC32_t, int> s_VTFAvatarTextureCache;
+static bool s_bVTFAvatarCacheInitialized = false;
 
 DECLARE_BUILD_FACTORY( CAvatarImagePanel );
 
@@ -340,11 +340,19 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 //-----------------------------------------------------------------------------
 void CAvatarImage::InitFromRGBA_VTF( const byte *rgba, int width, int height, CRC32_t crc )
 {
+        // Initialize cache map if needed
+        if ( !s_bVTFAvatarCacheInitialized )
+        {
+                s_bVTFAvatarCacheInitialized = true;
+                s_VTFAvatarTextureCache.SetLessFunc( DefLessFunc( CRC32_t ) );
+        }
+
         // Check if we can reuse cached VTF avatar texture
-        if ( s_iVTFAvatarTextureID != -1 && s_nVTFAvatarCRC == crc && crc != 0 )
+        int iCacheIndex = s_VTFAvatarTextureCache.Find( crc );
+        if ( iCacheIndex != s_VTFAvatarTextureCache.InvalidIndex() )
         {
                 // Reuse cached texture
-                m_iTextureID = s_iVTFAvatarTextureID;
+                m_iTextureID = s_VTFAvatarTextureCache[ iCacheIndex ];
         }
         else
         {
@@ -366,9 +374,11 @@ void CAvatarImage::InitFromRGBA_VTF( const byte *rgba, int width, int height, CR
                 }
                 delete[] pResizedRGBA;
                 
-                // Cache it
-                s_iVTFAvatarTextureID = m_iTextureID;
-                s_nVTFAvatarCRC = crc;
+                // Add to cache
+                if ( crc != 0 )
+                {
+                        s_VTFAvatarTextureCache.Insert( crc, m_iTextureID );
+                }
         }
         
         m_bValid = true;
@@ -388,11 +398,19 @@ bool CAvatarImage::SetAvatarFromCRC( CRC32_t crc )
                 return false;
         }
         
+        // Initialize cache map if needed
+        if ( !s_bVTFAvatarCacheInitialized )
+        {
+                s_bVTFAvatarCacheInitialized = true;
+                s_VTFAvatarTextureCache.SetLessFunc( DefLessFunc( CRC32_t ) );
+        }
+
         // Check if already cached with same CRC
-        if ( s_iVTFAvatarTextureID != -1 && s_nVTFAvatarCRC == crc )
+        int iCacheIndex = s_VTFAvatarTextureCache.Find( crc );
+        if ( iCacheIndex != s_VTFAvatarTextureCache.InvalidIndex() )
         {
                 ClearAvatarSteamID();
-                m_iTextureID = s_iVTFAvatarTextureID;
+                m_iTextureID = s_VTFAvatarTextureCache[ iCacheIndex ];
                 m_bValid = true;
                 m_bIsVTFAvatar = true;
                 return true;

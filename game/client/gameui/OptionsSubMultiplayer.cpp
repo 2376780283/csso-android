@@ -569,28 +569,32 @@ void COptionsSubMultiplayer::InitAvatarList( CLabeledCommandComboBox *cb )
 	Q_snprintf( directory, sizeof( directory ), "materials/vgui/logos/*.vtf" );
 	const char *fn = g_pFullFileSystem->FindFirst( directory, &fh );
 	int i = 0, initialItem = 0;
+	
+	// Pre-allocate buffers outside the loop
+	char baseFilename[256];
+	char fullVmtPath[512];
+	char displayPath[512];
+	
 	while (fn)
 	{
-		char filename[ 512 ];
-		Q_snprintf( filename, sizeof(filename), "materials/vgui/logos/%s", fn );
-		if ( strlen( filename ) >= 4 )
+		// Extract base filename (without extension) once
+		Q_strncpy( baseFilename, fn, sizeof( baseFilename ) );
+		int nameLen = strlen( baseFilename );
+		if ( nameLen >= 4 )
 		{
-			filename[ strlen( filename ) - 4 ] = 0;
-			Q_strncat( filename, ".vmt", sizeof( filename ), COPY_ALL_CHARACTERS );
-			if ( g_pFullFileSystem->FileExists( filename ) )
+			baseFilename[ nameLen - 4 ] = 0;  // Remove .vtf extension
+			
+			// Check if VMT exists
+			Q_snprintf( fullVmtPath, sizeof(fullVmtPath), "materials/vgui/logos/%s.vmt", baseFilename );
+			if ( g_pFullFileSystem->FileExists( fullVmtPath ) )
 			{
-				// strip off the extension - store full relative path
-				Q_strncpy( filename, fn, sizeof( filename ) );
-				filename[ strlen( filename ) - 4 ] = 0;
-				
 				// Store as "vgui/logos/filename" for the combo box
-				char displayPath[512];
-				Q_snprintf( displayPath, sizeof(displayPath), "vgui/logos/%s", filename );
-				cb->AddItem( filename, displayPath );
+				Q_snprintf( displayPath, sizeof(displayPath), "vgui/logos/%s", baseFilename );
+				cb->AddItem( baseFilename, displayPath );
 
-				// check to see if this is the one we have set
-				Q_snprintf( filename, sizeof(filename), "materials/vgui/logos/%s", fn );
-				if (!Q_stricmp(filename, avatarfile))
+				// Check if this is the currently selected avatar
+				Q_snprintf( fullVmtPath, sizeof(fullVmtPath), "materials/vgui/logos/%s.vtf", baseFilename );
+				if ( !Q_stricmp(fullVmtPath, avatarfile) )
 				{
 					initialItem = i;
 				}
