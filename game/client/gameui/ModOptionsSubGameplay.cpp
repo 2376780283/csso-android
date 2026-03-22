@@ -19,6 +19,7 @@
 #include <vgui/ISystem.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/ComboBox.h>
+#include <vgui_controls/ScrollBar.h>
 #include "vgui_controls/QueryBox.h"
 
 #include "CvarTextEntry.h"
@@ -54,40 +55,47 @@ CModOptionsSubGameplay::CModOptionsSubGameplay( vgui::Panel *parent ): vgui::Pro
 	// Initialize with minimum size - will be resized in PerformLayout
 	SetSize(100, 100);
 
-	// Create Section Labels (directly on this page)
-	m_pGeneralLabel = new Label(this, "GeneralLabel", "#GameUI_Gameplay_General");
-	m_pViewmodelLabel = new Label(this, "ViewmodelLabel", "#GameUI_Gameplay_Viewmodel");
-	m_pMovementLabel = new Label(this, "MovementLabel", "#GameUI_Gameplay_Movement");
-	m_pPresetLabel = new Label(this, "PresetLabel", "#GameUI_Gameplay_Viewmodel_Preset");
-	m_pOffsetXLabel = new Label(this, "OffsetXLabel", "#GameUI_Gameplay_Viewmodel_OffsetX");
-	m_pOffsetYLabel = new Label(this, "OffsetYLabel", "#GameUI_Gameplay_Viewmodel_OffsetY");
-	m_pOffsetZLabel = new Label(this, "OffsetZLabel", "#GameUI_Gameplay_Viewmodel_OffsetZ");
-	m_pFOVLabel = new Label(this, "FOVLabel", "#GameUI_Gameplay_Viewmodel_FOV");
-	m_pRecoilLabel = new Label(this, "RecoilLabel", "#GameUI_Gameplay_Viewmodel_Recoil");
-	m_pViewbobLabel = new Label(this, "ViewbobLabel", "#GameUI_Gameplay_Viewbob_Style");
-	m_pWeaponPosLabel = new Label(this, "WeaponPosLabel", "#GameUI_Gameplay_Weapon_Position");
+	// Create scroll container panel (holds all controls for scrolling)
+	m_pScrollContainer = new vgui::Panel(this, "ScrollContainer");
 
-	// Create all controls (directly on this page)
-	m_pCloseOnBuy = new CCvarToggleCheckButton(this, "CloseOnBuyCheckbox", "#GameUI_Gameplay_CloseOnBuy", "closeonbuy");
-	m_pUseOpensBuyMenu = new CCvarToggleCheckButton(this, "UseOpensBuyMenuCheckbox", "#GameUI_Gameplay_UseOpensBuyMenu", "cl_use_opens_buy_menu");
-	m_pAddBotPrefix = new CCvarToggleCheckButton(this, "AddBotPrefix", "#GameUI_Gameplay_AddBotPrefix", "cl_add_bot_prefix");
-	m_pDrawTracers = new CCvarToggleCheckButton(this, "DrawTracers", "#GameUI_Gameplay_DrawTracers", "r_drawtracers");
-	m_pSpecInterpCamera = new CCvarToggleCheckButton(this, "SpecInterpCamera", "#GameUI_Gameplay_SpecInterpCamera", "cl_obs_interp_enable");
-	m_pDisableShootingEffects = new CCvarToggleCheckButton(this, "DisableShootingEffects", "#GameUI_Gameplay_DisableShootingEffects", "cl_disable_shooting_effects");
+	// Create vertical scroll bar
+	m_pVScrollBar = new vgui::ScrollBar(this, "VScrollBar", true);
+	m_pVScrollBar->AddActionSignalTarget(this);
 
-	m_pViewmodelOffsetX = new CCvarSlider(this, "ViewmodelOffsetXSlider", "", -2.0f, 2.5f, "viewmodel_offset_x");
-	m_pViewmodelOffsetXLabel = new Label(this, "ViewmodelOffsetXLabel", "0.0");
-	m_pViewmodelOffsetY = new CCvarSlider(this, "ViewmodelOffsetYSlider", "", -2.0f, 2.0f, "viewmodel_offset_y");
-	m_pViewmodelOffsetYLabel = new Label(this, "ViewmodelOffsetYLabel", "0.0");
-	m_pViewmodelOffsetZ = new CCvarSlider(this, "ViewmodelOffsetZSlider", "", -2.0f, 2.0f, "viewmodel_offset_z");
-	m_pViewmodelOffsetZLabel = new Label(this, "ViewmodelOffsetZLabel", "0.0");
-	m_pViewmodelOffsetPreset = new CLabeledCommandComboBox(this, "ViewmodelOffsetPreset");
-	m_pViewmodelFOV = new CCvarSlider(this, "ViewmodelFOVSlider", "", 54.0f, 68.0f, "viewmodel_fov");
-	m_pViewmodelFOVLabel = new Label(this, "ViewmodelFOVLabel", "60");
-	m_pViewmodelRecoil = new CCvarSlider(this, "ViewmodelRecoilSlider", "", 0.0f, 1.0f, "viewmodel_recoil");
-	m_pViewmodelRecoilLabel = new Label(this, "ViewmodelRecoilLabel", "0.0");
-	m_pViewbobStyle = new CLabeledCommandComboBox(this, "ViewbobStyleComboBox");
-	m_pWeaponPos = new CLabeledCommandComboBox(this, "WeaponPositionComboBox");
+	// Create Section Labels (inside scroll container)
+	m_pGeneralLabel = new Label(m_pScrollContainer, "GeneralLabel", "#GameUI_Gameplay_General");
+	m_pViewmodelLabel = new Label(m_pScrollContainer, "ViewmodelLabel", "#GameUI_Gameplay_Viewmodel");
+	m_pMovementLabel = new Label(m_pScrollContainer, "MovementLabel", "#GameUI_Gameplay_Movement");
+	m_pPresetLabel = new Label(m_pScrollContainer, "PresetLabel", "#GameUI_Gameplay_Viewmodel_Preset");
+	m_pOffsetXLabel = new Label(m_pScrollContainer, "OffsetXLabel", "#GameUI_Gameplay_Viewmodel_OffsetX");
+	m_pOffsetYLabel = new Label(m_pScrollContainer, "OffsetYLabel", "#GameUI_Gameplay_Viewmodel_OffsetY");
+	m_pOffsetZLabel = new Label(m_pScrollContainer, "OffsetZLabel", "#GameUI_Gameplay_Viewmodel_OffsetZ");
+	m_pFOVLabel = new Label(m_pScrollContainer, "FOVLabel", "#GameUI_Gameplay_Viewmodel_FOV");
+	m_pRecoilLabel = new Label(m_pScrollContainer, "RecoilLabel", "#GameUI_Gameplay_Viewmodel_Recoil");
+	m_pViewbobLabel = new Label(m_pScrollContainer, "ViewbobLabel", "#GameUI_Gameplay_Viewbob_Style");
+	m_pWeaponPosLabel = new Label(m_pScrollContainer, "WeaponPosLabel", "#GameUI_Gameplay_Weapon_Position");
+
+	// Create all controls (inside scroll container)
+	m_pCloseOnBuy = new CCvarToggleCheckButton(m_pScrollContainer, "CloseOnBuyCheckbox", "#GameUI_Gameplay_CloseOnBuy", "closeonbuy");
+	m_pUseOpensBuyMenu = new CCvarToggleCheckButton(m_pScrollContainer, "UseOpensBuyMenuCheckbox", "#GameUI_Gameplay_UseOpensBuyMenu", "cl_use_opens_buy_menu");
+	m_pAddBotPrefix = new CCvarToggleCheckButton(m_pScrollContainer, "AddBotPrefix", "#GameUI_Gameplay_AddBotPrefix", "cl_add_bot_prefix");
+	m_pDrawTracers = new CCvarToggleCheckButton(m_pScrollContainer, "DrawTracers", "#GameUI_Gameplay_DrawTracers", "r_drawtracers");
+	m_pSpecInterpCamera = new CCvarToggleCheckButton(m_pScrollContainer, "SpecInterpCamera", "#GameUI_Gameplay_SpecInterpCamera", "cl_obs_interp_enable");
+	m_pDisableShootingEffects = new CCvarToggleCheckButton(m_pScrollContainer, "DisableShootingEffects", "#GameUI_Gameplay_DisableShootingEffects", "cl_disable_shooting_effects");
+
+	m_pViewmodelOffsetX = new CCvarSlider(m_pScrollContainer, "ViewmodelOffsetXSlider", "", -2.0f, 2.5f, "viewmodel_offset_x");
+	m_pViewmodelOffsetXLabel = new Label(m_pScrollContainer, "ViewmodelOffsetXLabel", "0.0");
+	m_pViewmodelOffsetY = new CCvarSlider(m_pScrollContainer, "ViewmodelOffsetYSlider", "", -2.0f, 2.0f, "viewmodel_offset_y");
+	m_pViewmodelOffsetYLabel = new Label(m_pScrollContainer, "ViewmodelOffsetYLabel", "0.0");
+	m_pViewmodelOffsetZ = new CCvarSlider(m_pScrollContainer, "ViewmodelOffsetZSlider", "", -2.0f, 2.0f, "viewmodel_offset_z");
+	m_pViewmodelOffsetZLabel = new Label(m_pScrollContainer, "ViewmodelOffsetZLabel", "0.0");
+	m_pViewmodelOffsetPreset = new CLabeledCommandComboBox(m_pScrollContainer, "ViewmodelOffsetPreset");
+	m_pViewmodelFOV = new CCvarSlider(m_pScrollContainer, "ViewmodelFOVSlider", "", 54.0f, 68.0f, "viewmodel_fov");
+	m_pViewmodelFOVLabel = new Label(m_pScrollContainer, "ViewmodelFOVLabel", "60");
+	m_pViewmodelRecoil = new CCvarSlider(m_pScrollContainer, "ViewmodelRecoilSlider", "", 0.0f, 1.0f, "viewmodel_recoil");
+	m_pViewmodelRecoilLabel = new Label(m_pScrollContainer, "ViewmodelRecoilLabel", "0.0");
+	m_pViewbobStyle = new CLabeledCommandComboBox(m_pScrollContainer, "ViewbobStyleComboBox");
+	m_pWeaponPos = new CLabeledCommandComboBox(m_pScrollContainer, "WeaponPositionComboBox");
 
 	m_pViewmodelOffsetPreset->AddItem("#GameUI_Gameplay_Viewmodel_Preset_1", "viewmodel_presetpos 1");
 	m_pViewmodelOffsetPreset->AddItem("#GameUI_Gameplay_Viewmodel_Preset_2", "viewmodel_presetpos 2");
@@ -129,8 +137,6 @@ void CModOptionsSubGameplay::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// No scrolling - all controls directly on this page
-
 	// Padding and spacing values - scaled for different resolutions
 	int margin = PROPVAL(24);
 	int spacing = PROPVAL(12);
@@ -139,133 +145,171 @@ void CModOptionsSubGameplay::PerformLayout()
 	int sectionSpacing = PROPVAL(28);
 	int labelControlGap = PROPVAL(10);
 	int sliderLabelWidth = PROPVAL(40);
+	int scrollBarWidth = PROPVAL(20);
 
-	// Calculate content width
-	int contentWidth = pw - (margin * 2);
+	// Calculate content width (accounting for scroll bar)
+	int contentWidth = pw - (margin * 2) - scrollBarWidth;
 	int controlWidth = contentWidth - labelWidth - labelControlGap;
 
-	int currentY = margin;
+	// Position scroll bar on the right side
+	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
+	m_pVScrollBar->SetSize(scrollBarWidth, ph - (margin * 2));
+
+	// Position scroll container
+	m_pScrollContainer->SetPos(margin, margin);
+	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
+
+	// Calculate total content height first
+	int totalContentHeight = 0;
 
 	// ================== SECTION 1: General Settings ==================
-	m_pGeneralLabel->SetPos(margin, currentY);
+	totalContentHeight += controlHeight + spacing; // GeneralLabel
+	totalContentHeight += (controlHeight + spacing) * 6; // 6 checkboxes
+
+	// ================== SECTION 2: Viewmodel ==================
+	totalContentHeight += sectionSpacing;
+	totalContentHeight += controlHeight + spacing; // ViewmodelLabel
+	totalContentHeight += controlHeight + spacing; // Preset
+	totalContentHeight += (controlHeight + spacing) * 5; // 5 offset/FOV/recoil sliders
+
+	// ================== SECTION 3: Movement ==================
+	totalContentHeight += sectionSpacing;
+	totalContentHeight += controlHeight + spacing; // MovementLabel
+	totalContentHeight += (controlHeight + spacing) * 2; // Viewbob + Weapon Position
+
+	// Add bottom margin
+	totalContentHeight += margin;
+
+	// Set scroll bar range
+	m_pVScrollBar->SetRange(0, totalContentHeight);
+	m_pVScrollBar->SetRangeWindow(ph - (margin * 2));
+
+	// Get scroll offset
+	int scrollOffset = m_pVScrollBar->GetValue();
+
+	// Now position all controls inside the scroll container (offset by scroll position)
+	int currentY = -scrollOffset;
+
+	// ================== SECTION 1: General Settings ==================
+	m_pGeneralLabel->SetPos(0, currentY);
 	m_pGeneralLabel->SetSize(contentWidth, controlHeight);
 	m_pGeneralLabel->SetContentAlignment(Label::a_west);
 	currentY += controlHeight + spacing;
 
-	m_pCloseOnBuy->SetPos(margin, currentY);
+	m_pCloseOnBuy->SetPos(0, currentY);
 	m_pCloseOnBuy->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
-	m_pUseOpensBuyMenu->SetPos(margin, currentY);
+	m_pUseOpensBuyMenu->SetPos(0, currentY);
 	m_pUseOpensBuyMenu->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
-	m_pAddBotPrefix->SetPos(margin, currentY);
+	m_pAddBotPrefix->SetPos(0, currentY);
 	m_pAddBotPrefix->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
-	m_pDrawTracers->SetPos(margin, currentY);
+	m_pDrawTracers->SetPos(0, currentY);
 	m_pDrawTracers->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
-	m_pSpecInterpCamera->SetPos(margin, currentY);
+	m_pSpecInterpCamera->SetPos(0, currentY);
 	m_pSpecInterpCamera->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
-	m_pDisableShootingEffects->SetPos(margin, currentY);
+	m_pDisableShootingEffects->SetPos(0, currentY);
 	m_pDisableShootingEffects->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// ================== SECTION 2: Viewmodel ==================
 	currentY += sectionSpacing;
 
-	m_pViewmodelLabel->SetPos(margin, currentY);
+	m_pViewmodelLabel->SetPos(0, currentY);
 	m_pViewmodelLabel->SetSize(contentWidth, controlHeight);
 	m_pViewmodelLabel->SetContentAlignment(Label::a_west);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel Preset
-	m_pPresetLabel->SetPos(margin, currentY);
+	m_pPresetLabel->SetPos(0, currentY);
 	m_pPresetLabel->SetSize(labelWidth, controlHeight);
 	m_pPresetLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetPreset->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelOffsetPreset->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelOffsetPreset->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel Offset X
-	m_pOffsetXLabel->SetPos(margin, currentY);
+	m_pOffsetXLabel->SetPos(0, currentY);
 	m_pOffsetXLabel->SetSize(labelWidth, controlHeight);
 	m_pOffsetXLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetX->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelOffsetX->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelOffsetX->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	m_pViewmodelOffsetXLabel->SetPos(margin + labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
+	m_pViewmodelOffsetXLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
 	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel Offset Y
-	m_pOffsetYLabel->SetPos(margin, currentY);
+	m_pOffsetYLabel->SetPos(0, currentY);
 	m_pOffsetYLabel->SetSize(labelWidth, controlHeight);
 	m_pOffsetYLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetY->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelOffsetY->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelOffsetY->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	m_pViewmodelOffsetYLabel->SetPos(margin + labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
+	m_pViewmodelOffsetYLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
 	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel Offset Z
-	m_pOffsetZLabel->SetPos(margin, currentY);
+	m_pOffsetZLabel->SetPos(0, currentY);
 	m_pOffsetZLabel->SetSize(labelWidth, controlHeight);
 	m_pOffsetZLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetZ->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelOffsetZ->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelOffsetZ->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	m_pViewmodelOffsetZLabel->SetPos(margin + labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
+	m_pViewmodelOffsetZLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
 	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel FOV
-	m_pFOVLabel->SetPos(margin, currentY);
+	m_pFOVLabel->SetPos(0, currentY);
 	m_pFOVLabel->SetSize(labelWidth, controlHeight);
 	m_pFOVLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelFOV->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelFOV->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelFOV->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	m_pViewmodelFOVLabel->SetPos(margin + labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
+	m_pViewmodelFOVLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
 	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Viewmodel Recoil
-	m_pRecoilLabel->SetPos(margin, currentY);
+	m_pRecoilLabel->SetPos(0, currentY);
 	m_pRecoilLabel->SetSize(labelWidth, controlHeight);
 	m_pRecoilLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelRecoil->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewmodelRecoil->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewmodelRecoil->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	m_pViewmodelRecoilLabel->SetPos(margin + labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
+	m_pViewmodelRecoilLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
 	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// ================== SECTION 3: Movement ==================
 	currentY += sectionSpacing;
 
-	m_pMovementLabel->SetPos(margin, currentY);
+	m_pMovementLabel->SetPos(0, currentY);
 	m_pMovementLabel->SetSize(contentWidth, controlHeight);
 	m_pMovementLabel->SetContentAlignment(Label::a_west);
 	currentY += controlHeight + spacing;
 
 	// Viewbob Style
-	m_pViewbobLabel->SetPos(margin, currentY);
+	m_pViewbobLabel->SetPos(0, currentY);
 	m_pViewbobLabel->SetSize(labelWidth, controlHeight);
 	m_pViewbobLabel->SetContentAlignment(Label::a_west);
-	m_pViewbobStyle->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pViewbobStyle->SetPos(labelWidth + labelControlGap, currentY);
 	m_pViewbobStyle->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Weapon Position
-	m_pWeaponPosLabel->SetPos(margin, currentY);
+	m_pWeaponPosLabel->SetPos(0, currentY);
 	m_pWeaponPosLabel->SetSize(labelWidth, controlHeight);
 	m_pWeaponPosLabel->SetContentAlignment(Label::a_west);
-	m_pWeaponPos->SetPos(margin + labelWidth + labelControlGap, currentY);
+	m_pWeaponPos->SetPos(labelWidth + labelControlGap, currentY);
 	m_pWeaponPos->SetSize(controlWidth, controlHeight);
 
-	// Done - all controls are positioned directly on this page
+	// Done - all controls are positioned inside scroll container
 }
 
 //-----------------------------------------------------------------------------
@@ -338,6 +382,19 @@ void CModOptionsSubGameplay::OnSliderMoved( KeyValues *data )
 	{
 		UpdateViewmodelSliderLabels();
 	}
+	else if ( pPanel == m_pVScrollBar )
+	{
+		InvalidateLayout();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Handle scroll bar movement
+//-----------------------------------------------------------------------------
+void CModOptionsSubGameplay::OnScrollBarSliderMoved( KeyValues *data )
+{
+	int position = data->GetInt( "position", 0 );
+	InvalidateLayout();
 }
 
 //-----------------------------------------------------------------------------

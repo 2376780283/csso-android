@@ -13,6 +13,8 @@
 
 #include <vgui_controls/PropertyPage.h>
 #include <vgui_controls/Label.h>
+#include <vgui_controls/ScrollBar.h>
+#include <vgui_controls/Panel.h>
 
 class CLabeledCommandComboBox;
 
@@ -43,6 +45,7 @@ public:
 
 protected:
 	MESSAGE_FUNC_PARAMS( OnSliderMoved, "SliderMoved", data );
+	MESSAGE_FUNC_PARAMS( OnScrollBarSliderMoved, "ScrollBarSliderMoved", data );
 
 	// Called when page is loaded.  Data should be reloaded from document into controls.
 	virtual void OnResetData();
@@ -82,6 +85,10 @@ private:
 	vgui::Label*				m_pViewmodelRecoilLabel;
 	CLabeledCommandComboBox*	m_pViewbobStyle;
 	CLabeledCommandComboBox*	m_pWeaponPos;
+
+	// Scroll panel controls
+	vgui::ScrollBar*			m_pVScrollBar;
+	vgui::Panel*				m_pScrollContainer;
 };
 
 #endif // MODOPTIONSSUBGAMEPLAY_H
