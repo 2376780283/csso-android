@@ -36,6 +36,9 @@ public:
 
 	MESSAGE_FUNC( OnControlModified, "ControlModified" );
 
+	// Called when layout needs to be performed
+	virtual void PerformLayout() override;
+
 protected:
 	// Called when page is loaded.  Data should be reloaded from document into controls.
 	virtual void OnResetData();

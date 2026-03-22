@@ -364,27 +364,76 @@ void CrosshairImagePanelCS::ApplyChanges()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Basic help dialog
+// Purpose: Constructor - Fullscreen Style with C++ Layout
 //-----------------------------------------------------------------------------
-CModOptionsSubCrosshair::CModOptionsSubCrosshair(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubCrosshair") 
+CModOptionsSubCrosshair::CModOptionsSubCrosshair(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubCrosshair")
 {
-	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
-	cancel->SetCommand( "Close" );
+#ifndef PROPVAL
+	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
+#endif
 
-	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
+	// Initialize with minimum size - will be resized in PerformLayout
+	SetSize(100, 100);
 
-	Button *apply = new Button( this, "Apply", "#GameUI_Apply" );
-	apply->SetCommand( "Apply" );
+	// Create the crosshair preview image - positions will be set in PerformLayout
+	m_pCrosshairImage = new CrosshairImagePanelCS(this, "CrosshairImage", this);
 
-	m_pCrosshairImage = new CrosshairImagePanelCS( this, "CrosshairImage", this );
-
-	//=========
-
+	// Load the .res file for the controls inside CrosshairImagePanel
 	LoadControlSettings("Resource/ModOptionsSubCrosshair.res");
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Perform layout - called when size changes
+//-----------------------------------------------------------------------------
+void CModOptionsSubCrosshair::PerformLayout()
+{
+	BaseClass::PerformLayout();
+
+	// Get available size
+	int pw = GetWide();
+	int ph = GetTall();
+
+	if (pw < 100 || ph < 100)
+		return;
+
+	// Padding and spacing values - scaled for different resolutions
+	int margin = PROPVAL(24);
+	int spacing = PROPVAL(12);
+	int labelWidth = PROPVAL(200);
+	int controlHeight = PROPVAL(26);
+	int sectionSpacing = PROPVAL(28);
+	int labelControlGap = PROPVAL(10);
+	int sliderLabelWidth = PROPVAL(40);
+	int smallControlWidth = PROPVAL(80);
+
+	// Calculate content width
+	int contentWidth = pw - (margin * 2);
+	int controlWidth = contentWidth - labelWidth - labelControlGap;
+	int halfControlWidth = (controlWidth - spacing) / 2;
+
+	int currentY = margin;
+
+	// Crosshair preview area - centered
+	int previewSize = PROPVAL(200);
+	int previewX = (pw - previewSize) / 2;
+	m_pCrosshairImage->SetBounds(previewX, currentY, previewSize, previewSize);
+	currentY += previewSize + spacing;
+
+	// ================== SECTION 1: Style ==================
+	currentY += controlHeight + spacing;
+
+	// ================== SECTION 2: Size & Gap ==================
+	currentY += sectionSpacing;
+
+	// ================== SECTION 3: Color ==================
+	currentY += sectionSpacing;
+	currentY += controlHeight + spacing;
+
+	// ================== SECTION 4: Additional Options ==================
+	currentY += sectionSpacing;
 
 	// this is necessary because some of the game .res files don't have visiblity flags set up correctly for their controls
-	if ( m_pCrosshairImage )
+	if (m_pCrosshairImage)
 		m_pCrosshairImage->UpdateVisibility();
 }
 

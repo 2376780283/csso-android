@@ -129,20 +129,12 @@ static Agents agentsT[] =
 };
 
 //-----------------------------------------------------------------------------
-// Purpose: Basic help dialog
+// Purpose: Constructor
 //-----------------------------------------------------------------------------
 CModOptionsSubAgents::CModOptionsSubAgents(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubAgents") 
 {
-	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
-	cancel->SetCommand( "Close" );
-
-	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
-
-	Button *apply = new Button( this, "Apply", "#GameUI_Apply" );
-	apply->SetCommand( "Apply" );
-
-	//=========
+	// Initialize with minimum size - will be resized in PerformLayout
+	SetSize(100, 100);
 
 	m_pLoadoutAgentCTComboBox = new CLabeledCommandComboBox( this, "AgentCTComboBox" );
 	m_pLoadoutAgentTComboBox = new CLabeledCommandComboBox( this, "AgentTComboBox" );
@@ -181,8 +173,41 @@ CModOptionsSubAgents::CModOptionsSubAgents(vgui::Panel *parent) : vgui::Property
 	m_pLoadoutAgentTComboBox->AddActionSignalTarget( this );
 	m_pLoadoutMainMenuWeaponCTComboBox->AddActionSignalTarget( this );
 	m_pLoadoutMainMenuWeaponTComboBox->AddActionSignalTarget( this );
+}
 
-	LoadControlSettings("Resource/ModOptionsSubAgents.res");
+//-----------------------------------------------------------------------------
+// Purpose: Perform layout - called when size changes
+//-----------------------------------------------------------------------------
+void CModOptionsSubAgents::PerformLayout()
+{
+	BaseClass::PerformLayout();
+
+	// Get available size
+	int pw = GetWide();
+	int ph = GetTall();
+
+	if (pw < 100 || ph < 100)
+		return;
+
+#ifndef PROPVAL
+	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
+#endif
+
+	int margin = PROPVAL(24);
+	int spacing = PROPVAL(12);
+	int halfWidth = (pw - margin * 3) / 2;
+	int controlHeight = PROPVAL(26);
+	int previewHeight = PROPVAL(200);
+
+	// CT side
+	m_pAgentImageCT->SetBounds(margin, margin, halfWidth, previewHeight);
+	m_pLoadoutAgentCTComboBox->SetBounds(margin, margin + previewHeight + spacing, halfWidth, controlHeight);
+	m_pLoadoutMainMenuWeaponCTComboBox->SetBounds(margin, margin + previewHeight + spacing * 2 + controlHeight, halfWidth, controlHeight);
+
+	// T side
+	m_pAgentImageT->SetBounds(margin * 2 + halfWidth, margin, halfWidth, previewHeight);
+	m_pLoadoutAgentTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing, halfWidth, controlHeight);
+	m_pLoadoutMainMenuWeaponTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing * 2 + controlHeight, halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

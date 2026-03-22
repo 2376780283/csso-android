@@ -61,20 +61,12 @@ static Gloves gloveNames[] =
 };
 
 //-----------------------------------------------------------------------------
-// Purpose: Basic help dialog
+// Purpose: Constructor
 //-----------------------------------------------------------------------------
 CModOptionsSubGloves::CModOptionsSubGloves(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubGloves") 
 {
-	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
-	cancel->SetCommand( "Close" );
-
-	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
-
-	Button *apply = new Button( this, "Apply", "#GameUI_Apply" );
-	apply->SetCommand( "Apply" );
-
-	//=========
+	// Initialize with minimum size - will be resized in PerformLayout
+	SetSize(100, 100);
 
 	m_pLoadoutGloveCTComboBox = new CLabeledCommandComboBox( this, "GloveCTComboBox" );
 	m_pLoadoutGloveTComboBox = new CLabeledCommandComboBox( this, "GloveTComboBox" );
@@ -96,8 +88,39 @@ CModOptionsSubGloves::CModOptionsSubGloves(vgui::Panel *parent) : vgui::Property
 
 	m_pLoadoutGloveCTComboBox->AddActionSignalTarget( this );
 	m_pLoadoutGloveTComboBox->AddActionSignalTarget( this );
+}
 
-	LoadControlSettings("Resource/ModOptionsSubGloves.res");
+//-----------------------------------------------------------------------------
+// Purpose: Perform layout - called when size changes
+//-----------------------------------------------------------------------------
+void CModOptionsSubGloves::PerformLayout()
+{
+	BaseClass::PerformLayout();
+
+	// Get available size
+	int pw = GetWide();
+	int ph = GetTall();
+
+	if (pw < 100 || ph < 100)
+		return;
+
+#ifndef PROPVAL
+	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
+#endif
+
+	int margin = PROPVAL(24);
+	int spacing = PROPVAL(12);
+	int halfWidth = (pw - margin * 3) / 2;
+	int controlHeight = PROPVAL(26);
+	int previewHeight = PROPVAL(200);
+
+	// CT side
+	m_pGloveImageCT->SetBounds(margin, margin, halfWidth, previewHeight);
+	m_pLoadoutGloveCTComboBox->SetBounds(margin, margin + previewHeight + spacing, halfWidth, controlHeight);
+
+	// T side
+	m_pGloveImageT->SetBounds(margin * 2 + halfWidth, margin, halfWidth, previewHeight);
+	m_pLoadoutGloveTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing, halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

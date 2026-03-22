@@ -38,6 +38,9 @@ public:
 
 	void UpdateViewmodelSliderLabels();
 
+	// Called when layout needs to be performed
+	virtual void PerformLayout() override;
+
 protected:
 	MESSAGE_FUNC_PARAMS( OnSliderMoved, "SliderMoved", data );
 

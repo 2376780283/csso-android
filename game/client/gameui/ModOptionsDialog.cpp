@@ -35,36 +35,44 @@ using namespace vgui;
 #include <tier0/memdbgon.h>
 
 //-----------------------------------------------------------------------------
-// Purpose: Basic help dialog
+// Purpose: Basic help dialog - Fullscreen Style
 //-----------------------------------------------------------------------------
 CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "ModOptionsDialog")
 {
 	SetDeleteSelfOnClose(true);
 
-	int w = 512;
-	int h = 406;
-	if (IsProportional())
-	{
-		w = scheme()->GetProportionalScaledValueEx(GetScheme(), w);
-		h = scheme()->GetProportionalScaledValueEx(GetScheme(), h);
-	}
+	// Get screen size for fullscreen
+	int screenW, screenH;
+	vgui::surface()->GetScreenSize(screenW, screenH);
 
-	SetBounds(0, 0, w, h);
+	// Set fullscreen bounds
+	SetBounds(0, 0, screenW, screenH);
 	
-	SetSizeable( false );
+	SetSizeable(false);
+	SetTitle("", false); // Hide title for fullscreen
+	SetPaintBackgroundEnabled(false);
 
-	SetTitle("#GameUI_Mod_Options", true);
+	// Create sub-pages
+	CModOptionsSubGameplay* pGameplay = new CModOptionsSubGameplay(this);
+	CModOptionsSubCrosshair* pCrosshair = new CModOptionsSubCrosshair(this);
+	CModOptionsSubLoadout* pLoadout = new CModOptionsSubLoadout(this);
+	CModOptionsSubKnives* pKnives = new CModOptionsSubKnives(this);
+	CModOptionsSubAgents* pAgents = new CModOptionsSubAgents(this);
+	CModOptionsSubGloves* pGloves = new CModOptionsSubGloves(this);
+	CModOptionsSubHUD* pHUD = new CModOptionsSubHUD(this);
 
-	AddPage(new CModOptionsSubGameplay(this), "#GameUI_Gameplay");
-	AddPage(new CModOptionsSubCrosshair(this), "#GameUI_Crosshair");
-	AddPage(new CModOptionsSubLoadout(this), "#GameUI_Loadout");
-	AddPage(new CModOptionsSubKnives(this), "#GameUI_Knives");
-	AddPage(new CModOptionsSubAgents(this), "#GameUI_Agents");
-	AddPage(new CModOptionsSubGloves(this), "#GameUI_Gloves");
-	AddPage(new CModOptionsSubHUD(this), "#GameUI_HUD");
+	AddPage(pGameplay, "#GameUI_Gameplay");
+	AddPage(pCrosshair, "#GameUI_Crosshair");
+	AddPage(pLoadout, "#GameUI_Loadout");
+	AddPage(pKnives, "#GameUI_Knives");
+	AddPage(pAgents, "#GameUI_Agents");
+	AddPage(pGloves, "#GameUI_Gloves");
+	AddPage(pHUD, "#GameUI_HUD");
 
 	SetApplyButtonVisible(true);
-	GetPropertySheet()->SetTabWidth(84);
+	
+	// Hide the default tab bar and use full space
+	GetPropertySheet()->SetTabWidth(0);
 }
 
 //-----------------------------------------------------------------------------

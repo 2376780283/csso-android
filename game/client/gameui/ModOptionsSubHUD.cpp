@@ -36,20 +36,13 @@
 using namespace vgui;
 
 //-----------------------------------------------------------------------------
-// Purpose: Basic help dialog
+// Purpose: Constructor
 //-----------------------------------------------------------------------------
 CModOptionsSubHUD::CModOptionsSubHUD( vgui::Panel *parent ): vgui::PropertyPage( parent, "ModOptionsSubHUD" )
 {
-	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
-	cancel->SetCommand( "Close" );
+	// Initialize with minimum size - will be resized in PerformLayout
+	SetSize(100, 100);
 
-	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
-
-	Button *apply = new Button( this, "Apply", "#GameUI_Apply" );
-	apply->SetCommand( "Apply" );
-
-	//=========
 	m_pPlayerCountPos = new CLabeledCommandComboBox( this, "PlayerCountPositionComboBox" );
 	m_pHealthAmmoStyle = new CLabeledCommandComboBox( this, "HealthAmmoStyleComboBox" );
 	m_pHUDColor = new CLabeledCommandComboBox( this, "HUDColorComboBox" );
@@ -99,8 +92,98 @@ CModOptionsSubHUD::CModOptionsSubHUD( vgui::Panel *parent ): vgui::PropertyPage(
 	m_pRadarSquare->AddActionSignalTarget( this );
 	m_pMenuBackground->AddActionSignalTarget( this );
 	m_pMenuAgent->AddActionSignalTarget( this );
+}
 
-	LoadControlSettings( "Resource/ModOptionsSubHUD.res" );
+//-----------------------------------------------------------------------------
+// Purpose: Perform layout - called when size changes
+//-----------------------------------------------------------------------------
+void CModOptionsSubHUD::PerformLayout()
+{
+	BaseClass::PerformLayout();
+
+	// Get available size
+	int pw = GetWide();
+	int ph = GetTall();
+
+	if (pw < 100 || ph < 100)
+		return;
+
+#ifndef PROPVAL
+	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
+#endif
+
+	int margin = PROPVAL(24);
+	int spacing = PROPVAL(12);
+	int labelWidth = PROPVAL(200);
+	int controlHeight = PROPVAL(26);
+	int sectionSpacing = PROPVAL(28);
+	int labelControlGap = PROPVAL(10);
+	int sliderLabelWidth = PROPVAL(40);
+
+	int contentWidth = pw - (margin * 2);
+	int controlWidth = contentWidth - labelWidth - labelControlGap;
+
+	int currentY = margin;
+
+	// ================== SECTION 1: HUD Settings ==================
+	currentY += controlHeight + spacing;
+
+	// Player Count Position
+	m_pPlayerCountPos->SetPos(margin, currentY);
+	m_pPlayerCountPos->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// Health Ammo Style
+	m_pHealthAmmoStyle->SetPos(margin, currentY);
+	m_pHealthAmmoStyle->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// HUD Color
+	m_pHUDColor->SetPos(margin, currentY);
+	m_pHUDColor->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// HUD Background Alpha
+	m_pHUDBackgroundAlpha->SetPos(margin, currentY);
+	m_pHUDBackgroundAlpha->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// Always Show Inventory
+	m_pAlwaysShowInventory->SetPos(margin, currentY);
+	m_pAlwaysShowInventory->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// ================== SECTION 2: Radar Settings ==================
+	currentY += sectionSpacing;
+	currentY += controlHeight + spacing;
+
+	// Radar Scale
+	m_pRadarScale->SetPos(margin, currentY);
+	m_pRadarScale->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// Radar Rotate
+	m_pRadarRotate->SetPos(margin, currentY);
+	m_pRadarRotate->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// Radar Square
+	m_pRadarSquare->SetPos(margin, currentY);
+	m_pRadarSquare->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// ================== SECTION 3: Menu Settings ==================
+	currentY += sectionSpacing;
+	currentY += controlHeight + spacing;
+
+	// Menu Background
+	m_pMenuBackground->SetPos(margin, currentY);
+	m_pMenuBackground->SetSize(controlWidth, controlHeight);
+	currentY += controlHeight + spacing;
+
+	// Menu Agent
+	m_pMenuAgent->SetPos(margin, currentY);
+	m_pMenuAgent->SetSize(controlWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------
