@@ -197,17 +197,19 @@ void CModOptionsSubAgents::PerformLayout()
 	int spacing = PROPVAL(12);
 	int halfWidth = (pw - margin * 3) / 2;
 	int controlHeight = PROPVAL(26);
-	int previewHeight = PROPVAL(200);
+	// Preview square size
+	int previewSize = MIN(halfWidth, ph - margin * 4 - controlHeight * 2);
+	previewSize = MAX(previewSize, PROPVAL(80));
 
 	// CT side
-	m_pAgentImageCT->SetBounds(margin, margin, halfWidth, previewHeight);
-	m_pLoadoutAgentCTComboBox->SetBounds(margin, margin + previewHeight + spacing, halfWidth, controlHeight);
-	m_pLoadoutMainMenuWeaponCTComboBox->SetBounds(margin, margin + previewHeight + spacing * 2 + controlHeight, halfWidth, controlHeight);
+	m_pAgentImageCT->SetBounds(margin, margin, previewSize, previewSize);
+	m_pLoadoutAgentCTComboBox->SetBounds(margin, margin + previewSize + spacing, halfWidth, controlHeight);
+	m_pLoadoutMainMenuWeaponCTComboBox->SetBounds(margin, margin + previewSize + spacing * 2 + controlHeight, halfWidth, controlHeight);
 
 	// T side
-	m_pAgentImageT->SetBounds(margin * 2 + halfWidth, margin, halfWidth, previewHeight);
-	m_pLoadoutAgentTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing, halfWidth, controlHeight);
-	m_pLoadoutMainMenuWeaponTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing * 2 + controlHeight, halfWidth, controlHeight);
+	m_pAgentImageT->SetBounds(margin * 2 + halfWidth, margin, previewSize, previewSize);
+	m_pLoadoutAgentTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewSize + spacing, halfWidth, controlHeight);
+	m_pLoadoutMainMenuWeaponTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewSize + spacing * 2 + controlHeight, halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

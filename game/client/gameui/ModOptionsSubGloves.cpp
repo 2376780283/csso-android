@@ -112,15 +112,17 @@ void CModOptionsSubGloves::PerformLayout()
 	int spacing = PROPVAL(12);
 	int halfWidth = (pw - margin * 3) / 2;
 	int controlHeight = PROPVAL(26);
-	int previewHeight = PROPVAL(200);
+	// Preview square size
+	int previewSize = MIN(halfWidth, ph - margin * 4 - controlHeight * 2);
+	previewSize = MAX(previewSize, PROPVAL(100));
 
 	// CT side
-	m_pGloveImageCT->SetBounds(margin, margin, halfWidth, previewHeight);
-	m_pLoadoutGloveCTComboBox->SetBounds(margin, margin + previewHeight + spacing, halfWidth, controlHeight);
+	m_pGloveImageCT->SetBounds(margin, margin, previewSize, previewSize);
+	m_pLoadoutGloveCTComboBox->SetBounds(margin, margin + previewSize + spacing, halfWidth, controlHeight);
 
 	// T side
-	m_pGloveImageT->SetBounds(margin * 2 + halfWidth, margin, halfWidth, previewHeight);
-	m_pLoadoutGloveTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewHeight + spacing, halfWidth, controlHeight);
+	m_pGloveImageT->SetBounds(margin * 2 + halfWidth, margin, previewSize, previewSize);
+	m_pLoadoutGloveTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewSize + spacing, halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------
