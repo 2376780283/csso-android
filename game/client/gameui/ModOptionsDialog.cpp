@@ -41,6 +41,9 @@ using namespace vgui;
 CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "ModOptionsDialog")
 {
 	SetDeleteSelfOnClose(true);
+	SetMoveable(false);
+    SetSizeable(false);
+    SetCloseButtonVisible(false);
 
 	// Get screen size for fullscreen
 	int screenW, screenH;
