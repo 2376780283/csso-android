@@ -43,6 +43,11 @@ protected:
 
 private:
 	void					RemapKnivesImage();
+
+	// Section Labels
+	vgui::Label*			m_pCTLabel;
+	vgui::Label*			m_pTLabel;
+
 	CBitmapImagePanel		*m_pKnifeImageCT;
 	CBitmapImagePanel		*m_pKnifeImageT;
 

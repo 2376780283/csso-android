@@ -50,6 +50,19 @@ protected:
 	virtual void OnApplyChanges();
 
 private:
+	// Section Labels
+	vgui::Label*				m_pGeneralLabel;
+	vgui::Label*				m_pViewmodelLabel;
+	vgui::Label*				m_pMovementLabel;
+	vgui::Label*				m_pPresetLabel;
+	vgui::Label*				m_pOffsetXLabel;
+	vgui::Label*				m_pOffsetYLabel;
+	vgui::Label*				m_pOffsetZLabel;
+	vgui::Label*				m_pFOVLabel;
+	vgui::Label*				m_pRecoilLabel;
+	vgui::Label*				m_pViewbobLabel;
+	vgui::Label*				m_pWeaponPosLabel;
+
 	CCvarToggleCheckButton*		m_pCloseOnBuy;
 	CCvarToggleCheckButton*		m_pUseOpensBuyMenu;
 	CCvarToggleCheckButton*		m_pAddBotPrefix;
