@@ -12,6 +12,8 @@
 #endif
 
 #include <vgui_controls/PropertyPage.h>
+#include <vgui_controls/ScrollBar.h>
+#include <vgui_controls/Panel.h>
 
 class CCvarToggleCheckButton;
 class CLabeledCommandComboBox;
@@ -40,6 +42,9 @@ public:
 	virtual void PerformLayout() override;
 
 protected:
+	MESSAGE_FUNC_PARAMS( OnScrollBarSliderMoved, "ScrollBarSliderMoved", data );
+	MESSAGE_FUNC_PARAMS( OnSliderMoved, "SliderMoved", data );
+
 	// Called when page is loaded.  Data should be reloaded from document into controls.
 	virtual void OnResetData();
 	// Called when the OK / Apply button is pressed.  Changed data should be written into document.
@@ -60,6 +65,10 @@ private:
 #if !INSTANT_MUSIC_CHANGE
 	bool						m_bNeedToWarnAboutMusic;
 #endif
+
+	// Scroll panel controls
+	vgui::ScrollBar*			m_pVScrollBar;
+	vgui::Panel*				m_pScrollContainer;
 };
 
 #endif // MODOPTIONSSUBLOADOUT_H

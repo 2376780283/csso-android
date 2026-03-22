@@ -15,6 +15,7 @@
 
 #include <vgui/ISystem.h>
 #include <vgui/ISurface.h>
+#include <vgui_controls/ScrollBar.h>
 
 #include "LabeledCommandComboBox.h"
 #include "cvarslider.h"
@@ -43,16 +44,23 @@ CModOptionsSubHUD::CModOptionsSubHUD( vgui::Panel *parent ): vgui::PropertyPage(
 	// Initialize with minimum size - will be resized in PerformLayout
 	SetSize(100, 100);
 
-	m_pPlayerCountPos = new CLabeledCommandComboBox( this, "PlayerCountPositionComboBox" );
-	m_pHealthAmmoStyle = new CLabeledCommandComboBox( this, "HealthAmmoStyleComboBox" );
-	m_pHUDColor = new CLabeledCommandComboBox( this, "HUDColorComboBox" );
-	m_pHUDBackgroundAlpha = new CCvarSlider( this, "HUDBackgroundAlphaSlider", "", 0.0f, 1.0f, "cl_hud_background_alpha" );
-	m_pRadarScale = new CCvarSlider( this, "RadarScaleSlider", "", 0.25f, 1.0f, "cl_radar_scale" );
-	m_pAlwaysShowInventory = new CCvarToggleCheckButton( this, "AlwaysShowInventoryCheckbox", "#GameUI_HUD_AlwaysShowInventory", "cl_showloadout" );
-	m_pRadarRotate = new CCvarToggleCheckButton( this, "RadarRotateCheckbox", "#GameUI_HUD_RotateRadar", "cl_radar_rotate" );
-	m_pRadarSquare = new CLabeledCommandComboBox( this, "RadarSquareComboBox" );
-	m_pMenuBackground = new CLabeledCommandComboBox( this, "MenuBackgroundComboBox" );
-	m_pMenuAgent = new CLabeledCommandComboBox( this, "MenuAgentComboBox" );
+	// Create scroll container panel (holds all controls for scrolling)
+	m_pScrollContainer = new vgui::Panel(this, "ScrollContainer");
+
+	// Create vertical scroll bar
+	m_pVScrollBar = new vgui::ScrollBar(this, "VScrollBar", true);
+	m_pVScrollBar->AddActionSignalTarget(this);
+
+	m_pPlayerCountPos = new CLabeledCommandComboBox( m_pScrollContainer, "PlayerCountPositionComboBox" );
+	m_pHealthAmmoStyle = new CLabeledCommandComboBox( m_pScrollContainer, "HealthAmmoStyleComboBox" );
+	m_pHUDColor = new CLabeledCommandComboBox( m_pScrollContainer, "HUDColorComboBox" );
+	m_pHUDBackgroundAlpha = new CCvarSlider( m_pScrollContainer, "HUDBackgroundAlphaSlider", "", 0.0f, 1.0f, "cl_hud_background_alpha" );
+	m_pRadarScale = new CCvarSlider( m_pScrollContainer, "RadarScaleSlider", "", 0.25f, 1.0f, "cl_radar_scale" );
+	m_pAlwaysShowInventory = new CCvarToggleCheckButton( m_pScrollContainer, "AlwaysShowInventoryCheckbox", "#GameUI_HUD_AlwaysShowInventory", "cl_showloadout" );
+	m_pRadarRotate = new CCvarToggleCheckButton( m_pScrollContainer, "RadarRotateCheckbox", "#GameUI_HUD_RotateRadar", "cl_radar_rotate" );
+	m_pRadarSquare = new CLabeledCommandComboBox( m_pScrollContainer, "RadarSquareComboBox" );
+	m_pMenuBackground = new CLabeledCommandComboBox( m_pScrollContainer, "MenuBackgroundComboBox" );
+	m_pMenuAgent = new CLabeledCommandComboBox( m_pScrollContainer, "MenuAgentComboBox" );
 
 	m_pPlayerCountPos->AddItem( "#GameUI_HUD_PlayerCount_Top", "hud_playercount_pos 0" );
 	m_pPlayerCountPos->AddItem( "#GameUI_HUD_PlayerCount_Bottom", "hud_playercount_pos 1" );
@@ -119,37 +127,78 @@ void CModOptionsSubHUD::PerformLayout()
 	int sectionSpacing = PROPVAL(28);
 	int labelControlGap = PROPVAL(10);
 	int sliderLabelWidth = PROPVAL(40);
+	int scrollBarWidth = PROPVAL(20);
 
-	int contentWidth = pw - (margin * 2);
+	int contentWidth = pw - (margin * 2) - scrollBarWidth;
 	int controlWidth = contentWidth - labelWidth - labelControlGap;
 
-	int currentY = margin;
+	// Position scroll bar on the right side
+	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
+	m_pVScrollBar->SetSize(scrollBarWidth, ph - (margin * 2));
+
+	// Position scroll container
+	m_pScrollContainer->SetPos(margin, margin);
+	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
+
+	// Calculate total content height first
+	int totalContentHeight = 0;
+
+	// ================== SECTION 1: HUD Settings ==================
+	totalContentHeight += controlHeight + spacing; // Player Count
+	totalContentHeight += controlHeight + spacing; // Health Ammo
+	totalContentHeight += controlHeight + spacing; // HUD Color
+	totalContentHeight += controlHeight + spacing; // HUD Background Alpha
+	totalContentHeight += controlHeight + spacing; // Always Show Inventory
+
+	// ================== SECTION 2: Radar Settings ==================
+	totalContentHeight += sectionSpacing;
+	totalContentHeight += controlHeight + spacing; // Radar Scale
+	totalContentHeight += controlHeight + spacing; // Radar Rotate
+	totalContentHeight += controlHeight + spacing; // Radar Square
+
+	// ================== SECTION 3: Menu Settings ==================
+	totalContentHeight += sectionSpacing;
+	totalContentHeight += controlHeight + spacing; // Menu Background
+	totalContentHeight += controlHeight + spacing; // Menu Agent
+
+	// Add bottom margin
+	totalContentHeight += margin;
+
+	// Set scroll bar range
+	m_pVScrollBar->SetRange(0, totalContentHeight);
+	m_pVScrollBar->SetRangeWindow(ph - (margin * 2));
+
+	// Get scroll offset
+	int scrollOffset = m_pVScrollBar->GetValue();
+
+	// Now position all controls inside the scroll container (offset by scroll position)
+	int currentY = -scrollOffset;
 
 	// ================== SECTION 1: HUD Settings ==================
 	currentY += controlHeight + spacing;
 
 	// Player Count Position
-	m_pPlayerCountPos->SetPos(margin, currentY);
+	m_pPlayerCountPos->SetPos(0, currentY);
 	m_pPlayerCountPos->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Health Ammo Style
-	m_pHealthAmmoStyle->SetPos(margin, currentY);
+	m_pHealthAmmoStyle->SetPos(0, currentY);
 	m_pHealthAmmoStyle->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// HUD Color
-	m_pHUDColor->SetPos(margin, currentY);
+	m_pHUDColor->SetPos(0, currentY);
 	m_pHUDColor->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// HUD Background Alpha
-	m_pHUDBackgroundAlpha->SetPos(margin, currentY);
+	m_pHUDBackgroundAlpha->SetPos(0, currentY);
 	m_pHUDBackgroundAlpha->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Always Show Inventory
-	m_pAlwaysShowInventory->SetPos(margin, currentY);
+	m_pAlwaysShowInventory->SetPos(0, currentY);
 	m_pAlwaysShowInventory->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
@@ -158,17 +207,17 @@ void CModOptionsSubHUD::PerformLayout()
 	currentY += controlHeight + spacing;
 
 	// Radar Scale
-	m_pRadarScale->SetPos(margin, currentY);
+	m_pRadarScale->SetPos(0, currentY);
 	m_pRadarScale->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Radar Rotate
-	m_pRadarRotate->SetPos(margin, currentY);
+	m_pRadarRotate->SetPos(0, currentY);
 	m_pRadarRotate->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Radar Square
-	m_pRadarSquare->SetPos(margin, currentY);
+	m_pRadarSquare->SetPos(0, currentY);
 	m_pRadarSquare->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
@@ -177,12 +226,12 @@ void CModOptionsSubHUD::PerformLayout()
 	currentY += controlHeight + spacing;
 
 	// Menu Background
-	m_pMenuBackground->SetPos(margin, currentY);
+	m_pMenuBackground->SetPos(0, currentY);
 	m_pMenuBackground->SetSize(controlWidth, controlHeight);
 	currentY += controlHeight + spacing;
 
 	// Menu Agent
-	m_pMenuAgent->SetPos(margin, currentY);
+	m_pMenuAgent->SetPos(0, currentY);
 	m_pMenuAgent->SetSize(controlWidth, controlHeight);
 }
 
@@ -200,6 +249,28 @@ void CModOptionsSubHUD::OnControlModified()
 {
 	PostMessage( GetParent(), new KeyValues( "ApplyButtonEnable" ) );
 	InvalidateLayout();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Handle scroll bar movement
+//-----------------------------------------------------------------------------
+void CModOptionsSubHUD::OnScrollBarSliderMoved( KeyValues *data )
+{
+	int position = data->GetInt( "position", 0 );
+	InvalidateLayout();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Handle slider movement
+//-----------------------------------------------------------------------------
+void CModOptionsSubHUD::OnSliderMoved( KeyValues *data )
+{
+	vgui::Panel* pPanel = static_cast<vgui::Panel*>(data->GetPtr( "panel" ));
+
+	if ( pPanel == m_pVScrollBar )
+	{
+		InvalidateLayout();
+	}
 }
 
 //-----------------------------------------------------------------------------
