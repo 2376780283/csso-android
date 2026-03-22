@@ -18,6 +18,7 @@
 #include "vgui/ISurface.h"
 #include "vgui/ISystem.h"
 #include "vgui/IVGui.h"
+#include "vgui/IScheme.h"
 
 #include "KeyValues.h"
 #include "ModOptionsSubGameplay.h"
@@ -50,7 +51,12 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	
 	SetSizeable(false);
 	SetTitle("", false); // Hide title for fullscreen
-	SetPaintBackgroundEnabled(false);
+
+	// Set border and background color
+	IScheme* pScheme = vgui::scheme()->GetIScheme(GetScheme());
+	SetBorder(pScheme->GetBorder("FrameBorder"));
+	SetBgColor(pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 200)));
+	SetPaintBackgroundEnabled(true);
 
 	// Create sub-pages
 	CModOptionsSubGameplay* pGameplay = new CModOptionsSubGameplay(this);
