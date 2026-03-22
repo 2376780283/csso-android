@@ -91,17 +91,7 @@ public:
 	virtual void ResetData();
 	virtual void ApplyChanges();
 
-protected:
-	MESSAGE_FUNC_PARAMS( OnSliderMoved, "SliderMoved", data );
-	MESSAGE_FUNC_PTR( OnTextChanged, "TextChanged", panel );
-	MESSAGE_FUNC( OnCheckButtonChecked, "CheckButtonChecked" );
-
-	virtual void Paint();
-	void DrawCrosshairRect( int r, int g, int b, int a, int x0, int y0, int x1, int y1, bool bAdditive );
-	void UpdateCrosshair();
-
-private:
-	CModOptionsSubCrosshair	*m_pOptionsPanel;
+	// Public access to controls for layout positioning
 	CLabeledCommandComboBox	*m_pCrosshairStyle;
 	CCvarSlider				*m_pCrosshairAlpha;
 	CCvarToggleCheckButton	*m_pCrosshairUseAlpha;
@@ -117,6 +107,18 @@ private:
 	CCvarSlider				*m_pCrosshairOutlineThickness;
 	CCvarToggleCheckButton	*m_pCrosshairT;
 	CLabeledCommandComboBox	*m_pCrosshairColor;
+
+protected:
+	MESSAGE_FUNC_PARAMS( OnSliderMoved, "SliderMoved", data );
+	MESSAGE_FUNC_PTR( OnTextChanged, "TextChanged", panel );
+	MESSAGE_FUNC( OnCheckButtonChecked, "CheckButtonChecked" );
+
+	virtual void Paint();
+	void DrawCrosshairRect( int r, int g, int b, int a, int x0, int y0, int x1, int y1, bool bAdditive );
+	void UpdateCrosshair();
+
+private:
+	CModOptionsSubCrosshair	*m_pOptionsPanel;
 	int m_iCrosshairTextureID;
 };
 
@@ -378,6 +380,27 @@ CModOptionsSubCrosshair::CModOptionsSubCrosshair(vgui::Panel *parent) : vgui::Pr
 	// Create the crosshair preview image - positions will be set in PerformLayout
 	m_pCrosshairImage = new CrosshairImagePanelCS(this, "CrosshairImage", this);
 
+	// Create labels for controls (these will be positioned in PerformLayout)
+	// Style section
+	new vgui::Label(this, "StyleLabel", "#GameUI_Crosshair_Style");
+	
+	// Size section
+	new vgui::Label(this, "SizeLabel", "#GameUI_Crosshair_Size");
+	new vgui::Label(this, "ThicknessLabel", "#GameUI_Crosshair_Thickness");
+	new vgui::Label(this, "GapLabel", "#GameUI_Crosshair_Gap");
+	
+	// Color section
+	new vgui::Label(this, "CrosshairColorLabel", "#GameUI_Crosshair_Color");
+	new vgui::Label(this, "RedLabel", "#GameUI_Crosshair_Color_R");
+	new vgui::Label(this, "GreenLabel", "#GameUI_Crosshair_Color_G");
+	new vgui::Label(this, "BlueLabel", "#GameUI_Crosshair_Color_B");
+	
+	// Alpha section
+	new vgui::Label(this, "AlphaLabel", "#GameUI_Crosshair_Alpha");
+	
+	// Outline section
+	new vgui::Label(this, "OutlineLabel", "#GameUI_Crosshair_OutlineThickness");
+
 	// Load the .res file for the controls inside CrosshairImagePanel
 	LoadControlSettings("Resource/ModOptionsSubCrosshair.res");
 }
@@ -397,40 +420,147 @@ void CModOptionsSubCrosshair::PerformLayout()
 		return;
 
 	// Padding and spacing values - scaled for different resolutions
-	int margin = PROPVAL(24);
-	int spacing = PROPVAL(12);
-	int labelWidth = PROPVAL(200);
-	int controlHeight = PROPVAL(26);
-	int sectionSpacing = PROPVAL(28);
-	int labelControlGap = PROPVAL(10);
-	int sliderLabelWidth = PROPVAL(40);
-	int smallControlWidth = PROPVAL(80);
+	int margin = PROPVAL(16);
+	int spacing = PROPVAL(8);
+	int controlHeight = PROPVAL(24);
+	int sliderHeight = PROPVAL(32);
+	int labelWidth = PROPVAL(80);
+	int controlWidth = PROPVAL(200);
+	int smallControlWidth = PROPVAL(140);
+	int columnGap = PROPVAL(50);
+	int rightColumnX = pw / 2 + columnGap / 2;
 
-	// Calculate content width
-	int contentWidth = pw - (margin * 2);
-	int controlWidth = contentWidth - labelWidth - labelControlGap;
-	int halfControlWidth = (controlWidth - spacing) / 2;
-
-	int currentY = margin;
-
-	// Crosshair preview area - centered
-	int previewSize = PROPVAL(200);
+	// Crosshair preview area - centered at top
+	int previewSize = PROPVAL(120);
 	int previewX = (pw - previewSize) / 2;
-	m_pCrosshairImage->SetBounds(previewX, currentY, previewSize, previewSize);
-	currentY += previewSize + spacing;
+	m_pCrosshairImage->SetBounds(previewX, margin, previewSize, previewSize);
 
-	// ================== SECTION 1: Style ==================
-	currentY += controlHeight + spacing;
+	// ================== LEFT COLUMN ==================
+	int leftY = margin + previewSize + spacing;
 
-	// ================== SECTION 2: Size & Gap ==================
-	currentY += sectionSpacing;
+	// Style
+	Panel* pStyleLabel = FindChildByName("StyleLabel");
+	if (pStyleLabel)
+	{
+		pStyleLabel->SetVisible(true);
+		pStyleLabel->SetBounds(margin, leftY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairStyle->SetBounds(margin + labelWidth + spacing, leftY, controlWidth, controlHeight);
+	leftY += controlHeight + spacing;
 
-	// ================== SECTION 3: Color ==================
-	currentY += sectionSpacing;
-	currentY += controlHeight + spacing;
+	// Size
+	Panel* pSizeLabel = FindChildByName("SizeLabel");
+	if (pSizeLabel)
+	{
+		pSizeLabel->SetVisible(true);
+		pSizeLabel->SetBounds(margin, leftY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairSize->SetBounds(margin + labelWidth + spacing, leftY - 4, controlWidth, sliderHeight);
+	leftY += sliderHeight + spacing;
 
-	// ================== SECTION 4: Additional Options ==================
-	currentY += sectionSpacing;
+	// Thickness
+	Panel* pThicknessLabel = FindChildByName("ThicknessLabel");
+	if (pThicknessLabel)
+	{
+		pThicknessLabel->SetVisible(true);
+		pThicknessLabel->SetBounds(margin, leftY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairThickness->SetBounds(margin + labelWidth + spacing, leftY - 4, controlWidth, sliderHeight);
+	leftY += sliderHeight + spacing;
+
+	// Gap
+	Panel* pGapLabel = FindChildByName("GapLabel");
+	if (pGapLabel)
+	{
+		pGapLabel->SetVisible(true);
+		pGapLabel->SetBounds(margin, leftY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairGap->SetBounds(margin + labelWidth + spacing, leftY - 4, controlWidth, sliderHeight);
+	leftY += sliderHeight + spacing;
+
+	// Gap Use Weapon Value
+	m_pCrosshairImage->m_pCrosshairGapUseWeaponValue->SetBounds(margin + labelWidth + spacing, leftY, smallControlWidth, controlHeight);
+	leftY += controlHeight + spacing * 2;
+
+	// ================== RIGHT COLUMN ==================
+	int rightY = margin + previewSize + spacing;
+
+	// Color Label
+	Panel* pColorLabel = FindChildByName("CrosshairColorLabel");
+	if (pColorLabel)
+	{
+		pColorLabel->SetVisible(true);
+		pColorLabel->SetBounds(rightColumnX, rightY, labelWidth, controlHeight);
+	}
+	rightY += controlHeight;
+
+	// Color ComboBox
+	m_pCrosshairImage->m_pCrosshairColor->SetBounds(rightColumnX, rightY, controlWidth, controlHeight);
+	rightY += controlHeight + spacing;
+
+	// Color R
+	Panel* pRedLabel = FindChildByName("RedLabel");
+	if (pRedLabel)
+	{
+		pRedLabel->SetVisible(true);
+		pRedLabel->SetBounds(rightColumnX, rightY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairColorR->SetBounds(rightColumnX + labelWidth + spacing, rightY - 4, controlWidth - labelWidth - spacing, sliderHeight);
+	rightY += sliderHeight + spacing;
+
+	// Color G
+	Panel* pGreenLabel = FindChildByName("GreenLabel");
+	if (pGreenLabel)
+	{
+		pGreenLabel->SetVisible(true);
+		pGreenLabel->SetBounds(rightColumnX, rightY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairColorG->SetBounds(rightColumnX + labelWidth + spacing, rightY - 4, controlWidth - labelWidth - spacing, sliderHeight);
+	rightY += sliderHeight + spacing;
+
+	// Color B
+	Panel* pBlueLabel = FindChildByName("BlueLabel");
+	if (pBlueLabel)
+	{
+		pBlueLabel->SetVisible(true);
+		pBlueLabel->SetBounds(rightColumnX, rightY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairColorB->SetBounds(rightColumnX + labelWidth + spacing, rightY - 4, controlWidth - labelWidth - spacing, sliderHeight);
+	rightY += sliderHeight + spacing * 2;
+
+	// Use Alpha
+	m_pCrosshairImage->m_pCrosshairUseAlpha->SetBounds(rightColumnX, rightY, smallControlWidth + labelWidth, controlHeight);
+	rightY += controlHeight + spacing;
+
+	// Alpha Label
+	Panel* pAlphaLabel = FindChildByName("AlphaLabel");
+	if (pAlphaLabel)
+	{
+		pAlphaLabel->SetVisible(true);
+		pAlphaLabel->SetBounds(rightColumnX, rightY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairAlpha->SetBounds(rightColumnX + labelWidth + spacing, rightY - 4, controlWidth - labelWidth - spacing, sliderHeight);
+	rightY += sliderHeight + spacing * 2;
+
+	// ================== BOTTOM ROW ==================
+	// Use the larger of leftY and rightY as starting point
+	int bottomY = (leftY > rightY ? leftY : rightY);
+
+	// Left side: Dot and T
+	m_pCrosshairImage->m_pCrosshairDot->SetBounds(margin, bottomY, smallControlWidth, controlHeight);
+	m_pCrosshairImage->m_pCrosshairT->SetBounds(margin + smallControlWidth + spacing, bottomY, smallControlWidth, controlHeight);
+
+	// Right side: Draw Outline and Outline Thickness
+	m_pCrosshairImage->m_pCrosshairDrawOutline->SetBounds(rightColumnX, bottomY, smallControlWidth + labelWidth, controlHeight);
+	bottomY += controlHeight + spacing;
+
+	Panel* pOutlineLabel = FindChildByName("OutlineLabel");
+	if (pOutlineLabel)
+	{
+		pOutlineLabel->SetVisible(true);
+		pOutlineLabel->SetBounds(rightColumnX, bottomY, labelWidth, controlHeight);
+	}
+	m_pCrosshairImage->m_pCrosshairOutlineThickness->SetBounds(rightColumnX + labelWidth + spacing, bottomY - 4, controlWidth - labelWidth - spacing, sliderHeight);
 
 	// this is necessary because some of the game .res files don't have visiblity flags set up correctly for their controls
 	if (m_pCrosshairImage)

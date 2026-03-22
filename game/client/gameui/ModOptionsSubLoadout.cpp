@@ -191,8 +191,6 @@ void CModOptionsSubLoadout::PerformLayout()
 	int currentY = -scrollOffset;
 
 	// ================== SECTION 1: CT Weapons ==================
-	currentY += controlHeight + spacing;
-
 	// M4
 	m_pLoadoutM4ComboBox->SetPos(0, currentY);
 	m_pLoadoutM4ComboBox->SetSize(controlWidth, controlHeight);
@@ -220,7 +218,6 @@ void CModOptionsSubLoadout::PerformLayout()
 
 	// ================== SECTION 2: T Weapons ==================
 	currentY += sectionSpacing;
-	currentY += controlHeight + spacing;
 
 	// Tec9
 	m_pLoadoutTec9ComboBox->SetPos(0, currentY);
@@ -239,7 +236,6 @@ void CModOptionsSubLoadout::PerformLayout()
 
 	// ================== SECTION 3: Options ==================
 	currentY += sectionSpacing;
-	currentY += controlHeight + spacing;
 
 	// StatTrak
 	m_pStatTrak->SetPos(0, currentY);

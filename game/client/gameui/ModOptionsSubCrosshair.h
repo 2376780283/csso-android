@@ -33,6 +33,8 @@ public:
 	virtual void UpdateVisibility() {}
 };
 
+class CrosshairImagePanelCS;
+
 //-----------------------------------------------------------------------------
 // Purpose: crosshair options property page
 //-----------------------------------------------------------------------------
@@ -56,7 +58,7 @@ protected:
 	virtual void OnApplyChanges();
 
 private:
-	CrosshairImagePanelBase *m_pCrosshairImage;
+	CrosshairImagePanelCS *m_pCrosshairImage;
 };
 
 #endif // MODOPTIONSSUBCROSSHAIR_H
