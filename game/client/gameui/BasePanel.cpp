@@ -1329,6 +1329,17 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_iAgentToUse = -1;
 
 	LoadControlSettings( "resource/mainmenu.res" );
+
+	// Find or create NvgLeftBar after LoadControlSettings
+	m_pNvgLeftBar = dynamic_cast<vgui::EditablePanel*>( FindChildByName( "NvgLeftBar" ) );
+	if ( !m_pNvgLeftBar )
+	{
+		m_pNvgLeftBar = new vgui::EditablePanel( this, "NvgLeftBar" );
+	}
+	m_pNvgLeftBar->SetPaintBackgroundEnabled( true );
+	m_pNvgLeftBar->SetVisible( true );
+	m_pNvgLeftBar->SetZPos( 100 );
+	InvalidateLayout();
 }
 
 //-----------------------------------------------------------------------------
@@ -2383,6 +2394,18 @@ void CBaseModPanel::PerformLayout()
 
 	m_pGameMenu->SetFixedWidth( m_iGameMenuWidth );
 
+	// Position NvgLeftBar on the left side of the screen
+	if ( m_pNvgLeftBar )
+	{
+		int nvgLeftBarWidth = 260;
+		int nvgLeftBarPadding = 15;
+		int nvgTopBarPadding = 15;
+		m_pNvgLeftBar->SetPos( nvgLeftBarPadding, nvgTopBarPadding );
+		m_pNvgLeftBar->SetSize( nvgLeftBarWidth, tall - nvgTopBarPadding * 2 );
+		m_pNvgLeftBar->SetVisible( true );
+		m_pNvgLeftBar->MoveToFront();
+	}
+
 	UpdateGameMenus();
 }
 
@@ -2393,6 +2416,13 @@ void CBaseModPanel::ApplySchemeSettings(IScheme *pScheme)
 {
 	int i;
 	BaseClass::ApplySchemeSettings(pScheme);
+
+	// Set NvgLeftBar border and background color
+	if ( m_pNvgLeftBar )
+	{
+		m_pNvgLeftBar->SetBorder( pScheme->GetBorder( "FrameBorder" ) );
+		m_pNvgLeftBar->SetBgColor( pScheme->GetColor( "Frame.BgColor", Color( 0, 0, 0, 200 ) ) );
+	}
 
 	m_iGameMenuInset = atoi(pScheme->GetResourceString("MainMenu.Inset"));
 	m_iGameMenuInset *= 2;

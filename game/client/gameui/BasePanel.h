@@ -540,6 +540,7 @@ private:
 	MESSAGE_FUNC( FinishDialogClose, "FinishDialogClose" );
 
 	CBaseModPlayerPanel* m_pPlayerModel;
+	vgui::EditablePanel* m_pNvgLeftBar;
 	int m_iCTAgent;
 	int m_iTAgent;
 	int m_iCTGloves;
