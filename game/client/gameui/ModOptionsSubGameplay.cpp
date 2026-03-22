@@ -63,17 +63,17 @@ CModOptionsSubGameplay::CModOptionsSubGameplay( vgui::Panel *parent ): vgui::Pro
 	m_pVScrollBar->AddActionSignalTarget(this);
 
 	// Create Section Labels (inside scroll container)
-	m_pGeneralLabel = new Label(m_pScrollContainer, "GeneralLabel", "#GameUI_Gameplay_General");
+	m_pGeneralLabel = new Label(m_pScrollContainer, "GeneralLabel", "#GameUI_Gameplay");
 	m_pViewmodelLabel = new Label(m_pScrollContainer, "ViewmodelLabel", "#GameUI_Gameplay_Viewmodel");
-	m_pMovementLabel = new Label(m_pScrollContainer, "MovementLabel", "#GameUI_Gameplay_Movement");
-	m_pPresetLabel = new Label(m_pScrollContainer, "PresetLabel", "#GameUI_Gameplay_Viewmodel_Preset");
-	m_pOffsetXLabel = new Label(m_pScrollContainer, "OffsetXLabel", "#GameUI_Gameplay_Viewmodel_OffsetX");
-	m_pOffsetYLabel = new Label(m_pScrollContainer, "OffsetYLabel", "#GameUI_Gameplay_Viewmodel_OffsetY");
-	m_pOffsetZLabel = new Label(m_pScrollContainer, "OffsetZLabel", "#GameUI_Gameplay_Viewmodel_OffsetZ");
-	m_pFOVLabel = new Label(m_pScrollContainer, "FOVLabel", "#GameUI_Gameplay_Viewmodel_FOV");
-	m_pRecoilLabel = new Label(m_pScrollContainer, "RecoilLabel", "#GameUI_Gameplay_Viewmodel_Recoil");
-	m_pViewbobLabel = new Label(m_pScrollContainer, "ViewbobLabel", "#GameUI_Gameplay_Viewbob_Style");
-	m_pWeaponPosLabel = new Label(m_pScrollContainer, "WeaponPosLabel", "#GameUI_Gameplay_Weapon_Position");
+	m_pMovementLabel = new Label(m_pScrollContainer, "MovementLabel", "#GameUI_Gameplay_Viewmodel"); // missing language
+	m_pPresetLabel = new Label(m_pScrollContainer, "PresetLabel", "#GameUI_Gameplay_ViewmodelPreset");
+	m_pOffsetXLabel = new Label(m_pScrollContainer, "OffsetXLabel", "Viewmodel Offset X"); // missing language
+	m_pOffsetYLabel = new Label(m_pScrollContainer, "OffsetYLabel", "Viewmodel Offset Y");
+	m_pOffsetZLabel = new Label(m_pScrollContainer, "OffsetZLabel", "Viewmodel Offset Z");
+	m_pFOVLabel = new Label(m_pScrollContainer, "FOVLabel", "#GameUI_Gameplay_ViewmodelFOV");
+	m_pRecoilLabel = new Label(m_pScrollContainer, "RecoilLabel", "#GameUI_Gameplay_ViewmodelRecoil");
+	m_pViewbobLabel = new Label(m_pScrollContainer, "ViewbobLabel", "#GameUI_Gameplay_ViewbobStyle");
+	m_pWeaponPosLabel = new Label(m_pScrollContainer, "WeaponPosLabel", "#GameUI_Gameplay_WeaponPos");
 
 	// Create all controls (inside scroll container)
 	m_pCloseOnBuy = new CCvarToggleCheckButton(m_pScrollContainer, "CloseOnBuyCheckbox", "#GameUI_Gameplay_CloseOnBuy", "closeonbuy");
