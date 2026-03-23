@@ -138,8 +138,12 @@ void CModOptionsSubHUD::PerformLayout()
 	int columnWidth = PROPVAL(224);
 	int scrollBarWidth = PROPVAL(20);
 
+	// Calculate total width and center offset
+	int totalWidth = columnWidth * 2 + spacing; // 224 * 2 + 12 = 460
+	int centerOffset = (pw - totalWidth) / 2;
+
 	// Left column X position
-	int leftColumnX = margin;
+	int leftColumnX = margin + centerOffset;
 	// Right column X position
 	int rightColumnX = leftColumnX + columnWidth + spacing;
 

@@ -207,25 +207,30 @@ void CModOptionsSubAgents::PerformLayout()
 	int labelHeight = PROPVAL(24);
 	int previewHeight = PROPVAL(168);
 
-	// CT side (left column x=16)
+	// Calculate total width and center offset
+	int totalWidth = margin + halfWidth + PROPVAL(12) + halfWidth;
+	int centerOffset = (pw - totalWidth) / 2;
+
+	// CT side (left column)
+	int leftX = margin + centerOffset;
 	// Agent CT ComboBox Label at y=8
-	m_pAgentCTComboBoxLabel->SetPos(margin, margin + PROPVAL(8));
+	m_pAgentCTComboBoxLabel->SetPos(leftX, margin + PROPVAL(8));
 	m_pAgentCTComboBoxLabel->SetSize(halfWidth, labelHeight);
 	// Agent Image CT at y=32
-	m_pAgentImageCT->SetPos(margin, margin + PROPVAL(32));
+	m_pAgentImageCT->SetPos(leftX, margin + PROPVAL(32));
 	m_pAgentImageCT->SetSize(halfWidth, previewHeight);
 	// Agent CT ComboBox at y=216
-	m_pLoadoutAgentCTComboBox->SetPos(margin, margin + PROPVAL(216));
+	m_pLoadoutAgentCTComboBox->SetPos(leftX, margin + PROPVAL(216));
 	m_pLoadoutAgentCTComboBox->SetSize(halfWidth, controlHeight);
 	// Main Menu Weapon CT Label at y=256
-	m_pMainMenuWeaponCTLabel->SetPos(margin, margin + PROPVAL(256));
+	m_pMainMenuWeaponCTLabel->SetPos(leftX, margin + PROPVAL(256));
 	m_pMainMenuWeaponCTLabel->SetSize(halfWidth, labelHeight);
 	// Main Menu Weapon CT ComboBox at y=280
-	m_pLoadoutMainMenuWeaponCTComboBox->SetPos(margin, margin + PROPVAL(280));
+	m_pLoadoutMainMenuWeaponCTComboBox->SetPos(leftX, margin + PROPVAL(280));
 	m_pLoadoutMainMenuWeaponCTComboBox->SetSize(halfWidth, controlHeight);
 
-	// T side (right column x=256)
-	int rightX = margin + halfWidth + PROPVAL(12);
+	// T side (right column)
+	int rightX = margin + halfWidth + PROPVAL(12) + centerOffset;
 	// Agent T ComboBox Label at y=8
 	m_pAgentTComboBoxLabel->SetPos(rightX, margin + PROPVAL(8));
 	m_pAgentTComboBoxLabel->SetSize(halfWidth, labelHeight);

@@ -121,19 +121,24 @@ void CModOptionsSubKnives::PerformLayout()
 	int labelHeight = PROPVAL(24);
 	int previewHeight = PROPVAL(168);
 
-	// CT side (left column x=16)
+	// Calculate total width and center offset
+	int totalWidth = margin + halfWidth + PROPVAL(12) + halfWidth;
+	int centerOffset = (pw - totalWidth) / 2;
+
+	// CT side (left column)
+	int leftX = margin + centerOffset;
 	// Knife CT ComboBox Label at y=8
-	m_pKnifeCTComboBoxLabel->SetPos(margin, margin + PROPVAL(8));
+	m_pKnifeCTComboBoxLabel->SetPos(leftX, margin + PROPVAL(8));
 	m_pKnifeCTComboBoxLabel->SetSize(halfWidth, labelHeight);
 	// Knife Image CT at y=32
-	m_pKnifeImageCT->SetPos(margin, margin + PROPVAL(32));
+	m_pKnifeImageCT->SetPos(leftX, margin + PROPVAL(32));
 	m_pKnifeImageCT->SetSize(halfWidth, previewHeight);
 	// Knife CT ComboBox at y=216
-	m_pLoadoutKnifeCTComboBox->SetPos(margin, margin + PROPVAL(216));
+	m_pLoadoutKnifeCTComboBox->SetPos(leftX, margin + PROPVAL(216));
 	m_pLoadoutKnifeCTComboBox->SetSize(halfWidth, controlHeight);
 
-	// T side (right column x=256)
-	int rightX = margin + halfWidth + PROPVAL(12);
+	// T side (right column)
+	int rightX = margin + halfWidth + PROPVAL(12) + centerOffset;
 	// Knife T ComboBox Label at y=8
 	m_pKnifeTComboBoxLabel->SetPos(rightX, margin + PROPVAL(8));
 	m_pKnifeTComboBoxLabel->SetSize(halfWidth, labelHeight);

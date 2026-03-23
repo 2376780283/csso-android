@@ -120,19 +120,24 @@ void CModOptionsSubGloves::PerformLayout()
 	int labelHeight = PROPVAL(24);
 	int previewHeight = PROPVAL(168);
 
-	// CT side (left column x=16)
+	// Calculate total width and center offset
+	int totalWidth = margin + halfWidth + PROPVAL(12) + halfWidth;
+	int centerOffset = (pw - totalWidth) / 2;
+
+	// CT side (left column)
+	int leftX = margin + centerOffset;
 	// Glove CT ComboBox Label at y=8
-	m_pGloveCTComboBoxLabel->SetPos(margin, margin + PROPVAL(8));
+	m_pGloveCTComboBoxLabel->SetPos(leftX, margin + PROPVAL(8));
 	m_pGloveCTComboBoxLabel->SetSize(halfWidth, labelHeight);
 	// Glove Image CT at y=32
-	m_pGloveImageCT->SetPos(margin, margin + PROPVAL(32));
+	m_pGloveImageCT->SetPos(leftX, margin + PROPVAL(32));
 	m_pGloveImageCT->SetSize(halfWidth, previewHeight);
 	// Glove CT ComboBox at y=216
-	m_pLoadoutGloveCTComboBox->SetPos(margin, margin + PROPVAL(216));
+	m_pLoadoutGloveCTComboBox->SetPos(leftX, margin + PROPVAL(216));
 	m_pLoadoutGloveCTComboBox->SetSize(halfWidth, controlHeight);
 
-	// T side (right column x=256)
-	int rightX = margin + halfWidth + PROPVAL(12);
+	// T side (right column)
+	int rightX = margin + halfWidth + PROPVAL(12) + centerOffset;
 	// Glove T ComboBox Label at y=8
 	m_pGloveTComboBoxLabel->SetPos(rightX, margin + PROPVAL(8));
 	m_pGloveTComboBoxLabel->SetSize(halfWidth, labelHeight);

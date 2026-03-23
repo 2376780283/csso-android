@@ -154,6 +154,10 @@ void CModOptionsSubGameplay::PerformLayout()
 	int midColX = PROPVAL(184);
 	int rightColX = PROPVAL(352);
 
+	// Calculate total width and center offset
+	int totalWidth = rightColX + sliderWidth; // 352 + 128 = 480
+	int centerOffset = (pw - totalWidth) / 2;
+
 	// Calculate content width
 	int contentWidth = pw - (margin * 2) - scrollBarWidth;
 	int controlWidth = contentWidth - margin;
@@ -177,109 +181,109 @@ void CModOptionsSubGameplay::PerformLayout()
 
 	// ================== Viewmodel Section ==================
 	// ViewmodelLabel: x=16, y=0, wide=192
-	m_pViewmodelLabel->SetPos(0, startY);
+	m_pViewmodelLabel->SetPos(centerOffset, startY);
 	m_pViewmodelLabel->SetSize(labelWidth, labelHeight);
 	m_pViewmodelLabel->SetContentAlignment(Label::a_west);
 
 	// --- Left Column (x=24): Offset X/Y/Z sliders ---
 	// OffsetX: x=24, y=24, wide=128
-	m_pViewmodelOffsetX->SetPos(leftColX, startY + PROPVAL(24));
+	m_pViewmodelOffsetX->SetPos(leftColX + centerOffset, startY + PROPVAL(24));
 	m_pViewmodelOffsetX->SetSize(sliderWidth, sliderHeight);
 	// Value label: x=24+128=152, y=24, wide=64
-	m_pViewmodelOffsetXLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(24));
+	m_pViewmodelOffsetXLabel->SetPos(leftColX + sliderWidth + centerOffset, startY + PROPVAL(24));
 	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// OffsetY: x=24, y=60
-	m_pViewmodelOffsetY->SetPos(leftColX, startY + PROPVAL(60));
+	m_pViewmodelOffsetY->SetPos(leftColX + centerOffset, startY + PROPVAL(60));
 	m_pViewmodelOffsetY->SetSize(sliderWidth, sliderHeight);
-	m_pViewmodelOffsetYLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(60));
+	m_pViewmodelOffsetYLabel->SetPos(leftColX + sliderWidth + centerOffset, startY + PROPVAL(60));
 	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// OffsetZ: x=24, y=96
-	m_pViewmodelOffsetZ->SetPos(leftColX, startY + PROPVAL(96));
+	m_pViewmodelOffsetZ->SetPos(leftColX + centerOffset, startY + PROPVAL(96));
 	m_pViewmodelOffsetZ->SetSize(sliderWidth, sliderHeight);
-	m_pViewmodelOffsetZLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(96));
+	m_pViewmodelOffsetZLabel->SetPos(leftColX + sliderWidth + centerOffset, startY + PROPVAL(96));
 	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// --- Middle Column (x=184): FOV and Recoil ---
 	// FOV Description: x=184, y=0, wide=192 (label, not slider)
-	m_pFOVDescription->SetPos(midColX, startY);
+	m_pFOVDescription->SetPos(midColX + centerOffset, startY);
 	m_pFOVDescription->SetSize(labelWidth, labelHeight);
 	m_pFOVDescription->SetContentAlignment(Label::a_west);
 
 	// FOV Slider: x=184, y=24, wide=128
-	m_pViewmodelFOV->SetPos(midColX, startY + PROPVAL(24));
+	m_pViewmodelFOV->SetPos(midColX + centerOffset, startY + PROPVAL(24));
 	m_pViewmodelFOV->SetSize(sliderWidth, sliderHeight);
 	// Value label: x=184+128=312, y=24, wide=64
-	m_pViewmodelFOVLabel->SetPos(midColX + sliderWidth, startY + PROPVAL(24));
+	m_pViewmodelFOVLabel->SetPos(midColX + sliderWidth + centerOffset, startY + PROPVAL(24));
 	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// Recoil Description: x=184, y=72
-	m_pRecoilDescription->SetPos(midColX, startY + PROPVAL(72));
+	m_pRecoilDescription->SetPos(midColX + centerOffset, startY + PROPVAL(72));
 	m_pRecoilDescription->SetSize(labelWidth, labelHeight);
 	m_pRecoilDescription->SetContentAlignment(Label::a_west);
 
 	// Recoil Slider: x=184, y=96
-	m_pViewmodelRecoil->SetPos(midColX, startY + PROPVAL(96));
+	m_pViewmodelRecoil->SetPos(midColX + centerOffset, startY + PROPVAL(96));
 	m_pViewmodelRecoil->SetSize(sliderWidth, sliderHeight);
-	m_pViewmodelRecoilLabel->SetPos(midColX + sliderWidth, startY + PROPVAL(96));
+	m_pViewmodelRecoilLabel->SetPos(midColX + sliderWidth + centerOffset, startY + PROPVAL(96));
 	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// --- Right Column (x=352): Preset, Viewbob, WeaponPos ---
 	// Preset Label: x=352, y=0
-	m_pPresetLabel->SetPos(rightColX, startY);
+	m_pPresetLabel->SetPos(rightColX + centerOffset, startY);
 	m_pPresetLabel->SetSize(labelWidth, labelHeight);
 	m_pPresetLabel->SetContentAlignment(Label::a_west);
 
 	// Preset ComboBox: x=352, y=24
-	m_pViewmodelOffsetPreset->SetPos(rightColX, startY + PROPVAL(24));
+	m_pViewmodelOffsetPreset->SetPos(rightColX + centerOffset, startY + PROPVAL(24));
 	m_pViewmodelOffsetPreset->SetSize(comboWidth, controlHeight);
 
 	// Viewbob Label: x=352, y=48
-	m_pViewbobLabel->SetPos(rightColX, startY + PROPVAL(48));
+	m_pViewbobLabel->SetPos(rightColX + centerOffset, startY + PROPVAL(48));
 	m_pViewbobLabel->SetSize(labelWidth, labelHeight);
 	m_pViewbobLabel->SetContentAlignment(Label::a_west);
 
 	// Viewbob ComboBox: x=352, y=72
-	m_pViewbobStyle->SetPos(rightColX, startY + PROPVAL(72));
+	m_pViewbobStyle->SetPos(rightColX + centerOffset, startY + PROPVAL(72));
 	m_pViewbobStyle->SetSize(comboWidth, controlHeight);
 
 	// WeaponPos Label: x=352, y=96
-	m_pWeaponPosLabel->SetPos(rightColX, startY + PROPVAL(96));
+	m_pWeaponPosLabel->SetPos(rightColX + centerOffset, startY + PROPVAL(96));
 	m_pWeaponPosLabel->SetSize(labelWidth, labelHeight);
 	m_pWeaponPosLabel->SetContentAlignment(Label::a_west);
 
 	// WeaponPos ComboBox: x=352, y=120
-	m_pWeaponPos->SetPos(rightColX, startY + PROPVAL(120));
+	m_pWeaponPos->SetPos(rightColX + centerOffset, startY + PROPVAL(120));
 	m_pWeaponPos->SetSize(comboWidth, controlHeight);
 
 	// Divider: x=16, y=152, wide=464
-	m_pDivider1->SetPos(0, startY + PROPVAL(152));
+	m_pDivider1->SetPos(centerOffset, startY + PROPVAL(152));
 	m_pDivider1->SetSize(dividerWidth, 2);
 
 	// ================== Checkboxes ==================
 	// CloseOnBuy: x=16, y=162
-	m_pCloseOnBuy->SetPos(0, startY + PROPVAL(162));
+	m_pCloseOnBuy->SetPos(centerOffset, startY + PROPVAL(162));
 	m_pCloseOnBuy->SetSize(controlWidth, controlHeight);
 
 	// UseOpensBuyMenu: x=16, y=186
-	m_pUseOpensBuyMenu->SetPos(0, startY + PROPVAL(186));
+	m_pUseOpensBuyMenu->SetPos(centerOffset, startY + PROPVAL(186));
 	m_pUseOpensBuyMenu->SetSize(controlWidth, controlHeight);
 
 	// AddBotPrefix: x=16, y=210
-	m_pAddBotPrefix->SetPos(0, startY + PROPVAL(210));
+	m_pAddBotPrefix->SetPos(centerOffset, startY + PROPVAL(210));
 	m_pAddBotPrefix->SetSize(controlWidth, controlHeight);
 
 	// DrawTracers: x=16, y=234
-	m_pDrawTracers->SetPos(0, startY + PROPVAL(234));
+	m_pDrawTracers->SetPos(centerOffset, startY + PROPVAL(234));
 	m_pDrawTracers->SetSize(controlWidth, controlHeight);
 
 	// SpecInterpCamera: x=16, y=258
-	m_pSpecInterpCamera->SetPos(0, startY + PROPVAL(258));
+	m_pSpecInterpCamera->SetPos(centerOffset, startY + PROPVAL(258));
 	m_pSpecInterpCamera->SetSize(controlWidth, controlHeight);
 
 	// DisableShootingEffects: x=16, y=282
-	m_pDisableShootingEffects->SetPos(0, startY + PROPVAL(282));
+	m_pDisableShootingEffects->SetPos(centerOffset, startY + PROPVAL(282));
 	m_pDisableShootingEffects->SetSize(controlWidth, controlHeight);
 }
 
