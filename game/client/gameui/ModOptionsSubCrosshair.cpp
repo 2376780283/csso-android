@@ -414,12 +414,11 @@ CModOptionsSubCrosshair::CModOptionsSubCrosshair(vgui::Panel *parent) : vgui::Pr
 	// Alpha section
 	new vgui::Label(m_pScrollContainer, "AlphaLabel", "#GameUI_Crosshair_Alpha");
 
-	// Outline section
-	new vgui::Label(m_pScrollContainer, "OutlineLabel", "#GameUI_Crosshair_OutlineThickness");
+	// Note: CrosshairDrawOutline is a checkbutton with built-in label, no separate label needed
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Perform layout - refined two-column scroll layout
+// Purpose: Perform layout - matching RES file coordinates exactly
 //-----------------------------------------------------------------------------
 void CModOptionsSubCrosshair::PerformLayout()
 {
@@ -432,234 +431,166 @@ void CModOptionsSubCrosshair::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// Layout parameters - increased sizes for better visibility
-	int margin = PROPVAL(24);
-	int spacing = PROPVAL(8);
-	int controlHeight = PROPVAL(26);
-	int sliderHeight = PROPVAL(30);
-	int labelWidth = PROPVAL(110);
-	int sliderLabelWidth = PROPVAL(16);
-	int scrollBarWidth = PROPVAL(8);
-	int columnGap = PROPVAL(20);
+	// RES file coordinates
+	int labelHeight = PROPVAL(24);
+	int sliderHeight = PROPVAL(40);
+	int controlHeight = PROPVAL(24);
 
-	// Two-column layout calculation
-	int contentWidth = pw - (margin * 2) - scrollBarWidth;
-	int columnWidth = (contentWidth - columnGap) / 2;
-	int leftColumnX = 0;
-	int rightColumnX = columnWidth + columnGap;
+	// Left column X position
+	int leftColX = PROPVAL(16);
+	// Right column X position
+	int rightColX = PROPVAL(356);
+	// Slider widths from RES
+	int sliderWidth = PROPVAL(128);
+	int comboWidth = PROPVAL(192);
 
-	// Crosshair preview area - in right column, at top of scroll area
-	int previewSize = PROPVAL(120);
+	// Position scroll bar (hidden/minimal since RES has no scroll)
+	m_pVScrollBar->SetVisible(false);
 
-	// Scroll area starts from top
-	int scrollAreaY = margin;
-	int scrollAreaHeight = ph - margin * 2;
+	// Position scroll container (full size)
+	m_pScrollContainer->SetPos(PROPVAL(16), PROPVAL(16));
+	m_pScrollContainer->SetSize(pw - PROPVAL(32), ph - PROPVAL(32));
 
-	// Position scroll bar on the right side
-	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, scrollAreaY);
-	m_pVScrollBar->SetSize(scrollBarWidth, scrollAreaHeight);
-
-	// Position scroll container
-	m_pScrollContainer->SetPos(margin, scrollAreaY);
-	m_pScrollContainer->SetSize(contentWidth, scrollAreaHeight);
-
-	// Calculate content heights for both columns
-	int leftColumnHeight = 0;
-	int rightColumnHeight = 0;
-
-	// Right column starts with preview
-	rightColumnHeight += previewSize + spacing * 3; // Preview + spacing
-
-	// Left column items
-	leftColumnHeight += controlHeight + spacing; // Style
-	leftColumnHeight += sliderHeight + spacing; // Size
-	leftColumnHeight += sliderHeight + spacing; // Thickness
-	leftColumnHeight += sliderHeight + spacing; // Gap
-	leftColumnHeight += controlHeight + spacing; // Gap Use Weapon
-
-	// Right column items
-	rightColumnHeight += controlHeight + spacing; // Color Combo
-	rightColumnHeight += sliderHeight + spacing; // Color R
-	rightColumnHeight += sliderHeight + spacing; // Color G
-	rightColumnHeight += sliderHeight + spacing; // Color B
-	rightColumnHeight += controlHeight + spacing; // Use Alpha
-	rightColumnHeight += sliderHeight + spacing; // Alpha
-	rightColumnHeight += controlHeight + spacing; // Dot
-	rightColumnHeight += controlHeight + spacing; // T
-	rightColumnHeight += controlHeight + spacing; // Draw Outline
-	rightColumnHeight += sliderHeight + spacing; // Outline Thickness
-
-	// Use the larger height for scroll
-	int totalContentHeight = MAX(leftColumnHeight, rightColumnHeight) + margin;
-
-	// Set scroll bar range
-	m_pVScrollBar->SetRange(0, totalContentHeight);
-	m_pVScrollBar->SetRangeWindow(scrollAreaHeight);
-
-	// Get scroll offset
-	int scrollOffset = m_pVScrollBar->GetValue();
-
-	// ================== LEFT COLUMN ==================
-	int currentY = -scrollOffset + spacing * 2;
-
-	// Crosshair Description Label (from RES file: x=16, y=4)
+	// ================== LEFT COLUMN (x=16) ==================
+	// CrosshairLabel: x=16, y=4, wide=128
 	Panel* pCrosshairLabel = m_pScrollContainer->FindChildByName("CrosshairLabel");
 	if (pCrosshairLabel)
 	{
-		pCrosshairLabel->SetVisible(true);
-		pCrosshairLabel->SetPos(leftColumnX, currentY - spacing * 2 + PROPVAL(4));
-		pCrosshairLabel->SetSize(PROPVAL(128), controlHeight);
+		pCrosshairLabel->SetPos(PROPVAL(16), PROPVAL(4));
+		pCrosshairLabel->SetSize(PROPVAL(128), labelHeight);
 	}
 
-	// Style (Combo)
-	Panel* pStyleLabel = m_pScrollContainer->FindChildByName("StyleLabel");
-	if (pStyleLabel)
-	{
-		pStyleLabel->SetVisible(true);
-		pStyleLabel->SetPos(leftColumnX, currentY);
-		pStyleLabel->SetSize(labelWidth, controlHeight);
-	}
-	m_pCrosshairImage->m_pCrosshairStyle->SetPos(leftColumnX + labelWidth + spacing, currentY);
-	m_pCrosshairImage->m_pCrosshairStyle->SetSize(columnWidth - labelWidth - spacing, controlHeight);
-	currentY += controlHeight + spacing;
+	// CrosshairImage: x=16, y=28, wide=80, tall=80
+	m_pCrosshairImage->SetPos(PROPVAL(16), PROPVAL(28));
+	m_pCrosshairImage->SetSize(PROPVAL(80), PROPVAL(80));
 
-	// Size
+	// CrosshairDot: x=100, y=24
+	m_pCrosshairImage->m_pCrosshairDot->SetPos(PROPVAL(100), PROPVAL(24));
+	m_pCrosshairImage->m_pCrosshairDot->SetSize(PROPVAL(100), controlHeight);
+
+	// CrosshairT: x=100, y=48
+	m_pCrosshairImage->m_pCrosshairT->SetPos(PROPVAL(100), PROPVAL(48));
+	m_pCrosshairImage->m_pCrosshairT->SetSize(PROPVAL(100), controlHeight);
+
+	// CrosshairGapUseWeaponValue: x=100, y=72, wide=256
+	m_pCrosshairImage->m_pCrosshairGapUseWeaponValue->SetPos(PROPVAL(100), PROPVAL(72));
+	m_pCrosshairImage->m_pCrosshairGapUseWeaponValue->SetSize(PROPVAL(256), controlHeight);
+
+	// CrosshairUseAlpha: x=100, y=96 (between Gap and Outline)
+	m_pCrosshairImage->m_pCrosshairUseAlpha->SetPos(PROPVAL(100), PROPVAL(96));
+	m_pCrosshairImage->m_pCrosshairUseAlpha->SetSize(PROPVAL(192), controlHeight);
+
+	// CrosshairSize: x=16, y=120, wide=128, tall=40
+	// SizeLabel: pin_to_sibling=CrosshairSize, pin_corner_to_sibling=0, pin_to_sibling_corner=1 (above left)
 	Panel* pSizeLabel = m_pScrollContainer->FindChildByName("SizeLabel");
 	if (pSizeLabel)
 	{
-		pSizeLabel->SetVisible(true);
-		pSizeLabel->SetPos(leftColumnX, currentY);
-		pSizeLabel->SetSize(labelWidth, controlHeight);
+		pSizeLabel->SetPos(PROPVAL(0), PROPVAL(120) - labelHeight);
+		pSizeLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairSize->SetPos(leftColumnX + labelWidth + spacing, currentY);
-	m_pCrosshairImage->m_pCrosshairSize->SetSize(columnWidth - labelWidth - spacing, sliderHeight);
-	currentY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairSize->SetPos(PROPVAL(16), PROPVAL(120));
+	m_pCrosshairImage->m_pCrosshairSize->SetSize(sliderWidth, sliderHeight);
 
-	// Thickness
+	// CrosshairThickness: x=16, y=156, wide=128, tall=40
+	// ThicknessLabel: pin_to_sibling=CrosshairThickness, pin_corner_to_sibling=0, pin_to_sibling_corner=1
 	Panel* pThicknessLabel = m_pScrollContainer->FindChildByName("ThicknessLabel");
 	if (pThicknessLabel)
 	{
-		pThicknessLabel->SetVisible(true);
-		pThicknessLabel->SetPos(leftColumnX, currentY);
-		pThicknessLabel->SetSize(labelWidth, controlHeight);
+		pThicknessLabel->SetPos(PROPVAL(0), PROPVAL(156) - labelHeight);
+		pThicknessLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairThickness->SetPos(leftColumnX + labelWidth + spacing, currentY);
-	m_pCrosshairImage->m_pCrosshairThickness->SetSize(columnWidth - labelWidth - spacing, sliderHeight);
-	currentY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairThickness->SetPos(PROPVAL(16), PROPVAL(156));
+	m_pCrosshairImage->m_pCrosshairThickness->SetSize(sliderWidth, sliderHeight);
 
-	// Gap
+	// CrosshairGap: x=16, y=192, wide=128, tall=40
+	// GapLabel: pin_to_sibling=CrosshairGap, pin_corner_to_sibling=0, pin_to_sibling_corner=1
 	Panel* pGapLabel = m_pScrollContainer->FindChildByName("GapLabel");
 	if (pGapLabel)
 	{
-		pGapLabel->SetVisible(true);
-		pGapLabel->SetPos(leftColumnX, currentY);
-		pGapLabel->SetSize(labelWidth, controlHeight);
+		pGapLabel->SetPos(PROPVAL(0), PROPVAL(192) - labelHeight);
+		pGapLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairGap->SetPos(leftColumnX + labelWidth + spacing, currentY);
-	m_pCrosshairImage->m_pCrosshairGap->SetSize(columnWidth - labelWidth - spacing, sliderHeight);
-	currentY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairGap->SetPos(PROPVAL(16), PROPVAL(192));
+	m_pCrosshairImage->m_pCrosshairGap->SetSize(sliderWidth, sliderHeight);
 
-	// Gap Use Weapon Value
-	m_pCrosshairImage->m_pCrosshairGapUseWeaponValue->SetPos(leftColumnX + labelWidth + spacing, currentY);
-	m_pCrosshairImage->m_pCrosshairGapUseWeaponValue->SetSize(columnWidth - labelWidth - spacing, controlHeight);
+	// CrosshairOutlineThickness: x=16, y=228, wide=128, tall=40
+	m_pCrosshairImage->m_pCrosshairOutlineThickness->SetPos(PROPVAL(16), PROPVAL(228));
+	m_pCrosshairImage->m_pCrosshairOutlineThickness->SetSize(sliderWidth, sliderHeight);
 
-	// ================== RIGHT COLUMN ==================
-	int rightY = -scrollOffset + spacing * 2;
+	// CrosshairDrawOutline: pin_to_sibling=CrosshairOutlineThickness, pin_corner_to_sibling=0, pin_to_sibling_corner=1
+	// RES: x=0, y=0 relative to sibling, positioned below the slider
+	m_pCrosshairImage->m_pCrosshairDrawOutline->SetPos(PROPVAL(16), PROPVAL(228) + sliderHeight);
+	m_pCrosshairImage->m_pCrosshairDrawOutline->SetSize(PROPVAL(192), controlHeight);
 
-	// Crosshair Preview (centered in right column)
-	m_pCrosshairImage->SetBounds(rightColumnX + (columnWidth - previewSize) / 2, rightY, previewSize, previewSize);
-	rightY += previewSize + spacing * 3;
+	// StyleLabel: pin_to_sibling=CrosshairStyle, pin_corner_to_sibling=0, pin_to_sibling_corner=1
+	// RES: x=8, y=0 relative to CrosshairStyle, positioned above
+	Panel* pStyleLabel = m_pScrollContainer->FindChildByName("StyleLabel");
+	if (pStyleLabel)
+	{
+		pStyleLabel->SetPos(PROPVAL(8), PROPVAL(280) - labelHeight);
+		pStyleLabel->SetSize(PROPVAL(192), labelHeight);
+	}
 
-	// Color Label
+	// CrosshairStyle: x=16, y=280, wide=192, tall=24
+	m_pCrosshairImage->m_pCrosshairStyle->SetPos(PROPVAL(16), PROPVAL(280));
+	m_pCrosshairImage->m_pCrosshairStyle->SetSize(comboWidth, controlHeight);
+
+	// ================== RIGHT COLUMN (x=356) ==================
+	// CrosshairColorLabel: x=356, y=4, wide=128
 	Panel* pColorLabel = m_pScrollContainer->FindChildByName("CrosshairColorLabel");
 	if (pColorLabel)
 	{
-		pColorLabel->SetVisible(true);
-		pColorLabel->SetPos(rightColumnX, rightY);
-		pColorLabel->SetSize(labelWidth, controlHeight);
+		pColorLabel->SetPos(rightColX, PROPVAL(4));
+		pColorLabel->SetSize(PROPVAL(128), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColor->SetPos(rightColumnX + labelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairColor->SetSize(columnWidth - labelWidth - spacing, controlHeight);
-	rightY += controlHeight + spacing;
 
-	// Color R
+	// CrosshairColor: x=356, y=28, wide=128
+	m_pCrosshairImage->m_pCrosshairColor->SetPos(rightColX, PROPVAL(28));
+	m_pCrosshairImage->m_pCrosshairColor->SetSize(PROPVAL(128), controlHeight);
+
+	// CrosshairColorR: x=356, y=64, wide=128, tall=40
+	// RedLabel: pin_to_sibling=CrosshairColorR, pin_corner_to_sibling=3, pin_to_sibling_corner=7 (left of top)
 	Panel* pRedLabel = m_pScrollContainer->FindChildByName("RedLabel");
 	if (pRedLabel)
 	{
-		pRedLabel->SetVisible(true);
-		pRedLabel->SetPos(rightColumnX, rightY);
-		pRedLabel->SetSize(sliderLabelWidth, controlHeight);
+		pRedLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(64) - labelHeight);
+		pRedLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorR->SetPos(rightColumnX + sliderLabelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairColorR->SetSize(columnWidth - sliderLabelWidth - spacing, sliderHeight);
-	rightY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairColorR->SetPos(rightColX, PROPVAL(64));
+	m_pCrosshairImage->m_pCrosshairColorR->SetSize(sliderWidth, sliderHeight);
 
-	// Color G
+	// CrosshairColorG: x=356, y=100, wide=128, tall=40
+	// GreenLabel: pin_to_sibling=CrosshairColorG, pin_corner_to_sibling=3, pin_to_sibling_corner=7
 	Panel* pGreenLabel = m_pScrollContainer->FindChildByName("GreenLabel");
 	if (pGreenLabel)
 	{
-		pGreenLabel->SetVisible(true);
-		pGreenLabel->SetPos(rightColumnX, rightY);
-		pGreenLabel->SetSize(sliderLabelWidth, controlHeight);
+		pGreenLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(100) - labelHeight);
+		pGreenLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorG->SetPos(rightColumnX + sliderLabelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairColorG->SetSize(columnWidth - sliderLabelWidth - spacing, sliderHeight);
-	rightY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairColorG->SetPos(rightColX, PROPVAL(100));
+	m_pCrosshairImage->m_pCrosshairColorG->SetSize(sliderWidth, sliderHeight);
 
-	// Color B
+	// CrosshairColorB: x=356, y=136, wide=128, tall=40
+	// BlueLabel: pin_to_sibling=CrosshairColorB, pin_corner_to_sibling=3, pin_to_sibling_corner=7
 	Panel* pBlueLabel = m_pScrollContainer->FindChildByName("BlueLabel");
 	if (pBlueLabel)
 	{
-		pBlueLabel->SetVisible(true);
-		pBlueLabel->SetPos(rightColumnX, rightY);
-		pBlueLabel->SetSize(sliderLabelWidth, controlHeight);
+		pBlueLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(136) - labelHeight);
+		pBlueLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorB->SetPos(rightColumnX + sliderLabelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairColorB->SetSize(columnWidth - sliderLabelWidth - spacing, sliderHeight);
-	rightY += sliderHeight + spacing;
+	m_pCrosshairImage->m_pCrosshairColorB->SetPos(rightColX, PROPVAL(136));
+	m_pCrosshairImage->m_pCrosshairColorB->SetSize(sliderWidth, sliderHeight);
 
-	// Use Alpha
-	m_pCrosshairImage->m_pCrosshairUseAlpha->SetPos(rightColumnX, rightY);
-	m_pCrosshairImage->m_pCrosshairUseAlpha->SetSize(columnWidth, controlHeight);
-	rightY += controlHeight + spacing;
-
-	// Alpha
+	// CrosshairAlpha: x=356, y=172, wide=128, tall=40
+	// AlphaLabel: pin_to_sibling=CrosshairAlpha, pin_corner_to_sibling=3, pin_to_sibling_corner=7 (left of top)
 	Panel* pAlphaLabel = m_pScrollContainer->FindChildByName("AlphaLabel");
 	if (pAlphaLabel)
 	{
-		pAlphaLabel->SetVisible(true);
-		pAlphaLabel->SetPos(rightColumnX, rightY);
-		pAlphaLabel->SetSize(sliderLabelWidth, controlHeight);
+		pAlphaLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(172) - labelHeight);
+		pAlphaLabel->SetSize(PROPVAL(128), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairAlpha->SetPos(rightColumnX + sliderLabelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairAlpha->SetSize(columnWidth - sliderLabelWidth - spacing, sliderHeight);
-	rightY += sliderHeight + spacing;
-
-	// Dot
-	m_pCrosshairImage->m_pCrosshairDot->SetPos(rightColumnX, rightY);
-	m_pCrosshairImage->m_pCrosshairDot->SetSize(columnWidth, controlHeight);
-	rightY += controlHeight + spacing;
-
-	// T (crosshair center)
-	m_pCrosshairImage->m_pCrosshairT->SetPos(rightColumnX, rightY);
-	m_pCrosshairImage->m_pCrosshairT->SetSize(columnWidth, controlHeight);
-	rightY += controlHeight + spacing;
-
-	// Draw Outline
-	m_pCrosshairImage->m_pCrosshairDrawOutline->SetPos(rightColumnX, rightY);
-	m_pCrosshairImage->m_pCrosshairDrawOutline->SetSize(columnWidth, controlHeight);
-	rightY += controlHeight + spacing;
-
-	// Outline Thickness
-	Panel* pOutlineLabel = m_pScrollContainer->FindChildByName("OutlineLabel");
-	if (pOutlineLabel)
-	{
-		pOutlineLabel->SetVisible(true);
-		pOutlineLabel->SetPos(rightColumnX, rightY);
-		pOutlineLabel->SetSize(sliderLabelWidth, controlHeight);
-	}
-	m_pCrosshairImage->m_pCrosshairOutlineThickness->SetPos(rightColumnX + sliderLabelWidth + spacing, rightY);
-	m_pCrosshairImage->m_pCrosshairOutlineThickness->SetSize(columnWidth - sliderLabelWidth - spacing, sliderHeight);
+	m_pCrosshairImage->m_pCrosshairAlpha->SetPos(rightColX, PROPVAL(172));
+	m_pCrosshairImage->m_pCrosshairAlpha->SetSize(sliderWidth, sliderHeight);
 
 	// Update visibility
 	if (m_pCrosshairImage)
