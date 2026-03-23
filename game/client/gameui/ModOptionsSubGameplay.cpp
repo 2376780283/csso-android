@@ -140,54 +140,58 @@ void CModOptionsSubGameplay::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// Base values from RES file (xpos, ypos coordinates)
-	int baseX = PROPVAL(16);
+	// Base values from RES file
+	int margin = PROPVAL(16);
 	int labelHeight = PROPVAL(24);
 	int sliderHeight = PROPVAL(40);
 	int controlHeight = PROPVAL(24);
 	int scrollBarWidth = PROPVAL(20);
 
-	// Column positions from RES file
-	int leftColX = PROPVAL(24);
-	int rightCol1X = PROPVAL(184);
-	int rightCol2X = PROPVAL(352);
+	// RES file coordinate positions
 	int sliderWidth = PROPVAL(128);
 	int comboWidth = PROPVAL(128);
 	int sliderLabelWidth = PROPVAL(64);
 	int labelWidth = PROPVAL(192);
 	int dividerWidth = PROPVAL(464);
+	int fullWidth = PROPVAL(496);
+
+	// Column X positions from RES
+	int leftColX = PROPVAL(24);
+	int midColX = PROPVAL(184);
+	int rightColX = PROPVAL(352);
 
 	// Calculate content width
-	int contentWidth = pw - (baseX * 2) - scrollBarWidth;
-	int controlWidth = contentWidth - baseX;
+	int contentWidth = pw - (margin * 2) - scrollBarWidth;
+	int controlWidth = contentWidth - margin;
 
 	// Position scroll bar on the right side
-	m_pVScrollBar->SetPos(pw - baseX - scrollBarWidth, baseX);
-	m_pVScrollBar->SetSize(scrollBarWidth, ph - (baseX * 2));
+	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
+	m_pVScrollBar->SetSize(scrollBarWidth, ph - (margin * 2));
 
 	// Position scroll container
-	m_pScrollContainer->SetPos(baseX, baseX);
-	m_pScrollContainer->SetSize(contentWidth, ph - (baseX * 2));
+	m_pScrollContainer->SetPos(margin, margin);
+	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
 
-	// Calculate total content height (from RES: last checkbox at y=282 + height=24 + margin)
+	// Total content height
 	int totalContentHeight = PROPVAL(314);
 	m_pVScrollBar->SetRange(0, totalContentHeight);
-	m_pVScrollBar->SetRangeWindow(ph - (baseX * 2));
+	m_pVScrollBar->SetRangeWindow(ph - (margin * 2));
 
 	// Get scroll offset
 	int scrollOffset = m_pVScrollBar->GetValue();
 	int startY = -scrollOffset;
 
-	// ================== Viewmodel Section - matching RES file coordinates ==================
-	// ViewmodelLabel: x=16, y=0
+	// ================== Viewmodel Section ==================
+	// ViewmodelLabel: x=16, y=0, wide=192
 	m_pViewmodelLabel->SetPos(0, startY);
 	m_pViewmodelLabel->SetSize(labelWidth, labelHeight);
 	m_pViewmodelLabel->SetContentAlignment(Label::a_west);
 
 	// --- Left Column (x=24): Offset X/Y/Z sliders ---
-	// OffsetX: x=24, y=24
+	// OffsetX: x=24, y=24, wide=128
 	m_pViewmodelOffsetX->SetPos(leftColX, startY + PROPVAL(24));
 	m_pViewmodelOffsetX->SetSize(sliderWidth, sliderHeight);
+	// Value label: x=24+128=152, y=24, wide=64
 	m_pViewmodelOffsetXLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(24));
 	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, labelHeight);
 
@@ -203,62 +207,63 @@ void CModOptionsSubGameplay::PerformLayout()
 	m_pViewmodelOffsetZLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(96));
 	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, labelHeight);
 
-	// --- Right Column 1 (x=184): FOV and Recoil ---
-	// FOV Description: x=184, y=0
-	m_pFOVDescription->SetPos(rightCol1X - baseX, startY);
+	// --- Middle Column (x=184): FOV and Recoil ---
+	// FOV Description: x=184, y=0, wide=192 (label, not slider)
+	m_pFOVDescription->SetPos(midColX, startY);
 	m_pFOVDescription->SetSize(labelWidth, labelHeight);
 	m_pFOVDescription->SetContentAlignment(Label::a_west);
 
-	// FOV Slider: x=184, y=24
-	m_pViewmodelFOV->SetPos(rightCol1X, startY + PROPVAL(24));
+	// FOV Slider: x=184, y=24, wide=128
+	m_pViewmodelFOV->SetPos(midColX, startY + PROPVAL(24));
 	m_pViewmodelFOV->SetSize(sliderWidth, sliderHeight);
-	m_pViewmodelFOVLabel->SetPos(rightCol1X + sliderWidth, startY + PROPVAL(24));
+	// Value label: x=184+128=312, y=24, wide=64
+	m_pViewmodelFOVLabel->SetPos(midColX + sliderWidth, startY + PROPVAL(24));
 	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, labelHeight);
 
 	// Recoil Description: x=184, y=72
-	m_pRecoilDescription->SetPos(rightCol1X - baseX, startY + PROPVAL(72));
+	m_pRecoilDescription->SetPos(midColX, startY + PROPVAL(72));
 	m_pRecoilDescription->SetSize(labelWidth, labelHeight);
 	m_pRecoilDescription->SetContentAlignment(Label::a_west);
 
 	// Recoil Slider: x=184, y=96
-	m_pViewmodelRecoil->SetPos(rightCol1X, startY + PROPVAL(96));
+	m_pViewmodelRecoil->SetPos(midColX, startY + PROPVAL(96));
 	m_pViewmodelRecoil->SetSize(sliderWidth, sliderHeight);
-	m_pViewmodelRecoilLabel->SetPos(rightCol1X + sliderWidth, startY + PROPVAL(96));
+	m_pViewmodelRecoilLabel->SetPos(midColX + sliderWidth, startY + PROPVAL(96));
 	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, labelHeight);
 
-	// --- Right Column 2 (x=352): Preset, Viewbob, WeaponPos ---
+	// --- Right Column (x=352): Preset, Viewbob, WeaponPos ---
 	// Preset Label: x=352, y=0
-	m_pPresetLabel->SetPos(rightCol2X - baseX, startY);
+	m_pPresetLabel->SetPos(rightColX, startY);
 	m_pPresetLabel->SetSize(labelWidth, labelHeight);
 	m_pPresetLabel->SetContentAlignment(Label::a_west);
 
 	// Preset ComboBox: x=352, y=24
-	m_pViewmodelOffsetPreset->SetPos(rightCol2X, startY + PROPVAL(24));
+	m_pViewmodelOffsetPreset->SetPos(rightColX, startY + PROPVAL(24));
 	m_pViewmodelOffsetPreset->SetSize(comboWidth, controlHeight);
 
 	// Viewbob Label: x=352, y=48
-	m_pViewbobLabel->SetPos(rightCol2X - baseX, startY + PROPVAL(48));
+	m_pViewbobLabel->SetPos(rightColX, startY + PROPVAL(48));
 	m_pViewbobLabel->SetSize(labelWidth, labelHeight);
 	m_pViewbobLabel->SetContentAlignment(Label::a_west);
 
 	// Viewbob ComboBox: x=352, y=72
-	m_pViewbobStyle->SetPos(rightCol2X, startY + PROPVAL(72));
+	m_pViewbobStyle->SetPos(rightColX, startY + PROPVAL(72));
 	m_pViewbobStyle->SetSize(comboWidth, controlHeight);
 
 	// WeaponPos Label: x=352, y=96
-	m_pWeaponPosLabel->SetPos(rightCol2X - baseX, startY + PROPVAL(96));
+	m_pWeaponPosLabel->SetPos(rightColX, startY + PROPVAL(96));
 	m_pWeaponPosLabel->SetSize(labelWidth, labelHeight);
 	m_pWeaponPosLabel->SetContentAlignment(Label::a_west);
 
 	// WeaponPos ComboBox: x=352, y=120
-	m_pWeaponPos->SetPos(rightCol2X, startY + PROPVAL(120));
+	m_pWeaponPos->SetPos(rightColX, startY + PROPVAL(120));
 	m_pWeaponPos->SetSize(comboWidth, controlHeight);
 
-	// Divider: x=16, y=152
+	// Divider: x=16, y=152, wide=464
 	m_pDivider1->SetPos(0, startY + PROPVAL(152));
 	m_pDivider1->SetSize(dividerWidth, 2);
 
-	// ================== Checkboxes (from RES y positions) ==================
+	// ================== Checkboxes ==================
 	// CloseOnBuy: x=16, y=162
 	m_pCloseOnBuy->SetPos(0, startY + PROPVAL(162));
 	m_pCloseOnBuy->SetSize(controlWidth, controlHeight);
