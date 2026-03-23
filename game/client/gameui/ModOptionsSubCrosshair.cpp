@@ -444,8 +444,8 @@ void CModOptionsSubCrosshair::PerformLayout()
 	int sliderWidth = PROPVAL(128);
 	int comboWidth = PROPVAL(192);
 
-	// Calculate content height based on RES file (tall=314)
-	int contentHeight = PROPVAL(314);
+	// Calculate content height based on RES file (tall=314) + offset for moved controls
+	int contentHeight = PROPVAL(350); // Increased to accommodate moved controls
 	int visibleHeight = ph - PROPVAL(32);
 	int scrollBarWidth = PROPVAL(16);
 	int margin = PROPVAL(16);
@@ -538,7 +538,7 @@ void CModOptionsSubCrosshair::PerformLayout()
 	Panel* pStyleLabel = m_pScrollContainer->FindChildByName("StyleLabel");
 	if (pStyleLabel)
 	{
-		pStyleLabel->SetPos(PROPVAL(8), PROPVAL(280) - labelHeight);
+		pStyleLabel->SetPos(PROPVAL(8), PROPVAL(85) - labelHeight);
 		pStyleLabel->SetSize(PROPVAL(192), labelHeight);
 	}
 
@@ -547,60 +547,60 @@ void CModOptionsSubCrosshair::PerformLayout()
 	m_pCrosshairImage->m_pCrosshairStyle->SetSize(comboWidth, controlHeight);
 
 	// ================== RIGHT COLUMN (x=356) ==================
-	// CrosshairColorLabel: x=356, y=4, wide=128
+	// CrosshairColorLabel: x=356, y=10 (moved down 70 pixels)
 	Panel* pColorLabel = m_pScrollContainer->FindChildByName("CrosshairColorLabel");
 	if (pColorLabel)
 	{
-		pColorLabel->SetPos(rightColX, PROPVAL(4));
+		pColorLabel->SetPos(rightColX, PROPVAL(10));
 		pColorLabel->SetSize(PROPVAL(128), labelHeight);
 	}
 
-	// CrosshairColor: x=356, y=28, wide=128
-	m_pCrosshairImage->m_pCrosshairColor->SetPos(rightColX, PROPVAL(28));
+	// CrosshairColor: x=356, y=98 (moved down 70 pixels)
+	m_pCrosshairImage->m_pCrosshairColor->SetPos(rightColX, PROPVAL(30));
 	m_pCrosshairImage->m_pCrosshairColor->SetSize(PROPVAL(128), controlHeight);
 
-	// CrosshairColorR: x=356, y=64, wide=128, tall=40
+	// CrosshairColorR: x=356, y=134 (moved down 70 pixels)
 	// RedLabel: pin_to_sibling=CrosshairColorR, pin_corner_to_sibling=3, pin_to_sibling_corner=7 (left of top)
 	Panel* pRedLabel = m_pScrollContainer->FindChildByName("RedLabel");
 	if (pRedLabel)
 	{
-		pRedLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(64) - labelHeight);
+		pRedLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(134) - labelHeight);
 		pRedLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorR->SetPos(rightColX, PROPVAL(64));
+	m_pCrosshairImage->m_pCrosshairColorR->SetPos(rightColX, PROPVAL(134));
 	m_pCrosshairImage->m_pCrosshairColorR->SetSize(sliderWidth, sliderHeight);
 
-	// CrosshairColorG: x=356, y=100, wide=128, tall=40
+	// CrosshairColorG: x=356, y=170 (moved down 70 pixels)
 	// GreenLabel: pin_to_sibling=CrosshairColorG, pin_corner_to_sibling=3, pin_to_sibling_corner=7
 	Panel* pGreenLabel = m_pScrollContainer->FindChildByName("GreenLabel");
 	if (pGreenLabel)
 	{
-		pGreenLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(100) - labelHeight);
+		pGreenLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(170) - labelHeight);
 		pGreenLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorG->SetPos(rightColX, PROPVAL(100));
+	m_pCrosshairImage->m_pCrosshairColorG->SetPos(rightColX, PROPVAL(170));
 	m_pCrosshairImage->m_pCrosshairColorG->SetSize(sliderWidth, sliderHeight);
 
-	// CrosshairColorB: x=356, y=136, wide=128, tall=40
+	// CrosshairColorB: x=356, y=206 (moved down 70 pixels)
 	// BlueLabel: pin_to_sibling=CrosshairColorB, pin_corner_to_sibling=3, pin_to_sibling_corner=7
 	Panel* pBlueLabel = m_pScrollContainer->FindChildByName("BlueLabel");
 	if (pBlueLabel)
 	{
-		pBlueLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(136) - labelHeight);
+		pBlueLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(206) - labelHeight);
 		pBlueLabel->SetSize(PROPVAL(64), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairColorB->SetPos(rightColX, PROPVAL(136));
+	m_pCrosshairImage->m_pCrosshairColorB->SetPos(rightColX, PROPVAL(206));
 	m_pCrosshairImage->m_pCrosshairColorB->SetSize(sliderWidth, sliderHeight);
 
-	// CrosshairAlpha: x=356, y=172, wide=128, tall=40
+	// CrosshairAlpha: x=356, y=242 (moved down 70 pixels)
 	// AlphaLabel: pin_to_sibling=CrosshairAlpha, pin_corner_to_sibling=3, pin_to_sibling_corner=7 (left of top)
 	Panel* pAlphaLabel = m_pScrollContainer->FindChildByName("AlphaLabel");
 	if (pAlphaLabel)
 	{
-		pAlphaLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(172) - labelHeight);
+		pAlphaLabel->SetPos(rightColX - PROPVAL(8), PROPVAL(242) - labelHeight);
 		pAlphaLabel->SetSize(PROPVAL(128), labelHeight);
 	}
-	m_pCrosshairImage->m_pCrosshairAlpha->SetPos(rightColX, PROPVAL(172));
+	m_pCrosshairImage->m_pCrosshairAlpha->SetPos(rightColX, PROPVAL(242));
 	m_pCrosshairImage->m_pCrosshairAlpha->SetSize(sliderWidth, sliderHeight);
 
 	// Update visibility
@@ -614,7 +614,13 @@ void CModOptionsSubCrosshair::PerformLayout()
 void CModOptionsSubCrosshair::OnScrollBarSliderMoved(KeyValues *data)
 {
 	int position = data->GetInt("position", 0);
-	InvalidateLayout();
+	// Reposition scroll container based on scroll bar position
+	if (m_pScrollContainer)
+	{
+		int margin = PROPVAL(16);
+		m_pScrollContainer->SetPos(margin, margin - position);
+	}
+	Repaint();
 }
 
 //-----------------------------------------------------------------------------
