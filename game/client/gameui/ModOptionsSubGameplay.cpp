@@ -139,11 +139,12 @@ void CModOptionsSubGameplay::PerformLayout()
 
 	// Padding and spacing values - scaled for different resolutions
 	int margin = PROPVAL(24);
-	int spacing = PROPVAL(12);
-	int labelWidth = PROPVAL(200);
-	int controlHeight = PROPVAL(26);
-	int sectionSpacing = PROPVAL(28);
-	int labelControlGap = PROPVAL(10);
+	int spacing = PROPVAL(10);
+	int labelWidth = PROPVAL(140);
+	int controlHeight = PROPVAL(28);
+	int sliderHeight = PROPVAL(30);
+	int sectionSpacing = PROPVAL(24);
+	int labelControlGap = PROPVAL(8);
 	int sliderLabelWidth = PROPVAL(40);
 	int scrollBarWidth = PROPVAL(20);
 
@@ -163,19 +164,19 @@ void CModOptionsSubGameplay::PerformLayout()
 	int totalContentHeight = 0;
 
 	// ================== SECTION 1: General Settings ==================
-	totalContentHeight += controlHeight + spacing; // GeneralLabel
-	totalContentHeight += (controlHeight + spacing) * 6; // 6 checkboxes
+	totalContentHeight += sliderHeight + spacing; // GeneralLabel
+	totalContentHeight += (sliderHeight + spacing) * 6; // 6 checkboxes
 
 	// ================== SECTION 2: Viewmodel ==================
 	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // ViewmodelLabel
-	totalContentHeight += controlHeight + spacing; // Preset
-	totalContentHeight += (controlHeight + spacing) * 5; // 5 offset/FOV/recoil sliders
+	totalContentHeight += sliderHeight + spacing; // ViewmodelLabel
+	totalContentHeight += sliderHeight + spacing; // Preset
+	totalContentHeight += (sliderHeight + spacing) * 5; // 5 offset/FOV/recoil sliders
 
 	// ================== SECTION 3: Movement ==================
 	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // MovementLabel
-	totalContentHeight += (controlHeight + spacing) * 2; // Viewbob + Weapon Position
+	totalContentHeight += sliderHeight + spacing; // MovementLabel
+	totalContentHeight += (sliderHeight + spacing) * 2; // Viewbob + Weapon Position
 
 	// Add bottom margin
 	totalContentHeight += margin;
@@ -192,122 +193,122 @@ void CModOptionsSubGameplay::PerformLayout()
 
 	// ================== SECTION 1: General Settings ==================
 	m_pGeneralLabel->SetPos(0, currentY);
-	m_pGeneralLabel->SetSize(contentWidth, controlHeight);
+	m_pGeneralLabel->SetSize(contentWidth, sliderHeight);
 	m_pGeneralLabel->SetContentAlignment(Label::a_west);
-	currentY += controlHeight + spacing;
+	currentY += sliderHeight + spacing;
 
 	m_pCloseOnBuy->SetPos(0, currentY);
-	m_pCloseOnBuy->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pCloseOnBuy->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	m_pUseOpensBuyMenu->SetPos(0, currentY);
-	m_pUseOpensBuyMenu->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pUseOpensBuyMenu->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	m_pAddBotPrefix->SetPos(0, currentY);
-	m_pAddBotPrefix->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pAddBotPrefix->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	m_pDrawTracers->SetPos(0, currentY);
-	m_pDrawTracers->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pDrawTracers->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	m_pSpecInterpCamera->SetPos(0, currentY);
-	m_pSpecInterpCamera->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pSpecInterpCamera->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	m_pDisableShootingEffects->SetPos(0, currentY);
-	m_pDisableShootingEffects->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pDisableShootingEffects->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// ================== SECTION 2: Viewmodel ==================
 	currentY += sectionSpacing;
 
 	m_pViewmodelLabel->SetPos(0, currentY);
-	m_pViewmodelLabel->SetSize(contentWidth, controlHeight);
+	m_pViewmodelLabel->SetSize(contentWidth, sliderHeight);
 	m_pViewmodelLabel->SetContentAlignment(Label::a_west);
-	currentY += controlHeight + spacing;
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel Preset
 	m_pPresetLabel->SetPos(0, currentY);
-	m_pPresetLabel->SetSize(labelWidth, controlHeight);
+	m_pPresetLabel->SetSize(labelWidth, sliderHeight);
 	m_pPresetLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelOffsetPreset->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetPreset->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelOffsetPreset->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel Offset X
 	m_pOffsetXLabel->SetPos(0, currentY);
-	m_pOffsetXLabel->SetSize(labelWidth, controlHeight);
+	m_pOffsetXLabel->SetSize(labelWidth, sliderHeight);
 	m_pOffsetXLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelOffsetX->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetX->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	m_pViewmodelOffsetX->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
 	m_pViewmodelOffsetXLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel Offset Y
 	m_pOffsetYLabel->SetPos(0, currentY);
-	m_pOffsetYLabel->SetSize(labelWidth, controlHeight);
+	m_pOffsetYLabel->SetSize(labelWidth, sliderHeight);
 	m_pOffsetYLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelOffsetY->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetY->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	m_pViewmodelOffsetY->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
 	m_pViewmodelOffsetYLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel Offset Z
 	m_pOffsetZLabel->SetPos(0, currentY);
-	m_pOffsetZLabel->SetSize(labelWidth, controlHeight);
+	m_pOffsetZLabel->SetSize(labelWidth, sliderHeight);
 	m_pOffsetZLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelOffsetZ->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetZ->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	m_pViewmodelOffsetZ->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
 	m_pViewmodelOffsetZLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel FOV
 	m_pFOVLabel->SetPos(0, currentY);
-	m_pFOVLabel->SetSize(labelWidth, controlHeight);
+	m_pFOVLabel->SetSize(labelWidth, sliderHeight);
 	m_pFOVLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelFOV->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelFOV->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	m_pViewmodelFOV->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
 	m_pViewmodelFOVLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Viewmodel Recoil
 	m_pRecoilLabel->SetPos(0, currentY);
-	m_pRecoilLabel->SetSize(labelWidth, controlHeight);
+	m_pRecoilLabel->SetSize(labelWidth, sliderHeight);
 	m_pRecoilLabel->SetContentAlignment(Label::a_west);
 	m_pViewmodelRecoil->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelRecoil->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
+	m_pViewmodelRecoil->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
 	m_pViewmodelRecoilLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// ================== SECTION 3: Movement ==================
 	currentY += sectionSpacing;
 
 	m_pMovementLabel->SetPos(0, currentY);
-	m_pMovementLabel->SetSize(contentWidth, controlHeight);
+	m_pMovementLabel->SetSize(contentWidth, sliderHeight);
 	m_pMovementLabel->SetContentAlignment(Label::a_west);
-	currentY += controlHeight + spacing;
+	currentY += sliderHeight + spacing;
 
 	// Viewbob Style
 	m_pViewbobLabel->SetPos(0, currentY);
-	m_pViewbobLabel->SetSize(labelWidth, controlHeight);
+	m_pViewbobLabel->SetSize(labelWidth, sliderHeight);
 	m_pViewbobLabel->SetContentAlignment(Label::a_west);
 	m_pViewbobStyle->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewbobStyle->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pViewbobStyle->SetSize(controlWidth, sliderHeight);
+	currentY += sliderHeight + spacing;
 
 	// Weapon Position
 	m_pWeaponPosLabel->SetPos(0, currentY);
-	m_pWeaponPosLabel->SetSize(labelWidth, controlHeight);
+	m_pWeaponPosLabel->SetSize(labelWidth, sliderHeight);
 	m_pWeaponPosLabel->SetContentAlignment(Label::a_west);
 	m_pWeaponPos->SetPos(labelWidth + labelControlGap, currentY);
-	m_pWeaponPos->SetSize(controlWidth, controlHeight);
+	m_pWeaponPos->SetSize(controlWidth, sliderHeight);
 
 	// Done - all controls are positioned inside scroll container
 }
