@@ -70,10 +70,13 @@ CModOptionsSubGameplay::CModOptionsSubGameplay( vgui::Panel *parent ): vgui::Pro
 	m_pOffsetXLabel = new Label(m_pScrollContainer, "OffsetXLabel", "Viewmodel Offset X"); // missing language
 	m_pOffsetYLabel = new Label(m_pScrollContainer, "OffsetYLabel", "Viewmodel Offset Y");
 	m_pOffsetZLabel = new Label(m_pScrollContainer, "OffsetZLabel", "Viewmodel Offset Z");
+	m_pFOVDescription = new Label(m_pScrollContainer, "ViewmodelFOVDescription", "#GameUI_Gameplay_ViewmodelFOV");
 	m_pFOVLabel = new Label(m_pScrollContainer, "FOVLabel", "#GameUI_Gameplay_ViewmodelFOV");
+	m_pRecoilDescription = new Label(m_pScrollContainer, "ViewmodelRecoilDescription", "#GameUI_Gameplay_ViewmodelRecoil");
 	m_pRecoilLabel = new Label(m_pScrollContainer, "RecoilLabel", "#GameUI_Gameplay_ViewmodelRecoil");
 	m_pViewbobLabel = new Label(m_pScrollContainer, "ViewbobLabel", "#GameUI_Gameplay_ViewbobStyle");
 	m_pWeaponPosLabel = new Label(m_pScrollContainer, "WeaponPosLabel", "#GameUI_Gameplay_WeaponPos");
+	m_pDivider1 = new vgui::Panel(m_pScrollContainer, "Divider1");
 
 	// Create all controls (inside scroll container)
 	m_pCloseOnBuy = new CCvarToggleCheckButton(m_pScrollContainer, "CloseOnBuyCheckbox", "#GameUI_Gameplay_CloseOnBuy", "closeonbuy");
@@ -137,180 +140,148 @@ void CModOptionsSubGameplay::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// Padding and spacing values - scaled for different resolutions
-	int margin = PROPVAL(24);
-	int spacing = PROPVAL(10);
-	int labelWidth = PROPVAL(140);
-	int controlHeight = PROPVAL(28);
-	int sliderHeight = PROPVAL(30);
-	int sectionSpacing = PROPVAL(24);
-	int labelControlGap = PROPVAL(8);
-	int sliderLabelWidth = PROPVAL(40);
+	// Base values from RES file (xpos, ypos coordinates)
+	int baseX = PROPVAL(16);
+	int labelHeight = PROPVAL(24);
+	int sliderHeight = PROPVAL(40);
+	int controlHeight = PROPVAL(24);
 	int scrollBarWidth = PROPVAL(20);
 
-	// Calculate content width (accounting for scroll bar)
-	int contentWidth = pw - (margin * 2) - scrollBarWidth;
-	int controlWidth = contentWidth - labelWidth - labelControlGap;
+	// Column positions from RES file
+	int leftColX = PROPVAL(24);
+	int rightCol1X = PROPVAL(184);
+	int rightCol2X = PROPVAL(352);
+	int sliderWidth = PROPVAL(128);
+	int comboWidth = PROPVAL(128);
+	int sliderLabelWidth = PROPVAL(64);
+	int labelWidth = PROPVAL(192);
+	int dividerWidth = PROPVAL(464);
+
+	// Calculate content width
+	int contentWidth = pw - (baseX * 2) - scrollBarWidth;
+	int controlWidth = contentWidth - baseX;
 
 	// Position scroll bar on the right side
-	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
-	m_pVScrollBar->SetSize(scrollBarWidth, ph - (margin * 2));
+	m_pVScrollBar->SetPos(pw - baseX - scrollBarWidth, baseX);
+	m_pVScrollBar->SetSize(scrollBarWidth, ph - (baseX * 2));
 
 	// Position scroll container
-	m_pScrollContainer->SetPos(margin, margin);
-	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
+	m_pScrollContainer->SetPos(baseX, baseX);
+	m_pScrollContainer->SetSize(contentWidth, ph - (baseX * 2));
 
-	// Calculate total content height first
-	int totalContentHeight = 0;
-
-	// ================== SECTION 1: General Settings ==================
-	totalContentHeight += sliderHeight + spacing; // GeneralLabel
-	totalContentHeight += (sliderHeight + spacing) * 6; // 6 checkboxes
-
-	// ================== SECTION 2: Viewmodel ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += sliderHeight + spacing; // ViewmodelLabel
-	totalContentHeight += sliderHeight + spacing; // Preset
-	totalContentHeight += (sliderHeight + spacing) * 5; // 5 offset/FOV/recoil sliders
-
-	// ================== SECTION 3: Movement ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += sliderHeight + spacing; // MovementLabel
-	totalContentHeight += (sliderHeight + spacing) * 2; // Viewbob + Weapon Position
-
-	// Add bottom margin
-	totalContentHeight += margin;
-
-	// Set scroll bar range
+	// Calculate total content height (from RES: last checkbox at y=282 + height=24 + margin)
+	int totalContentHeight = PROPVAL(314);
 	m_pVScrollBar->SetRange(0, totalContentHeight);
-	m_pVScrollBar->SetRangeWindow(ph - (margin * 2));
+	m_pVScrollBar->SetRangeWindow(ph - (baseX * 2));
 
 	// Get scroll offset
 	int scrollOffset = m_pVScrollBar->GetValue();
+	int startY = -scrollOffset;
 
-	// Now position all controls inside the scroll container (offset by scroll position)
-	int currentY = -scrollOffset;
-
-	// ================== SECTION 1: General Settings ==================
-	m_pGeneralLabel->SetPos(0, currentY);
-	m_pGeneralLabel->SetSize(contentWidth, sliderHeight);
-	m_pGeneralLabel->SetContentAlignment(Label::a_west);
-	currentY += sliderHeight + spacing;
-
-	m_pCloseOnBuy->SetPos(0, currentY);
-	m_pCloseOnBuy->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	m_pUseOpensBuyMenu->SetPos(0, currentY);
-	m_pUseOpensBuyMenu->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	m_pAddBotPrefix->SetPos(0, currentY);
-	m_pAddBotPrefix->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	m_pDrawTracers->SetPos(0, currentY);
-	m_pDrawTracers->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	m_pSpecInterpCamera->SetPos(0, currentY);
-	m_pSpecInterpCamera->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	m_pDisableShootingEffects->SetPos(0, currentY);
-	m_pDisableShootingEffects->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	// ================== SECTION 2: Viewmodel ==================
-	currentY += sectionSpacing;
-
-	m_pViewmodelLabel->SetPos(0, currentY);
-	m_pViewmodelLabel->SetSize(contentWidth, sliderHeight);
+	// ================== Viewmodel Section - matching RES file coordinates ==================
+	// ViewmodelLabel: x=16, y=0
+	m_pViewmodelLabel->SetPos(0, startY);
+	m_pViewmodelLabel->SetSize(labelWidth, labelHeight);
 	m_pViewmodelLabel->SetContentAlignment(Label::a_west);
-	currentY += sliderHeight + spacing;
 
-	// Viewmodel Preset
-	m_pPresetLabel->SetPos(0, currentY);
-	m_pPresetLabel->SetSize(labelWidth, sliderHeight);
+	// --- Left Column (x=24): Offset X/Y/Z sliders ---
+	// OffsetX: x=24, y=24
+	m_pViewmodelOffsetX->SetPos(leftColX, startY + PROPVAL(24));
+	m_pViewmodelOffsetX->SetSize(sliderWidth, sliderHeight);
+	m_pViewmodelOffsetXLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(24));
+	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, labelHeight);
+
+	// OffsetY: x=24, y=60
+	m_pViewmodelOffsetY->SetPos(leftColX, startY + PROPVAL(60));
+	m_pViewmodelOffsetY->SetSize(sliderWidth, sliderHeight);
+	m_pViewmodelOffsetYLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(60));
+	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, labelHeight);
+
+	// OffsetZ: x=24, y=96
+	m_pViewmodelOffsetZ->SetPos(leftColX, startY + PROPVAL(96));
+	m_pViewmodelOffsetZ->SetSize(sliderWidth, sliderHeight);
+	m_pViewmodelOffsetZLabel->SetPos(leftColX + sliderWidth, startY + PROPVAL(96));
+	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, labelHeight);
+
+	// --- Right Column 1 (x=184): FOV and Recoil ---
+	// FOV Description: x=184, y=0
+	m_pFOVDescription->SetPos(rightCol1X - baseX, startY);
+	m_pFOVDescription->SetSize(labelWidth, labelHeight);
+	m_pFOVDescription->SetContentAlignment(Label::a_west);
+
+	// FOV Slider: x=184, y=24
+	m_pViewmodelFOV->SetPos(rightCol1X, startY + PROPVAL(24));
+	m_pViewmodelFOV->SetSize(sliderWidth, sliderHeight);
+	m_pViewmodelFOVLabel->SetPos(rightCol1X + sliderWidth, startY + PROPVAL(24));
+	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, labelHeight);
+
+	// Recoil Description: x=184, y=72
+	m_pRecoilDescription->SetPos(rightCol1X - baseX, startY + PROPVAL(72));
+	m_pRecoilDescription->SetSize(labelWidth, labelHeight);
+	m_pRecoilDescription->SetContentAlignment(Label::a_west);
+
+	// Recoil Slider: x=184, y=96
+	m_pViewmodelRecoil->SetPos(rightCol1X, startY + PROPVAL(96));
+	m_pViewmodelRecoil->SetSize(sliderWidth, sliderHeight);
+	m_pViewmodelRecoilLabel->SetPos(rightCol1X + sliderWidth, startY + PROPVAL(96));
+	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, labelHeight);
+
+	// --- Right Column 2 (x=352): Preset, Viewbob, WeaponPos ---
+	// Preset Label: x=352, y=0
+	m_pPresetLabel->SetPos(rightCol2X - baseX, startY);
+	m_pPresetLabel->SetSize(labelWidth, labelHeight);
 	m_pPresetLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetPreset->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetPreset->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
 
-	// Viewmodel Offset X
-	m_pOffsetXLabel->SetPos(0, currentY);
-	m_pOffsetXLabel->SetSize(labelWidth, sliderHeight);
-	m_pOffsetXLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetX->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetX->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
-	m_pViewmodelOffsetXLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetXLabel->SetSize(sliderLabelWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
+	// Preset ComboBox: x=352, y=24
+	m_pViewmodelOffsetPreset->SetPos(rightCol2X, startY + PROPVAL(24));
+	m_pViewmodelOffsetPreset->SetSize(comboWidth, controlHeight);
 
-	// Viewmodel Offset Y
-	m_pOffsetYLabel->SetPos(0, currentY);
-	m_pOffsetYLabel->SetSize(labelWidth, sliderHeight);
-	m_pOffsetYLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetY->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetY->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
-	m_pViewmodelOffsetYLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetYLabel->SetSize(sliderLabelWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	// Viewmodel Offset Z
-	m_pOffsetZLabel->SetPos(0, currentY);
-	m_pOffsetZLabel->SetSize(labelWidth, sliderHeight);
-	m_pOffsetZLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelOffsetZ->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelOffsetZ->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
-	m_pViewmodelOffsetZLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelOffsetZLabel->SetSize(sliderLabelWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	// Viewmodel FOV
-	m_pFOVLabel->SetPos(0, currentY);
-	m_pFOVLabel->SetSize(labelWidth, sliderHeight);
-	m_pFOVLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelFOV->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelFOV->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
-	m_pViewmodelFOVLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelFOVLabel->SetSize(sliderLabelWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	// Viewmodel Recoil
-	m_pRecoilLabel->SetPos(0, currentY);
-	m_pRecoilLabel->SetSize(labelWidth, sliderHeight);
-	m_pRecoilLabel->SetContentAlignment(Label::a_west);
-	m_pViewmodelRecoil->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewmodelRecoil->SetSize(controlWidth - sliderLabelWidth - spacing, sliderHeight);
-	m_pViewmodelRecoilLabel->SetPos(labelWidth + labelControlGap + controlWidth - sliderLabelWidth - spacing, currentY);
-	m_pViewmodelRecoilLabel->SetSize(sliderLabelWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
-
-	// ================== SECTION 3: Movement ==================
-	currentY += sectionSpacing;
-
-	m_pMovementLabel->SetPos(0, currentY);
-	m_pMovementLabel->SetSize(contentWidth, sliderHeight);
-	m_pMovementLabel->SetContentAlignment(Label::a_west);
-	currentY += sliderHeight + spacing;
-
-	// Viewbob Style
-	m_pViewbobLabel->SetPos(0, currentY);
-	m_pViewbobLabel->SetSize(labelWidth, sliderHeight);
+	// Viewbob Label: x=352, y=48
+	m_pViewbobLabel->SetPos(rightCol2X - baseX, startY + PROPVAL(48));
+	m_pViewbobLabel->SetSize(labelWidth, labelHeight);
 	m_pViewbobLabel->SetContentAlignment(Label::a_west);
-	m_pViewbobStyle->SetPos(labelWidth + labelControlGap, currentY);
-	m_pViewbobStyle->SetSize(controlWidth, sliderHeight);
-	currentY += sliderHeight + spacing;
 
-	// Weapon Position
-	m_pWeaponPosLabel->SetPos(0, currentY);
-	m_pWeaponPosLabel->SetSize(labelWidth, sliderHeight);
+	// Viewbob ComboBox: x=352, y=72
+	m_pViewbobStyle->SetPos(rightCol2X, startY + PROPVAL(72));
+	m_pViewbobStyle->SetSize(comboWidth, controlHeight);
+
+	// WeaponPos Label: x=352, y=96
+	m_pWeaponPosLabel->SetPos(rightCol2X - baseX, startY + PROPVAL(96));
+	m_pWeaponPosLabel->SetSize(labelWidth, labelHeight);
 	m_pWeaponPosLabel->SetContentAlignment(Label::a_west);
-	m_pWeaponPos->SetPos(labelWidth + labelControlGap, currentY);
-	m_pWeaponPos->SetSize(controlWidth, sliderHeight);
 
-	// Done - all controls are positioned inside scroll container
+	// WeaponPos ComboBox: x=352, y=120
+	m_pWeaponPos->SetPos(rightCol2X, startY + PROPVAL(120));
+	m_pWeaponPos->SetSize(comboWidth, controlHeight);
+
+	// Divider: x=16, y=152
+	m_pDivider1->SetPos(0, startY + PROPVAL(152));
+	m_pDivider1->SetSize(dividerWidth, 2);
+
+	// ================== Checkboxes (from RES y positions) ==================
+	// CloseOnBuy: x=16, y=162
+	m_pCloseOnBuy->SetPos(0, startY + PROPVAL(162));
+	m_pCloseOnBuy->SetSize(controlWidth, controlHeight);
+
+	// UseOpensBuyMenu: x=16, y=186
+	m_pUseOpensBuyMenu->SetPos(0, startY + PROPVAL(186));
+	m_pUseOpensBuyMenu->SetSize(controlWidth, controlHeight);
+
+	// AddBotPrefix: x=16, y=210
+	m_pAddBotPrefix->SetPos(0, startY + PROPVAL(210));
+	m_pAddBotPrefix->SetSize(controlWidth, controlHeight);
+
+	// DrawTracers: x=16, y=234
+	m_pDrawTracers->SetPos(0, startY + PROPVAL(234));
+	m_pDrawTracers->SetSize(controlWidth, controlHeight);
+
+	// SpecInterpCamera: x=16, y=258
+	m_pSpecInterpCamera->SetPos(0, startY + PROPVAL(258));
+	m_pSpecInterpCamera->SetSize(controlWidth, controlHeight);
+
+	// DisableShootingEffects: x=16, y=282
+	m_pDisableShootingEffects->SetPos(0, startY + PROPVAL(282));
+	m_pDisableShootingEffects->SetSize(controlWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

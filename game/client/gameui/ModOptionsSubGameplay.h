@@ -62,9 +62,12 @@ private:
 	vgui::Label*				m_pOffsetYLabel;
 	vgui::Label*				m_pOffsetZLabel;
 	vgui::Label*				m_pFOVLabel;
+	vgui::Label*				m_pFOVDescription;
 	vgui::Label*				m_pRecoilLabel;
+	vgui::Label*				m_pRecoilDescription;
 	vgui::Label*				m_pViewbobLabel;
 	vgui::Label*				m_pWeaponPosLabel;
+	vgui::Panel*				m_pDivider1;
 
 	CCvarToggleCheckButton*		m_pCloseOnBuy;
 	CCvarToggleCheckButton*		m_pUseOpensBuyMenu;
