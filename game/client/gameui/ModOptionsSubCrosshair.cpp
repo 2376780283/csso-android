@@ -530,7 +530,7 @@ void CModOptionsSubCrosshair::PerformLayout()
 
 	// CrosshairDrawOutline: pin_to_sibling=CrosshairOutlineThickness, pin_corner_to_sibling=0, pin_to_sibling_corner=1
 	// RES: x=0, y=0 relative to sibling, positioned below the slider
-	m_pCrosshairImage->m_pCrosshairDrawOutline->SetPos(PROPVAL(16), PROPVAL(228) + sliderHeight);
+	m_pCrosshairImage->m_pCrosshairDrawOutline->SetPos(PROPVAL(16), PROPVAL(241) + sliderHeight);
 	m_pCrosshairImage->m_pCrosshairDrawOutline->SetSize(PROPVAL(192), controlHeight);
 
 	// StyleLabel: pin_to_sibling=CrosshairStyle, pin_corner_to_sibling=0, pin_to_sibling_corner=1
@@ -538,12 +538,12 @@ void CModOptionsSubCrosshair::PerformLayout()
 	Panel* pStyleLabel = m_pScrollContainer->FindChildByName("StyleLabel");
 	if (pStyleLabel)
 	{
-		pStyleLabel->SetPos(PROPVAL(8), PROPVAL(85) - labelHeight);
+		pStyleLabel->SetPos(PROPVAL(8), PROPVAL(280) - labelHeight);
 		pStyleLabel->SetSize(PROPVAL(192), labelHeight);
 	}
 
 	// CrosshairStyle: x=16, y=280, wide=192, tall=24
-	m_pCrosshairImage->m_pCrosshairStyle->SetPos(PROPVAL(16), PROPVAL(280));
+	m_pCrosshairImage->m_pCrosshairStyle->SetPos(PROPVAL(16), PROPVAL(310));
 	m_pCrosshairImage->m_pCrosshairStyle->SetSize(comboWidth, controlHeight);
 
 	// ================== RIGHT COLUMN (x=356) ==================
