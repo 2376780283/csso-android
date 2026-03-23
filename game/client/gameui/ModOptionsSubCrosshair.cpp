@@ -444,12 +444,23 @@ void CModOptionsSubCrosshair::PerformLayout()
 	int sliderWidth = PROPVAL(128);
 	int comboWidth = PROPVAL(192);
 
-	// Position scroll bar (hidden/minimal since RES has no scroll)
-	m_pVScrollBar->SetVisible(false);
+	// Calculate content height based on RES file (tall=314)
+	int contentHeight = PROPVAL(314);
+	int visibleHeight = ph - PROPVAL(32);
+	int scrollBarWidth = PROPVAL(16);
+	int margin = PROPVAL(16);
 
-	// Position scroll container (full size)
-	m_pScrollContainer->SetPos(PROPVAL(16), PROPVAL(16));
-	m_pScrollContainer->SetSize(pw - PROPVAL(32), ph - PROPVAL(32));
+	// Position scroll bar on the right side
+	m_pVScrollBar->SetVisible(true);
+	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
+	m_pVScrollBar->SetSize(scrollBarWidth, visibleHeight);
+	m_pVScrollBar->SetRange(0, contentHeight - visibleHeight);
+	m_pVScrollBar->SetRangeWindow(visibleHeight);
+
+	// Position scroll container and apply scroll offset
+	int scrollOffset = m_pVScrollBar->GetValue();
+	m_pScrollContainer->SetPos(margin, margin - scrollOffset);
+	m_pScrollContainer->SetSize(pw - (margin * 2) - scrollBarWidth, contentHeight);
 
 	// ================== LEFT COLUMN (x=16) ==================
 	// CrosshairLabel: x=16, y=4, wide=128
@@ -485,7 +496,7 @@ void CModOptionsSubCrosshair::PerformLayout()
 	Panel* pSizeLabel = m_pScrollContainer->FindChildByName("SizeLabel");
 	if (pSizeLabel)
 	{
-		pSizeLabel->SetPos(PROPVAL(0), PROPVAL(120) - labelHeight);
+		pSizeLabel->SetPos(PROPVAL(16), PROPVAL(120) - labelHeight);
 		pSizeLabel->SetSize(PROPVAL(64), labelHeight);
 	}
 	m_pCrosshairImage->m_pCrosshairSize->SetPos(PROPVAL(16), PROPVAL(120));
@@ -496,7 +507,7 @@ void CModOptionsSubCrosshair::PerformLayout()
 	Panel* pThicknessLabel = m_pScrollContainer->FindChildByName("ThicknessLabel");
 	if (pThicknessLabel)
 	{
-		pThicknessLabel->SetPos(PROPVAL(0), PROPVAL(156) - labelHeight);
+		pThicknessLabel->SetPos(PROPVAL(16), PROPVAL(156) - labelHeight);
 		pThicknessLabel->SetSize(PROPVAL(64), labelHeight);
 	}
 	m_pCrosshairImage->m_pCrosshairThickness->SetPos(PROPVAL(16), PROPVAL(156));
@@ -507,7 +518,7 @@ void CModOptionsSubCrosshair::PerformLayout()
 	Panel* pGapLabel = m_pScrollContainer->FindChildByName("GapLabel");
 	if (pGapLabel)
 	{
-		pGapLabel->SetPos(PROPVAL(0), PROPVAL(192) - labelHeight);
+		pGapLabel->SetPos(PROPVAL(16), PROPVAL(192) - labelHeight);
 		pGapLabel->SetSize(PROPVAL(64), labelHeight);
 	}
 	m_pCrosshairImage->m_pCrosshairGap->SetPos(PROPVAL(16), PROPVAL(192));
