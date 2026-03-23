@@ -61,6 +61,22 @@ CModOptionsSubLoadout::CModOptionsSubLoadout(vgui::Panel *parent) : vgui::Proper
 	m_pVScrollBar = new vgui::ScrollBar(this, "VScrollBar", true);
 	m_pVScrollBar->AddActionSignalTarget(this);
 
+	// Create labels (inside scroll container)
+	// CT Weapons labels
+	m_pM4ComboBoxLabel = new vgui::Label(m_pScrollContainer, "M4ComboBoxLabel", "#GameUI_Loadout_M4");
+	m_pHKP2000ComboBoxLabel = new vgui::Label(m_pScrollContainer, "HKP2000ComboBoxLabel", "#GameUI_Loadout_HKP2000");
+	m_pFiveSevenComboBoxLabel = new vgui::Label(m_pScrollContainer, "FiveSevenComboBoxLabel", "#GameUI_Loadout_FiveSeven");
+	m_pMP7CTComboBoxLabel = new vgui::Label(m_pScrollContainer, "MP7CTComboBoxLabel", "#GameUI_Loadout_MP7_CT");
+	m_pDeagleCTComboBoxLabel = new vgui::Label(m_pScrollContainer, "DeagleCTComboBoxLabel", "#GameUI_Loadout_Deagle_CT");
+
+	// T Weapons labels
+	m_pTec9ComboBoxLabel = new vgui::Label(m_pScrollContainer, "Tec9ComboBoxLabel", "#GameUI_Loadout_Tec9");
+	m_pMP7TComboBoxLabel = new vgui::Label(m_pScrollContainer, "MP7TComboBoxLabel", "#GameUI_Loadout_MP7_T");
+	m_pDeagleTComboBoxLabel = new vgui::Label(m_pScrollContainer, "DeagleTComboBoxLabel", "#GameUI_Loadout_Deagle_T");
+
+	// Other labels
+	m_pMusicSelectionLabel = new vgui::Label(m_pScrollContainer, "MusicSelectionLabel", "#GameUI_Gameplay_Music");
+
 	// Create all controls (inside scroll container)
 	m_pLoadoutM4ComboBox = new CLabeledCommandComboBox(m_pScrollContainer, "M4ComboBox");
 	m_pLoadoutM4ComboBox->AddItem("#Cstrike_WPNHUD_M4A4", "loadout_slot_m4_weapon 0");
@@ -138,11 +154,16 @@ void CModOptionsSubLoadout::PerformLayout()
 	// Padding and spacing values - scaled for different resolutions
 	int margin = PROPVAL(24);
 	int spacing = PROPVAL(12);
-	int labelWidth = PROPVAL(200);
-	int controlHeight = PROPVAL(26);
+	int labelWidth = PROPVAL(224);
+	int controlHeight = PROPVAL(24);
 	int sectionSpacing = PROPVAL(28);
 	int labelControlGap = PROPVAL(10);
 	int scrollBarWidth = PROPVAL(20);
+
+	// Column positions from RES file
+	int leftColumnX = PROPVAL(16);
+	int rightColumnX = PROPVAL(256);
+	int labelHeight = PROPVAL(24);
 
 	// Calculate content width (accounting for scroll bar)
 	int contentWidth = pw - (margin * 2) - scrollBarWidth;
@@ -157,25 +178,8 @@ void CModOptionsSubLoadout::PerformLayout()
 	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
 
 	// Calculate total content height first
-	int totalContentHeight = 0;
-
-	// ================== SECTION 1: CT Weapons ==================
-	totalContentHeight += controlHeight + spacing; // M4
-	totalContentHeight += controlHeight + spacing; // HKP2000
-	totalContentHeight += controlHeight + spacing; // FiveSeven
-	totalContentHeight += controlHeight + spacing; // MP7 CT
-	totalContentHeight += controlHeight + spacing; // Deagle CT
-
-	// ================== SECTION 2: T Weapons ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // Tec9
-	totalContentHeight += controlHeight + spacing; // MP7 T
-	totalContentHeight += controlHeight + spacing; // Deagle T
-
-	// ================== SECTION 3: Options ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // StatTrak
-	totalContentHeight += controlHeight + spacing; // Music Selection
+	// Based on RES file: last control is MusicSelectionComboBox at y=280 with height 24
+	int totalContentHeight = PROPVAL(304); // 280 + 24
 
 	// Add bottom margin
 	totalContentHeight += margin;
@@ -188,63 +192,63 @@ void CModOptionsSubLoadout::PerformLayout()
 	int scrollOffset = m_pVScrollBar->GetValue();
 
 	// Now position all controls inside the scroll container (offset by scroll position)
-	int currentY = -scrollOffset;
+	// Using exact positions from RES file for consistency
+	// ================== SECTION 1: Weapons (Two Column Layout) ==================
 
-	// ================== SECTION 1: CT Weapons ==================
-	// M4
-	m_pLoadoutM4ComboBox->SetPos(0, currentY);
-	m_pLoadoutM4ComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// Row 1: M4 (left, y=8), HKP2000 (right, y=8)
+	m_pM4ComboBoxLabel->SetPos(leftColumnX, -scrollOffset + PROPVAL(8));
+	m_pM4ComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutM4ComboBox->SetPos(leftColumnX, -scrollOffset + PROPVAL(32));
+	m_pLoadoutM4ComboBox->SetSize(labelWidth, controlHeight);
 
-	// HKP2000
-	m_pLoadoutHKP2000ComboBox->SetPos(0, currentY);
-	m_pLoadoutHKP2000ComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pHKP2000ComboBoxLabel->SetPos(rightColumnX, -scrollOffset + PROPVAL(8));
+	m_pHKP2000ComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutHKP2000ComboBox->SetPos(rightColumnX, -scrollOffset + PROPVAL(32));
+	m_pLoadoutHKP2000ComboBox->SetSize(labelWidth, controlHeight);
 
-	// FiveSeven
-	m_pLoadoutFiveSevenComboBox->SetPos(0, currentY);
-	m_pLoadoutFiveSevenComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// Row 2: FiveSeven (left, y=56), Tec9 (right, y=56)
+	m_pFiveSevenComboBoxLabel->SetPos(leftColumnX, -scrollOffset + PROPVAL(56));
+	m_pFiveSevenComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutFiveSevenComboBox->SetPos(leftColumnX, -scrollOffset + PROPVAL(80));
+	m_pLoadoutFiveSevenComboBox->SetSize(labelWidth, controlHeight);
 
-	// MP7 CT
-	m_pLoadoutMP7CTComboBox->SetPos(0, currentY);
-	m_pLoadoutMP7CTComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pTec9ComboBoxLabel->SetPos(rightColumnX, -scrollOffset + PROPVAL(56));
+	m_pTec9ComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutTec9ComboBox->SetPos(rightColumnX, -scrollOffset + PROPVAL(80));
+	m_pLoadoutTec9ComboBox->SetSize(labelWidth, controlHeight);
 
-	// Deagle CT
-	m_pLoadoutDeagleCTComboBox->SetPos(0, currentY);
-	m_pLoadoutDeagleCTComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// Row 3: MP7 CT (left, y=104), MP7 T (right, y=104)
+	m_pMP7CTComboBoxLabel->SetPos(leftColumnX, -scrollOffset + PROPVAL(104));
+	m_pMP7CTComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutMP7CTComboBox->SetPos(leftColumnX, -scrollOffset + PROPVAL(128));
+	m_pLoadoutMP7CTComboBox->SetSize(labelWidth, controlHeight);
 
-	// ================== SECTION 2: T Weapons ==================
-	currentY += sectionSpacing;
+	m_pMP7TComboBoxLabel->SetPos(rightColumnX, -scrollOffset + PROPVAL(104));
+	m_pMP7TComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutMP7TComboBox->SetPos(rightColumnX, -scrollOffset + PROPVAL(128));
+	m_pLoadoutMP7TComboBox->SetSize(labelWidth, controlHeight);
 
-	// Tec9
-	m_pLoadoutTec9ComboBox->SetPos(0, currentY);
-	m_pLoadoutTec9ComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// Row 4: Deagle CT (left, y=152), Deagle T (right, y=152)
+	m_pDeagleCTComboBoxLabel->SetPos(leftColumnX, -scrollOffset + PROPVAL(152));
+	m_pDeagleCTComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutDeagleCTComboBox->SetPos(leftColumnX, -scrollOffset + PROPVAL(176));
+	m_pLoadoutDeagleCTComboBox->SetSize(labelWidth, controlHeight);
 
-	// MP7 T
-	m_pLoadoutMP7TComboBox->SetPos(0, currentY);
-	m_pLoadoutMP7TComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	m_pDeagleTComboBoxLabel->SetPos(rightColumnX, -scrollOffset + PROPVAL(152));
+	m_pDeagleTComboBoxLabel->SetSize(labelWidth, labelHeight);
+	m_pLoadoutDeagleTComboBox->SetPos(rightColumnX, -scrollOffset + PROPVAL(176));
+	m_pLoadoutDeagleTComboBox->SetSize(labelWidth, controlHeight);
 
-	// Deagle T
-	m_pLoadoutDeagleTComboBox->SetPos(0, currentY);
-	m_pLoadoutDeagleTComboBox->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// ================== SECTION 2: Options ==================
+	// StatTrak (y=234)
+	m_pStatTrak->SetPos(leftColumnX, -scrollOffset + PROPVAL(234));
+	m_pStatTrak->SetSize(labelWidth * 2 + spacing, controlHeight);
 
-	// ================== SECTION 3: Options ==================
-	currentY += sectionSpacing;
-
-	// StatTrak
-	m_pStatTrak->SetPos(0, currentY);
-	m_pStatTrak->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
-
-	// Music Selection
-	m_pMusicSelection->SetPos(0, currentY);
-	m_pMusicSelection->SetSize(controlWidth, controlHeight);
+	// Music Selection (label y=256, combo y=280)
+	m_pMusicSelectionLabel->SetPos(leftColumnX, -scrollOffset + PROPVAL(256));
+	m_pMusicSelectionLabel->SetSize(labelWidth * 2 + spacing, labelHeight);
+	m_pMusicSelection->SetPos(leftColumnX, -scrollOffset + PROPVAL(280));
+	m_pMusicSelection->SetSize(labelWidth * 2 + spacing, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

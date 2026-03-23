@@ -14,6 +14,7 @@
 #include <vgui_controls/PropertyPage.h>
 #include <vgui_controls/ScrollBar.h>
 #include <vgui_controls/Panel.h>
+#include <vgui_controls/Label.h>
 
 class CCvarToggleCheckButton;
 class CLabeledCommandComboBox;
@@ -51,6 +52,22 @@ protected:
 	virtual void OnApplyChanges();
 
 private:
+	// Labels for CT weapons
+	vgui::Label* m_pM4ComboBoxLabel;
+	vgui::Label* m_pHKP2000ComboBoxLabel;
+	vgui::Label* m_pFiveSevenComboBoxLabel;
+	vgui::Label* m_pMP7CTComboBoxLabel;
+	vgui::Label* m_pDeagleCTComboBoxLabel;
+
+	// Labels for T weapons
+	vgui::Label* m_pTec9ComboBoxLabel;
+	vgui::Label* m_pMP7TComboBoxLabel;
+	vgui::Label* m_pDeagleTComboBoxLabel;
+
+	// Other labels
+	vgui::Label* m_pMusicSelectionLabel;
+
+	// ComboBox controls
 	CLabeledCommandComboBox *m_pLoadoutM4ComboBox;
 	CLabeledCommandComboBox *m_pLoadoutHKP2000ComboBox;
 	CLabeledCommandComboBox *m_pLoadoutFiveSevenComboBox;

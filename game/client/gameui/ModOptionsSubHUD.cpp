@@ -51,6 +51,17 @@ CModOptionsSubHUD::CModOptionsSubHUD( vgui::Panel *parent ): vgui::PropertyPage(
 	m_pVScrollBar = new vgui::ScrollBar(this, "VScrollBar", true);
 	m_pVScrollBar->AddActionSignalTarget(this);
 
+	// Create labels
+	m_pPlayerCountPosLabel = new vgui::Label( m_pScrollContainer, "PlayerCountPositionLabel", "#GameUI_HUD_PlayerCount_Position" );
+	m_pHealthAmmoStyleLabel = new vgui::Label( m_pScrollContainer, "HealthAmmoStyleLabel", "#GameUI_HUD_HealthAmmoStyle" );
+	m_pHUDColorLabel = new vgui::Label( m_pScrollContainer, "HUDColorLabel", "#GameUI_HUD_Color" );
+	m_pHUDBackgroundAlphaLabel = new vgui::Label( m_pScrollContainer, "HUDBackgroundAlphaLabel", "#GameUI_HUD_BackgroundAlpha" );
+	m_pRadarScaleLabel = new vgui::Label( m_pScrollContainer, "RadarScaleLabel", "#GameUI_HUD_RadarScale" );
+	m_pRadarSquareLabel = new vgui::Label( m_pScrollContainer, "RadarSquareLabel", "#GameUI_HUD_RadarSquare" );
+	m_pMenuBackgroundLabel = new vgui::Label( m_pScrollContainer, "MenuBackgroundLabel", "#GameUI_HUD_MenuBackground" );
+	m_pMenuAgentLabel = new vgui::Label( m_pScrollContainer, "MenuAgentLabel", "#GameUI_HUD_MenuAgent" );
+
+	// Create controls
 	m_pPlayerCountPos = new CLabeledCommandComboBox( m_pScrollContainer, "PlayerCountPositionComboBox" );
 	m_pHealthAmmoStyle = new CLabeledCommandComboBox( m_pScrollContainer, "HealthAmmoStyleComboBox" );
 	m_pHUDColor = new CLabeledCommandComboBox( m_pScrollContainer, "HUDColorComboBox" );
@@ -120,17 +131,20 @@ void CModOptionsSubHUD::PerformLayout()
 	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
 #endif
 
-	int margin = PROPVAL(24);
+	int margin = PROPVAL(16);
 	int spacing = PROPVAL(12);
-	int labelWidth = PROPVAL(200);
-	int controlHeight = PROPVAL(26);
-	int sectionSpacing = PROPVAL(28);
-	int labelControlGap = PROPVAL(10);
-	int sliderLabelWidth = PROPVAL(40);
+	int controlHeight = PROPVAL(24);
+	int sliderHeight = PROPVAL(32);
+	int columnWidth = PROPVAL(224);
 	int scrollBarWidth = PROPVAL(20);
 
+	// Left column X position
+	int leftColumnX = margin;
+	// Right column X position
+	int rightColumnX = leftColumnX + columnWidth + spacing;
+
 	int contentWidth = pw - (margin * 2) - scrollBarWidth;
-	int controlWidth = contentWidth - labelWidth - labelControlGap;
+	int controlWidth = columnWidth;
 
 	// Position scroll bar on the right side
 	m_pVScrollBar->SetPos(pw - margin - scrollBarWidth, margin);
@@ -140,29 +154,11 @@ void CModOptionsSubHUD::PerformLayout()
 	m_pScrollContainer->SetPos(margin, margin);
 	m_pScrollContainer->SetSize(contentWidth, ph - (margin * 2));
 
-	// Calculate total content height first
+	// Calculate total content height based on RES file positions
 	int totalContentHeight = 0;
-
-	// ================== SECTION 1: HUD Settings ==================
-	totalContentHeight += controlHeight + spacing; // Player Count
-	totalContentHeight += controlHeight + spacing; // Health Ammo
-	totalContentHeight += controlHeight + spacing; // HUD Color
-	totalContentHeight += controlHeight + spacing; // HUD Background Alpha
-	totalContentHeight += controlHeight + spacing; // Always Show Inventory
-
-	// ================== SECTION 2: Radar Settings ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // Radar Scale
-	totalContentHeight += controlHeight + spacing; // Radar Rotate
-	totalContentHeight += controlHeight + spacing; // Radar Square
-
-	// ================== SECTION 3: Menu Settings ==================
-	totalContentHeight += sectionSpacing;
-	totalContentHeight += controlHeight + spacing; // Menu Background
-	totalContentHeight += controlHeight + spacing; // Menu Agent
-
-	// Add bottom margin
-	totalContentHeight += margin;
+	// Find the maximum Y position from all controls + bottom margin
+	// Menu Background/Agent at y=280 + controlHeight(24) + margin(16) = ~320
+	totalContentHeight = PROPVAL(320);
 
 	// Set scroll bar range
 	m_pVScrollBar->SetRange(0, totalContentHeight);
@@ -172,66 +168,101 @@ void CModOptionsSubHUD::PerformLayout()
 	int scrollOffset = m_pVScrollBar->GetValue();
 
 	// Now position all controls inside the scroll container (offset by scroll position)
-	int currentY = -scrollOffset;
+	// Using Y positions from RES file
+	int leftY = -scrollOffset;
+	int rightY = -scrollOffset;
+	int labelHeight = PROPVAL(24);
 
-	// ================== SECTION 1: HUD Settings ==================
-	currentY += controlHeight + spacing;
+	// ================== LEFT COLUMN ==================
+	// Player Count Position Label (y=8 in RES)
+	leftY += PROPVAL(8);
+	m_pPlayerCountPosLabel->SetPos(leftColumnX, leftY);
+	m_pPlayerCountPosLabel->SetSize(controlWidth, labelHeight);
 
-	// Player Count Position
-	m_pPlayerCountPos->SetPos(0, currentY);
+	// Player Count Position ComboBox (y=32 in RES)
+	leftY += PROPVAL(24);
+	m_pPlayerCountPos->SetPos(leftColumnX, leftY);
 	m_pPlayerCountPos->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// Health Ammo Style
-	m_pHealthAmmoStyle->SetPos(0, currentY);
+	// Health Ammo Style Label (y=56 in RES)
+	leftY = -scrollOffset + PROPVAL(56);
+	m_pHealthAmmoStyleLabel->SetPos(leftColumnX, leftY);
+	m_pHealthAmmoStyleLabel->SetSize(controlWidth, labelHeight);
+
+	// Health Ammo Style ComboBox (y=80 in RES)
+	leftY += PROPVAL(24);
+	m_pHealthAmmoStyle->SetPos(leftColumnX, leftY);
 	m_pHealthAmmoStyle->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// HUD Color
-	m_pHUDColor->SetPos(0, currentY);
+	// HUD Color Label (y=104 in RES)
+	leftY = -scrollOffset + PROPVAL(104);
+	m_pHUDColorLabel->SetPos(leftColumnX, leftY);
+	m_pHUDColorLabel->SetSize(controlWidth, labelHeight);
+
+	// HUD Color ComboBox (y=128 in RES)
+	leftY += PROPVAL(24);
+	m_pHUDColor->SetPos(leftColumnX, leftY);
 	m_pHUDColor->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// HUD Background Alpha
-	m_pHUDBackgroundAlpha->SetPos(0, currentY);
-	m_pHUDBackgroundAlpha->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	currentY += controlHeight + spacing;
-
-	// Always Show Inventory
-	m_pAlwaysShowInventory->SetPos(0, currentY);
+	// Always Show Inventory (y=204 in RES)
+	leftY = -scrollOffset + PROPVAL(204);
+	m_pAlwaysShowInventory->SetPos(leftColumnX, leftY);
 	m_pAlwaysShowInventory->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// ================== SECTION 2: Radar Settings ==================
-	currentY += sectionSpacing;
-	currentY += controlHeight + spacing;
-
-	// Radar Scale
-	m_pRadarScale->SetPos(0, currentY);
-	m_pRadarScale->SetSize(controlWidth - sliderLabelWidth - spacing, controlHeight);
-	currentY += controlHeight + spacing;
-
-	// Radar Rotate
-	m_pRadarRotate->SetPos(0, currentY);
+	// Radar Rotate (y=228 in RES)
+	leftY += controlHeight + spacing;
+	m_pRadarRotate->SetPos(leftColumnX, leftY);
 	m_pRadarRotate->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// Radar Square
-	m_pRadarSquare->SetPos(0, currentY);
-	m_pRadarSquare->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
+	// Menu Background Label (y=256 in RES)
+	leftY = -scrollOffset + PROPVAL(256);
+	m_pMenuBackgroundLabel->SetPos(leftColumnX, leftY);
+	m_pMenuBackgroundLabel->SetSize(controlWidth, labelHeight);
 
-	// ================== SECTION 3: Menu Settings ==================
-	currentY += sectionSpacing;
-	currentY += controlHeight + spacing;
-
-	// Menu Background
-	m_pMenuBackground->SetPos(0, currentY);
+	// Menu Background ComboBox (y=280 in RES)
+	leftY += PROPVAL(24);
+	m_pMenuBackground->SetPos(leftColumnX, leftY);
 	m_pMenuBackground->SetSize(controlWidth, controlHeight);
-	currentY += controlHeight + spacing;
 
-	// Menu Agent
-	m_pMenuAgent->SetPos(0, currentY);
+	// ================== RIGHT COLUMN ==================
+	// Radar Square Label (y=8 in RES)
+	rightY += PROPVAL(8);
+	m_pRadarSquareLabel->SetPos(rightColumnX, rightY);
+	m_pRadarSquareLabel->SetSize(controlWidth, labelHeight);
+
+	// Radar Square ComboBox (y=32 in RES)
+	rightY += PROPVAL(24);
+	m_pRadarSquare->SetPos(rightColumnX, rightY);
+	m_pRadarSquare->SetSize(controlWidth, controlHeight);
+
+	// HUD Background Alpha Label (y=56 in RES)
+	rightY = -scrollOffset + PROPVAL(56);
+	m_pHUDBackgroundAlphaLabel->SetPos(rightColumnX, rightY);
+	m_pHUDBackgroundAlphaLabel->SetSize(controlWidth, labelHeight);
+
+	// HUD Background Alpha Slider (y=76 in RES) - slider is taller
+	rightY += PROPVAL(20);
+	m_pHUDBackgroundAlpha->SetPos(rightColumnX, rightY);
+	m_pHUDBackgroundAlpha->SetSize(controlWidth, sliderHeight);
+
+	// Radar Scale Label (y=104 in RES)
+	rightY = -scrollOffset + PROPVAL(104);
+	m_pRadarScaleLabel->SetPos(rightColumnX, rightY);
+	m_pRadarScaleLabel->SetSize(controlWidth, labelHeight);
+
+	// Radar Scale Slider (y=124 in RES) - slider is taller
+	rightY += PROPVAL(20);
+	m_pRadarScale->SetPos(rightColumnX, rightY);
+	m_pRadarScale->SetSize(controlWidth, sliderHeight);
+
+	// Menu Agent Label (y=256 in RES)
+	rightY = -scrollOffset + PROPVAL(256);
+	m_pMenuAgentLabel->SetPos(rightColumnX, rightY);
+	m_pMenuAgentLabel->SetSize(controlWidth, labelHeight);
+
+	// Menu Agent ComboBox (y=280 in RES)
+	rightY += PROPVAL(24);
+	m_pMenuAgent->SetPos(rightColumnX, rightY);
 	m_pMenuAgent->SetSize(controlWidth, controlHeight);
 }
 

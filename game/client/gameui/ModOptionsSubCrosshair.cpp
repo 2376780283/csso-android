@@ -394,6 +394,9 @@ CModOptionsSubCrosshair::CModOptionsSubCrosshair(vgui::Panel *parent) : vgui::Pr
 	m_pCrosshairImage = new CrosshairImagePanelCS(m_pScrollContainer, "CrosshairImage", this);
 
 	// Create labels for controls inside scroll container
+	// Description label (from RES file)
+	new vgui::Label(m_pScrollContainer, "CrosshairLabel", "#GameUI_CrosshairDescription");
+
 	// Style section
 	new vgui::Label(m_pScrollContainer, "StyleLabel", "#GameUI_Crosshair_Style");
 
@@ -498,6 +501,15 @@ void CModOptionsSubCrosshair::PerformLayout()
 
 	// ================== LEFT COLUMN ==================
 	int currentY = -scrollOffset + spacing * 2;
+
+	// Crosshair Description Label (from RES file: x=16, y=4)
+	Panel* pCrosshairLabel = m_pScrollContainer->FindChildByName("CrosshairLabel");
+	if (pCrosshairLabel)
+	{
+		pCrosshairLabel->SetVisible(true);
+		pCrosshairLabel->SetPos(leftColumnX, currentY - spacing * 2 + PROPVAL(4));
+		pCrosshairLabel->SetSize(PROPVAL(128), controlHeight);
+	}
 
 	// Style (Combo)
 	Panel* pStyleLabel = m_pScrollContainer->FindChildByName("StyleLabel");

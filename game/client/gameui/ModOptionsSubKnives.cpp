@@ -71,9 +71,9 @@ CModOptionsSubKnives::CModOptionsSubKnives(vgui::Panel *parent) : vgui::Property
 	// Initialize with minimum size - will be resized in PerformLayout
 	SetSize(100, 100);
 
-	// Create Section Labels
-	m_pCTLabel = new Label(this, "CTLabel", "#GameUI_Loadout_Knife_CT");
-	m_pTLabel = new Label(this, "TLabel", "#GameUI_Loadout_Knife_T");
+	// Create ComboBox Labels (matching RES file naming)
+	m_pKnifeCTComboBoxLabel = new vgui::Label(this, "KnifeCTComboBoxLabel", "#GameUI_Loadout_Knife_CT");
+	m_pKnifeTComboBoxLabel = new vgui::Label(this, "KnifeTComboBoxLabel", "#GameUI_Loadout_Knife_T");
 
 	// Create controls
 	m_pKnifeImageCT = new CBitmapImagePanel(this, "KnifeImageCT", NULL);
@@ -114,48 +114,35 @@ void CModOptionsSubKnives::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// Padding and spacing values - 更紧凑的布局
-	int margin = PROPVAL(24);
-	int spacing = PROPVAL(12);
-	int controlHeight = PROPVAL(26);
-	int labelWidth = PROPVAL(120);
+	// Use RES file coordinate values
+	int margin = PROPVAL(16);
+	int halfWidth = PROPVAL(224);
+	int controlHeight = PROPVAL(24);
+	int labelHeight = PROPVAL(24);
+	int previewHeight = PROPVAL(168);
 
-	// 使用较小的预览图尺寸
-	int previewSize = PROPVAL(140);
+	// CT side (left column x=16)
+	// Knife CT ComboBox Label at y=8
+	m_pKnifeCTComboBoxLabel->SetPos(margin, margin + PROPVAL(8));
+	m_pKnifeCTComboBoxLabel->SetSize(halfWidth, labelHeight);
+	// Knife Image CT at y=32
+	m_pKnifeImageCT->SetPos(margin, margin + PROPVAL(32));
+	m_pKnifeImageCT->SetSize(halfWidth, previewHeight);
+	// Knife CT ComboBox at y=216
+	m_pLoadoutKnifeCTComboBox->SetPos(margin, margin + PROPVAL(216));
+	m_pLoadoutKnifeCTComboBox->SetSize(halfWidth, controlHeight);
 
-	// 计算左右两边的宽度
-	int sideWidth = (pw - margin * 2 - spacing) / 2;
-
-	int currentY = margin;
-
-	// ================== SECTION 1: CT Knife ==================
-	m_pCTLabel->SetPos(margin, currentY);
-	m_pCTLabel->SetSize(sideWidth, controlHeight);
-	m_pCTLabel->SetContentAlignment(Label::a_west);
-	currentY += controlHeight + spacing;
-
-	// Knife Preview CT - 使用较小的预览图
-	m_pKnifeImageCT->SetBounds(margin, currentY, previewSize, previewSize);
-
-	// Knife Selection CT - 放在预览图右侧
-	m_pLoadoutKnifeCTComboBox->SetBounds(margin + previewSize + spacing, currentY, sideWidth - previewSize - spacing, controlHeight);
-	currentY = margin;
-
-	// ================== SECTION 2: T Knife ==================
-	int tx = margin + sideWidth + spacing;
-
-	currentY = margin;
-
-	m_pTLabel->SetPos(tx, currentY);
-	m_pTLabel->SetSize(sideWidth, controlHeight);
-	m_pTLabel->SetContentAlignment(Label::a_west);
-	currentY += controlHeight + spacing;
-
-	// Knife Preview T - 使用较小的预览图
-	m_pKnifeImageT->SetBounds(tx, currentY, previewSize, previewSize);
-
-	// Knife Selection T - 放在预览图右侧
-	m_pLoadoutKnifeTComboBox->SetBounds(tx + previewSize + spacing, currentY, sideWidth - previewSize - spacing, controlHeight);
+	// T side (right column x=256)
+	int rightX = margin + halfWidth + PROPVAL(12);
+	// Knife T ComboBox Label at y=8
+	m_pKnifeTComboBoxLabel->SetPos(rightX, margin + PROPVAL(8));
+	m_pKnifeTComboBoxLabel->SetSize(halfWidth, labelHeight);
+	// Knife Image T at y=32
+	m_pKnifeImageT->SetPos(rightX, margin + PROPVAL(32));
+	m_pKnifeImageT->SetSize(halfWidth, previewHeight);
+	// Knife T ComboBox at y=216
+	m_pLoadoutKnifeTComboBox->SetPos(rightX, margin + PROPVAL(216));
+	m_pLoadoutKnifeTComboBox->SetSize(halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

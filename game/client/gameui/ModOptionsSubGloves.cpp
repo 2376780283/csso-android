@@ -63,11 +63,16 @@ static Gloves gloveNames[] =
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CModOptionsSubGloves::CModOptionsSubGloves(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubGloves") 
+CModOptionsSubGloves::CModOptionsSubGloves(vgui::Panel *parent) : vgui::PropertyPage(parent, "ModOptionsSubGloves")
 {
 	// Initialize with minimum size - will be resized in PerformLayout
 	SetSize(100, 100);
 
+	// Create labels
+	m_pGloveCTComboBoxLabel = new vgui::Label( this, "GloveCTComboBoxLabel", "#GameUI_Loadout_Glove_CT" );
+	m_pGloveTComboBoxLabel = new vgui::Label( this, "GloveTComboBoxLabel", "#GameUI_Loadout_Glove_T" );
+
+	// Create ComboBoxes
 	m_pLoadoutGloveCTComboBox = new CLabeledCommandComboBox( this, "GloveCTComboBox" );
 	m_pLoadoutGloveTComboBox = new CLabeledCommandComboBox( this, "GloveTComboBox" );
 
@@ -81,6 +86,7 @@ CModOptionsSubGloves::CModOptionsSubGloves(vgui::Panel *parent) : vgui::Property
 		m_pLoadoutGloveTComboBox->AddItem( gloveNames[i].m_szUIName, command );
 	}
 
+	// Create image panels
 	m_pGloveImageCT = new CBitmapImagePanel( this, "GloveImageCT", NULL );
 	m_pGloveImageCT->AddActionSignalTarget( this );
 	m_pGloveImageT = new CBitmapImagePanel( this, "GloveImageT", NULL );
@@ -108,21 +114,34 @@ void CModOptionsSubGloves::PerformLayout()
 	#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
 #endif
 
-	int margin = PROPVAL(24);
-	int spacing = PROPVAL(12);
-	int halfWidth = (pw - margin * 3) / 2;
-	int controlHeight = PROPVAL(26);
-	// Preview square size
-	int previewSize = MIN(halfWidth, ph - margin * 4 - controlHeight * 2);
-	previewSize = MAX(previewSize, PROPVAL(100));
+	int margin = PROPVAL(16);
+	int halfWidth = PROPVAL(224);
+	int controlHeight = PROPVAL(24);
+	int labelHeight = PROPVAL(24);
+	int previewHeight = PROPVAL(168);
 
-	// CT side
-	m_pGloveImageCT->SetBounds(margin, margin, previewSize, previewSize);
-	m_pLoadoutGloveCTComboBox->SetBounds(margin, margin + previewSize + spacing, halfWidth, controlHeight);
+	// CT side (left column x=16)
+	// Glove CT ComboBox Label at y=8
+	m_pGloveCTComboBoxLabel->SetPos(margin, margin + PROPVAL(8));
+	m_pGloveCTComboBoxLabel->SetSize(halfWidth, labelHeight);
+	// Glove Image CT at y=32
+	m_pGloveImageCT->SetPos(margin, margin + PROPVAL(32));
+	m_pGloveImageCT->SetSize(halfWidth, previewHeight);
+	// Glove CT ComboBox at y=216
+	m_pLoadoutGloveCTComboBox->SetPos(margin, margin + PROPVAL(216));
+	m_pLoadoutGloveCTComboBox->SetSize(halfWidth, controlHeight);
 
-	// T side
-	m_pGloveImageT->SetBounds(margin * 2 + halfWidth, margin, previewSize, previewSize);
-	m_pLoadoutGloveTComboBox->SetBounds(margin * 2 + halfWidth, margin + previewSize + spacing, halfWidth, controlHeight);
+	// T side (right column x=256)
+	int rightX = margin + halfWidth + PROPVAL(12);
+	// Glove T ComboBox Label at y=8
+	m_pGloveTComboBoxLabel->SetPos(rightX, margin + PROPVAL(8));
+	m_pGloveTComboBoxLabel->SetSize(halfWidth, labelHeight);
+	// Glove Image T at y=32
+	m_pGloveImageT->SetPos(rightX, margin + PROPVAL(32));
+	m_pGloveImageT->SetSize(halfWidth, previewHeight);
+	// Glove T ComboBox at y=216
+	m_pLoadoutGloveTComboBox->SetPos(rightX, margin + PROPVAL(216));
+	m_pLoadoutGloveTComboBox->SetSize(halfWidth, controlHeight);
 }
 
 //-----------------------------------------------------------------------------

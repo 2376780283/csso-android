@@ -12,6 +12,7 @@
 #endif
 
 #include <vgui_controls/PropertyPage.h>
+#include <vgui_controls/Label.h>
 
 class CLabeledCommandComboBox;
 class CBitmapImagePanel;
@@ -43,9 +44,16 @@ protected:
 
 private:
 	void					RemapGlovesImage();
+
+	// Labels
+	vgui::Label*			m_pGloveCTComboBoxLabel;
+	vgui::Label*			m_pGloveTComboBoxLabel;
+
+	// Image panels
 	CBitmapImagePanel		*m_pGloveImageCT;
 	CBitmapImagePanel		*m_pGloveImageT;
 
+	// ComboBoxes
 	CLabeledCommandComboBox *m_pLoadoutGloveCTComboBox;
 	CLabeledCommandComboBox *m_pLoadoutGloveTComboBox;
 };

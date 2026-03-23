@@ -48,6 +48,17 @@ protected:
 	virtual void OnApplyChanges();
 
 private:
+	// Labels
+	vgui::Label*				m_pPlayerCountPosLabel;
+	vgui::Label*				m_pHealthAmmoStyleLabel;
+	vgui::Label*				m_pHUDColorLabel;
+	vgui::Label*				m_pHUDBackgroundAlphaLabel;
+	vgui::Label*				m_pRadarScaleLabel;
+	vgui::Label*				m_pRadarSquareLabel;
+	vgui::Label*				m_pMenuBackgroundLabel;
+	vgui::Label*				m_pMenuAgentLabel;
+
+	// Controls
 	CLabeledCommandComboBox*	m_pPlayerCountPos;
 	CLabeledCommandComboBox*	m_pHealthAmmoStyle;
 	CLabeledCommandComboBox*	m_pHUDColor;
