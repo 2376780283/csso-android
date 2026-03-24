@@ -46,17 +46,17 @@ using namespace vgui;
 COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "OptionsDialog")
 {
 	SetDeleteSelfOnClose(true);
+	SetMoveable(false);
+    SetSizeable(false);
+    SetCloseButtonVisible(false);
 
-	int w = 512;
-	int h = 406;
-	if (IsProportional())
-	{
-		w = scheme()->GetProportionalScaledValueEx(GetScheme(), w);
-		h = scheme()->GetProportionalScaledValueEx(GetScheme(), h);
-	}
+	// Get screen size for fullscreen
+	int screenW, screenH;
+	vgui::surface()->GetScreenSize(screenW, screenH);
 
-	SetBounds(0, 0, w, h);
-
+	// Set fullscreen bounds
+	SetBounds(0, 0, screenW, screenH);
+	
 	SetSizeable( false );
 
 	SetTitle("#GameUI_Options", true);
@@ -83,10 +83,8 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	{
 		AddPage(new COptionsSubPortal(this), "#GameUI_Portal");
 	}
-#ifndef ANDROID
 	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
 	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
-#endif
 #ifdef ANDROID
 	AddPage(new COptionsSubTouch(this), "Touch");
 #endif
