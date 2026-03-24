@@ -87,44 +87,60 @@ void COptionsSubKeyboard::PerformLayout()
 	if (pw < 100 || ph < 100)
 		return;
 
-	// Content dimensions (from original RES file)
-	int listWidth = 480;
-	int listHeight = 258;
-	int buttonY = 276;
-	int buttonHeight = 24;
+	// Content dimensions
+	int buttonHeight = 28;
+	int margin = 16;
+	int buttonSpacing = 8;
+	int buttonAreaHeight = buttonHeight + margin;
 
-	// Button widths
+	// List fills width with margins
+	int listWidth = pw - margin * 2;
+	if (listWidth < 100)
+		listWidth = 100;
+
+	// Calculate available height for the list
+	int availableHeight = ph - buttonAreaHeight - margin * 2;
+	if (availableHeight < 100)
+		availableHeight = 100;
+
+	// Calculate vertical center offset
+	int contentHeight = availableHeight + buttonAreaHeight;
+	int vertOffset = (ph - contentHeight) / 2;
+	if (vertOffset < margin)
+		vertOffset = margin;
+
+	// List always starts at margin (left edge), width fills container
+	// Position key binding list - fills available width and height
+	m_pKeyBindList->SetBounds(margin, vertOffset, listWidth, availableHeight);
+
+	// Position buttons - centered below the list
+	int buttonY = vertOffset + availableHeight + margin;
+
+	// Button total width
 	int btnDefaultsWidth = 134;
 	int btnAdvancedWidth = 111;
 	int btnChangeWidth = 106;
 	int btnClearWidth = 105;
+	int totalButtonWidth = btnDefaultsWidth + btnAdvancedWidth + btnChangeWidth + btnClearWidth + buttonSpacing * 3;
 
-	// Calculate total content width and center offset
-	int totalContentWidth = listWidth; // 480
-	int centerOffset = (pw - totalContentWidth) / 2;
+	// Calculate center offset for buttons
+	int buttonStartX = margin + (listWidth - totalButtonWidth) / 2;
+	if (buttonStartX < margin)
+		buttonStartX = margin;
 
-	// Clamp minimum offset to prevent controls going off-screen
-	if (centerOffset < 8)
-		centerOffset = 8;
-
-	// Position key binding list
-	m_pKeyBindList->SetBounds(centerOffset, 10, listWidth, listHeight);
-
-	// Calculate button positions (centered below the list)
-	int buttonStartX = centerOffset;
 	int currentX = buttonStartX;
 
 	// Defaults button
 	m_pDefaultsButton->SetBounds(currentX, buttonY, btnDefaultsWidth, buttonHeight);
-	currentX += btnDefaultsWidth + 8; // 8px gap
+	currentX += btnDefaultsWidth + buttonSpacing;
 
 	// Advanced button
 	m_pKeyAdvancedButton->SetBounds(currentX, buttonY, btnAdvancedWidth, buttonHeight);
-	currentX += btnAdvancedWidth + 8;
+	currentX += btnAdvancedWidth + buttonSpacing;
 
 	// Change Key button
 	m_pSetBindingButton->SetBounds(currentX, buttonY, btnChangeWidth, buttonHeight);
-	currentX += btnChangeWidth + 8;
+	currentX += btnChangeWidth + buttonSpacing;
 
 	// Clear Key button
 	m_pClearBindingButton->SetBounds(currentX, buttonY, btnClearWidth, buttonHeight);

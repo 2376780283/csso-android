@@ -74,15 +74,7 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	}
 	// NVNT END
 #endif
-	if (ModInfo().IsSinglePlayerOnly() && !ModInfo().NoDifficulty())
-	{
-		AddPage(new COptionsSubDifficulty(this), "#GameUI_Difficulty");
-	}
 
-	if (ModInfo().HasPortals())
-	{
-		AddPage(new COptionsSubPortal(this), "#GameUI_Portal");
-	}
 	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
 	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
 #ifdef ANDROID
@@ -93,19 +85,12 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	AddPage(m_pOptionsSubAudio, "#GameUI_Audio");
 	m_pOptionsSubVideo = new COptionsSubVideo(this);
 	AddPage(m_pOptionsSubVideo, "#GameUI_Video");
-
-	if ( !ModInfo().IsSinglePlayerOnly() ) 
-	{
-		AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
-	}
-
+    AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
+	
 	// add the multiplay page last, if we're combo single/multi or just multi
-	if ( (ModInfo().IsMultiplayerOnly() && !ModInfo().IsSinglePlayerOnly()) ||
-		 (!ModInfo().IsMultiplayerOnly() && !ModInfo().IsSinglePlayerOnly()) )
-	{
-		m_pOptionsSubMultiplayer = new COptionsSubMultiplayer(this);
-		AddPage(m_pOptionsSubMultiplayer, "#GameUI_Multiplayer");
-	}
+	m_pOptionsSubMultiplayer = new COptionsSubMultiplayer(this);
+	AddPage(m_pOptionsSubMultiplayer, "#GameUI_Multiplayer");
+	
 
 //	double s5 = system()->GetCurrentTime();
 //	Msg("COptionsDialog::COptionsDialog(): %.3fms\n", (float)(s5 - s4) * 1000.0f);
