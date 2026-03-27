@@ -178,14 +178,38 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose: Transparent menu item designed to sit on the background ingame
 //-----------------------------------------------------------------------------
+class CPNGIconPanel : public vgui::Panel
+{
+	DECLARE_CLASS_SIMPLE( CPNGIconPanel, vgui::Panel );
+public:
+	CPNGIconPanel( vgui::Panel *parent, const char *name );
+	~CPNGIconPanel();
+
+	virtual void Paint();
+
+	void SetPNGTexture( int textureId, int width, int height );
+
+private:
+	int m_textureId;
+	int m_texWidth;
+	int m_texHeight;
+};
+
 class CGameMenuItem : public vgui::MenuItem
 {
 	DECLARE_CLASS_SIMPLE( CGameMenuItem, vgui::MenuItem );
 public:
 	CGameMenuItem(vgui::Menu *parent, const char *name);
+	~CGameMenuItem();
 
 	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void ApplySettings( KeyValues *inResourceData );
+	virtual void PerformLayout();
+
+	void SetIcon( const char *iconName );
+
+private:
+	CPNGIconPanel *m_pIcon;
 };
 
 //-----------------------------------------------------------------------------

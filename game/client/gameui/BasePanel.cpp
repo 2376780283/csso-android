@@ -105,6 +105,8 @@ using namespace vgui;
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb/stb_image_resize.h"
 
+#include "tier1/utlbuffer.h"
+
 #ifdef ANDROID
 #include <SDL_misc.h>
 #endif
@@ -190,8 +192,18 @@ VPANEL GetGameUIBasePanel()
 	return BasePanel()->GetVPanel();
 }
 
-CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem") 
+CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem")
 {
+	m_pIcon = NULL;
+}
+
+CGameMenuItem::~CGameMenuItem()
+{
+	if ( m_pIcon )
+	{
+		m_pIcon->DeletePanel();
+		m_pIcon = NULL;
+	}
 }
 
 void CGameMenuItem::ApplySchemeSettings(IScheme *pScheme)
@@ -249,6 +261,164 @@ void CGameMenuItem::ApplySettings( KeyValues *inResourceData )
 	}
 
 	_activationType = (ActivationType_t)inResourceData->GetInt( "button_activation_type", Button::ACTIVATE_ONPRESSED );
+
+	// 读取图标配置
+	const char *iconName = inResourceData->GetString( "icon", "" );
+	if ( iconName && iconName[0] )
+	{
+		SetIcon( iconName );
+	}
+}
+
+// CPNGIconPanel 实现 - 使用 stb_image 加载 PNG 并绘制
+CPNGIconPanel::CPNGIconPanel( vgui::Panel *parent, const char *name ) : BaseClass( parent, name )
+{
+	m_textureId = -1;
+	m_texWidth = 0;
+	m_texHeight = 0;
+}
+
+CPNGIconPanel::~CPNGIconPanel()
+{
+	if ( m_textureId != -1 )
+	{
+		vgui::surface()->DestroyTextureID( m_textureId );
+		m_textureId = -1;
+	}
+}
+
+void CPNGIconPanel::SetPNGTexture( int textureId, int width, int height )
+{
+	m_textureId = textureId;
+	m_texWidth = width;
+	m_texHeight = height;
+}
+
+void CPNGIconPanel::Paint()
+{
+	if ( m_textureId == -1 )
+		return;
+
+	// 检查纹理是否有效
+	if ( !vgui::surface()->IsTextureIDValid( m_textureId ) )
+		return;
+
+	int x, y;
+	GetPos( x, y );
+	int wide, tall;
+	GetSize( wide, tall );
+
+	// 设置颜色（白色，不透明）
+	vgui::surface()->DrawSetColor( 255, 255, 255, 255 );
+
+	// 设置纹理并绘制
+	vgui::surface()->DrawSetTexture( m_textureId );
+	vgui::surface()->DrawTexturedRect( 0, 0, wide, tall );
+}
+
+void CGameMenuItem::SetIcon( const char *iconName )
+{
+	if ( !iconName || !iconName[0] )
+		return;
+
+	// 如果图标已存在，先删除
+	if ( m_pIcon )
+	{
+		m_pIcon->DeletePanel();
+		m_pIcon = NULL;
+	}
+
+	// 检查是否为 PNG 文件
+	bool isPNG = false;
+	size_t len = strlen( iconName );
+	if ( len >= 4 )
+	{
+		const char *ext = iconName + len - 4;
+		if ( ext[0] == '.' )
+		{
+			isPNG = (Q_stricmp(ext, ".png") == 0);
+		}
+	}
+
+	if ( isPNG )
+	{
+		// 使用 stb_image 加载 PNG
+		CUtlBuffer buf;
+		if ( g_pFullFileSystem->ReadFile( iconName, "MOD", buf ) )
+		{
+			int width, height, channels;
+			unsigned char *imageData = stbi_load_from_memory(
+				(unsigned char *)buf.Base(),
+				buf.TellPut(),
+				&width,
+				&height,
+				&channels,
+				STBI_rgb_alpha
+			);
+
+			if ( imageData )
+			{
+				// 创建自定义图标面板
+				m_pIcon = new CPNGIconPanel( this, "MenuIcon" );
+
+				// 缩放到固定大小（32x32）
+				int targetSize = 32;
+				unsigned char *resizedData = (unsigned char *)malloc(targetSize * targetSize * 4);
+				if ( resizedData )
+				{
+					stbir_resize_uint8( imageData, width, height, width * 4,
+						resizedData, targetSize, targetSize, targetSize * 4, 4 );
+
+					// 创建纹理 ID（使用 true 启用 procedural）
+					int textureId = vgui::surface()->CreateNewTextureID( true );
+					if ( textureId != -1 )
+					{
+						vgui::surface()->DrawSetTextureRGBA( textureId, resizedData, targetSize, targetSize, true, false );
+						m_pIcon->SetPNGTexture( textureId, targetSize, targetSize );
+					}
+
+					free( resizedData );
+				}
+
+				m_pIcon->SetVisible( true );
+				m_pIcon->SetZPos( 1 );
+
+				stbi_image_free( imageData );
+			}
+		}
+	}
+	else
+	{
+		// 非 PNG 文件，使用普通 ImagePanel
+		m_pIcon = new CPNGIconPanel( this, "MenuIcon" );
+		m_pIcon->SetVisible( true );
+		m_pIcon->SetZPos( 1 );
+	}
+
+	// 标记需要更新布局
+	InvalidateLayout( true );
+}
+
+void CGameMenuItem::PerformLayout()
+{
+	BaseClass::PerformLayout();
+
+	// 如果有图标，调整图标和文字位置
+	if ( m_pIcon && m_pIcon->IsVisible() )
+	{
+		int wide, tall;
+		GetSize( wide, tall );
+
+		int iconSize = 20;
+		int iconPadding = 8;
+
+		// 设置图标位置（左对齐，垂直居中）
+		m_pIcon->SetPos( iconPadding, (tall - iconSize) / 2 );
+		m_pIcon->SetSize( iconSize, iconSize );
+
+		// 调整文字位置，留出图标空间
+		SetTextInset( iconSize + iconPadding + 4, 0 );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -352,16 +522,38 @@ public:
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
+
+		// 如果 userData 中有 icon 配置，设置图标
+		if ( userData )
+		{
+			const char *icon = userData->GetString( "icon", "" );
+			if ( icon && icon[0] )
+			{
+				item->SetIcon( icon );
+			}
+		}
+
 		return BaseClass::AddMenuItem(item);
 	}
 
 	virtual int AddMenuItem(const char *itemName, wchar_t *itemText, const char *command, Panel *target, KeyValues *userData = NULL)
 	{
-		MenuItem *item = new CGameMenuItem(this, itemName);
+		CGameMenuItem *item = new CGameMenuItem(this, itemName);
 		item->AddActionSignalTarget(target);
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
+
+		// 如果 userData 中有 icon 配置，设置图标
+		if ( userData )
+		{
+			const char *icon = userData->GetString( "icon", "" );
+			if ( icon && icon[0] )
+			{
+				item->SetIcon( icon );
+			}
+		}
+
 		return BaseClass::AddMenuItem(item);
 	}
 
@@ -372,6 +564,17 @@ public:
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
+
+		// 如果 userData 中有 icon 配置，设置图标
+		if ( userData )
+		{
+			const char *icon = userData->GetString( "icon", "" );
+			if ( icon && icon[0] )
+			{
+				item->SetIcon( icon );
+			}
+		}
+
 		return BaseClass::AddMenuItem(item);
 	}
 
@@ -1261,6 +1464,16 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 		SteamClient()->BReleaseSteamPipe( steamPipe );
 	}
 
+	// Find or create NvgLeftBar before creating the game menu
+	m_pNvgLeftBar = dynamic_cast<vgui::EditablePanel*>( FindChildByName( "NvgLeftBar" ) );
+	if ( !m_pNvgLeftBar )
+	{
+		m_pNvgLeftBar = new vgui::EditablePanel( this, "NvgLeftBar" );
+	}
+	m_pNvgLeftBar->SetPaintBackgroundEnabled( true );
+	m_pNvgLeftBar->SetVisible( true );
+	m_pNvgLeftBar->SetZPos( 100 );
+
 	CreateGameMenu();
 	CreateGameLogo();
 
@@ -1330,15 +1543,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 
 	LoadControlSettings( "resource/mainmenu.res" );
 
-	// Find or create NvgLeftBar after LoadControlSettings
-	m_pNvgLeftBar = dynamic_cast<vgui::EditablePanel*>( FindChildByName( "NvgLeftBar" ) );
-	if ( !m_pNvgLeftBar )
-	{
-		m_pNvgLeftBar = new vgui::EditablePanel( this, "NvgLeftBar" );
-	}
-	m_pNvgLeftBar->SetPaintBackgroundEnabled( true );
-	m_pNvgLeftBar->SetVisible( true );
-	m_pNvgLeftBar->SetZPos( 100 );
 	InvalidateLayout();
 }
 
@@ -2196,7 +2400,7 @@ void CBaseModPanel::UpdateGameMenus()
 //-----------------------------------------------------------------------------
 CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 {
-	CGameMenu *menu = new CGameMenu(this, datafile->GetName());
+	CGameMenu *menu = new CGameMenu(m_pNvgLeftBar, datafile->GetName());
 
 	if (CommandLine()->CheckParm( "-console" )){	     		
 	    menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this); 
@@ -2380,20 +2584,6 @@ void CBaseModPanel::PerformLayout()
 		m_pGameLogo->SetPos( m_iGameMenuPos.x + m_pGameLogo->GetOffsetX(), idealMenuY - m_pGameLogo->GetTall() + m_pGameLogo->GetOffsetY() );
 	}
 
-	// position self along middle of screen
-	if ( GameUI().IsConsoleUI() )
-	{
-		int posx, posy;
-		m_pGameMenu->GetPos( posx, posy );
-		m_iGameMenuPos.x = posx;
-	}
-	m_pGameMenu->SetPos(m_iGameMenuPos.x, idealMenuY);
-
-	if ( m_iGameMenuWidth < m_pGameMenu->GetHighestItemWidth() )
-		m_iGameMenuWidth = m_pGameMenu->GetHighestItemWidth();
-
-	m_pGameMenu->SetFixedWidth( m_iGameMenuWidth );
-
 	// Position NvgLeftBar on the left side of the screen
 	if ( m_pNvgLeftBar )
 	{
@@ -2404,7 +2594,29 @@ void CBaseModPanel::PerformLayout()
 		m_pNvgLeftBar->SetSize( nvgLeftBarWidth, tall - nvgTopBarPadding * 2 );
 		m_pNvgLeftBar->SetVisible( true );
 		m_pNvgLeftBar->MoveToFront();
+
+		// Position menu inside NvgLeftBar
+		int menuX = 10;
+		int menuY = nvgTopBarPadding + 10;
+		m_pGameMenu->SetPos( menuX, menuY );
+		m_pGameMenu->SetSize( nvgLeftBarWidth - 20, tall - nvgTopBarPadding * 2 - 20 );
 	}
+	else
+	{
+		// Fallback to original positioning if NvgLeftBar doesn't exist
+		if ( GameUI().IsConsoleUI() )
+		{
+			int posx, posy;
+			m_pGameMenu->GetPos( posx, posy );
+			m_iGameMenuPos.x = posx;
+		}
+		m_pGameMenu->SetPos(m_iGameMenuPos.x, idealMenuY);
+	}
+
+	if ( m_iGameMenuWidth < m_pGameMenu->GetHighestItemWidth() )
+		m_iGameMenuWidth = m_pGameMenu->GetHighestItemWidth();
+
+	m_pGameMenu->SetFixedWidth( m_iGameMenuWidth );
 
 	UpdateGameMenus();
 }
