@@ -1285,8 +1285,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftNvgbarUp1 = NULL;
 	m_pLeftNvgbarUp2 = NULL;
 	m_pLeftNvgbarDown = NULL;
-	m_pRightNvgbarTop = NULL;
-	m_pRightNvgbarDown = NULL;
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
@@ -1294,10 +1292,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pDemoBtn = NULL;
 	m_pSettingsBtn = NULL;
 	m_pQuitBtn = NULL;
-	m_pRightAchievementBtn = NULL;
-	m_pRightAvatarView = NULL;
-	m_pRightNewsPanel = NULL;
-	m_pLeftSkinviewPanel = NULL;
 
 	m_bUserRefusedSignIn = false;
 	m_bUserRefusedStorageDevice = false;
@@ -2333,51 +2327,6 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pQuitBtn->SetBounds( leftNavX + btnOffset, screenTall - navHeight + btnOffset, btnSize, btnSize );
 	m_pQuitBtn->SetVisible( true );
 
-	// Create right navigation bar backgrounds
-	// right_nvgbar_top
-	m_pRightNvgbarTop = new ImagePanel( this, "right_nvgbar_top" );
-	m_pRightNvgbarTop->SetBounds( rightNavX, 0, navWidth, navHeight );
-	m_pRightNvgbarTop->SetFillColor( Color(90, 90, 90, 169) );
-	m_pRightNvgbarTop->SetVisible( true );
-	m_pRightNvgbarTop->SetPaintBackgroundType( 0 );
-
-	// right_nvgbar_down
-	m_pRightNvgbarDown = new ImagePanel( this, "right_nvgbar_down" );
-	m_pRightNvgbarDown->SetBounds( rightNavX, navHeight, navWidth, screenTall - navHeight );
-	m_pRightNvgbarDown->SetFillColor( Color(90, 90, 90, 169) );
-	m_pRightNvgbarDown->SetVisible( true );
-	m_pRightNvgbarDown->SetPaintBackgroundType( 0 );
-
-	// rightbar_openachievement (centered in nav bar)
-	m_pRightAchievementBtn = new ImageButton( this, "rightbar_openachievement", "resource/ui/menu/achievements.png", "OpenCSAchievementsDialog" );
-	m_pRightAchievementBtn->SetBounds( rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
-	m_pRightAchievementBtn->SetVisible( true );
-
-	// right_nvgbar_avatarview
-	m_pRightAvatarView = new ImagePanel( this, "right_nvgbar_avatarview" );
-	m_pRightAvatarView->SetBounds( screenWide / 2 - 20, 10, 40, 40 );
-	m_pRightAvatarView->SetVisible( true );
-	m_pRightAvatarView->SetPaintBackgroundType( 0 );
-
-	// Create center info panels (positioned between nav bars)
-	int contentLeft = leftNavX + navWidth + 20;
-	int contentRight = rightNavX - 20;
-	int contentWidth = contentRight - contentLeft;
-	
-	// right_news_panel
-	m_pRightNewsPanel = new ImagePanel( this, "right_news_panel" );
-	m_pRightNewsPanel->SetBounds( contentLeft, 20, contentWidth, screenTall * 0.6f );
-	m_pRightNewsPanel->SetFillColor( Color(90, 90, 90, 169) );
-	m_pRightNewsPanel->SetVisible( true );
-	m_pRightNewsPanel->SetPaintBackgroundType( 0 );
-
-	// left_skinview_panel
-	m_pLeftSkinviewPanel = new ImagePanel( this, "left_skinview_panel" );
-	m_pLeftSkinviewPanel->SetBounds( contentLeft, screenTall * 0.6f + 30, contentWidth, screenTall * 0.35f );
-	m_pLeftSkinviewPanel->SetFillColor( Color(90, 90, 90, 169) );
-	m_pLeftSkinviewPanel->SetVisible( true );
-	m_pLeftSkinviewPanel->SetPaintBackgroundType( 0 );
-
 	// Setup panels
 	SETUP_PANEL( m_pLeftNvgbarUp1 );
 	SETUP_PANEL( m_pLeftNvgbarUp2 );
@@ -2389,12 +2338,6 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pDemoBtn );
 	SETUP_PANEL( m_pSettingsBtn );
 	SETUP_PANEL( m_pQuitBtn );
-	SETUP_PANEL( m_pRightNvgbarTop );
-	SETUP_PANEL( m_pRightNvgbarDown );
-	SETUP_PANEL( m_pRightAchievementBtn );
-	SETUP_PANEL( m_pRightAvatarView );
-	SETUP_PANEL( m_pRightNewsPanel );
-	SETUP_PANEL( m_pLeftSkinviewPanel );
 }
 
 void CBaseModPanel::CheckBonusBlinkState()
@@ -2631,23 +2574,6 @@ void CBaseModPanel::PerformLayout()
 		m_pSettingsBtn->SetBounds(leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize);
 		m_pQuitBtn->SetBounds(leftNavX + btnOffset, tall - navHeight + btnOffset, btnSize, btnSize);
 
-		// Right nav bar backgrounds
-		m_pRightNvgbarTop->SetBounds(rightNavX, 0, navWidth, navHeight);
-		m_pRightNvgbarDown->SetBounds(rightNavX, navHeight, navWidth, tall - navHeight);
-
-		// Right buttons
-		m_pRightAchievementBtn->SetBounds(rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize);
-
-		// Avatar view
-		m_pRightAvatarView->SetBounds(wide / 2 - 20, 10, 40, 40);
-
-		// Center panels
-		int contentLeft = leftNavX + navWidth + 20;
-		int contentRight = rightNavX - 20;
-		int contentWidth = contentRight - contentLeft;
-
-		m_pRightNewsPanel->SetBounds(contentLeft, 20, contentWidth, tall * 0.6f);
-		m_pLeftSkinviewPanel->SetBounds(contentLeft, tall * 0.6f + 30, contentWidth, tall * 0.35f);
 	}
 
 	// Get the size of the menu

@@ -514,8 +514,6 @@ private:
 	vgui::ImagePanel *m_pLeftNvgbarUp1;
 	vgui::ImagePanel *m_pLeftNvgbarUp2;
 	vgui::ImagePanel *m_pLeftNvgbarDown;
-	vgui::ImagePanel *m_pRightNvgbarTop;
-	vgui::ImagePanel *m_pRightNvgbarDown;
 	class ImageButton *m_pLeftTopLogo;
 	class ImageButton *m_pPlayBtn;
 	class ImageButton *m_pOpenServersBtn;
@@ -523,10 +521,6 @@ private:
 	class ImageButton *m_pDemoBtn;
 	class ImageButton *m_pSettingsBtn;
 	class ImageButton *m_pQuitBtn;
-	class ImageButton *m_pRightAchievementBtn;
-	vgui::ImagePanel *m_pRightAvatarView;
-	vgui::ImagePanel *m_pRightNewsPanel;
-	vgui::ImagePanel *m_pLeftSkinviewPanel;
 	
 		// Used for internal state dealing with blades
 	bool						m_bUserRefusedSignIn;
