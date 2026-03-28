@@ -105,19 +105,96 @@ using namespace vgui;
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb/stb_image_resize.h"
 
-#include "tier1/utlbuffer.h"
-
 #ifdef ANDROID
 #include <SDL_misc.h>
 #endif
 
 #undef MessageBox	// Windows helpfully #define's this to MessageBoxA, we're using vgui::MessageBox
 
+#include "tier1/utlbuffer.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 
 #define MAIN_MENU_INDENT_X360 10
+
+// ====================================
+// 辅助函数：加载 PNG 并返回 TextureID
+// ====================================
+static int CreatePNGTextureHelper(const char *szPath) {
+	CUtlBuffer buf;
+	if (!g_pFullFileSystem->ReadFile(szPath, "MOD", buf)) return -1;
+
+	int width, height, channels;
+	unsigned char *data = stbi_load_from_memory((unsigned char *)buf.Base(), buf.TellPut(), &width, &height, &channels, 4);
+	if (!data) return -1;
+
+	int targetW = 128; // 统一缩放大小
+	int targetH = 128;
+	unsigned char *resizedData = (unsigned char *)malloc(targetW * targetH * 4);
+	int textureID = -1;
+
+	if (resizedData) {
+		if (stbir_resize_uint8(data, width, height, width * 4, resizedData, targetW, targetH, targetW * 4, 4)) {
+			textureID = vgui::surface()->CreateNewTextureID(true);
+			vgui::surface()->DrawSetTextureRGBA(textureID, resizedData, targetW, targetH, true, false);
+		}
+		free(resizedData);
+	}
+
+	stbi_image_free(data);
+	return textureID;
+}
+
+class ImageButton : public vgui::Panel
+{
+public:
+	ImageButton(Panel *parent, const char *name, const char *imagePath, const char *command) : Panel(parent, name)
+	{
+		m_szCommand = command;
+		m_bSelected = false;
+		m_textureID = CreatePNGTextureHelper(imagePath);
+		
+		SetMouseInputEnabled(true);
+		SetPaintBackgroundEnabled(false);
+	}
+
+	virtual ~ImageButton() {
+		if (vgui::surface()->IsTextureIDValid(m_textureID)) {
+			vgui::surface()->DeleteTextureByID(m_textureID);
+		}
+	}
+
+	virtual void Paint()
+	{
+		if (m_textureID == -1) return;
+		int alpha = m_bSelected ? 150 : 255;        
+		vgui::surface()->DrawSetColor(255, 255, 255, alpha);
+		vgui::surface()->DrawSetTexture(m_textureID);
+		vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
+	}
+
+	virtual void OnMousePressed(MouseCode code) {
+		if (code == MOUSE_LEFT) { m_bSelected = true; input()->SetMouseCapture(GetVPanel()); }
+	}
+
+	virtual void OnMouseReleased(MouseCode code) {
+		if (code == MOUSE_LEFT) {
+			if (m_bSelected)
+			{
+				PostMessage(GetParent(), new KeyValues("Command", "command", m_szCommand.String()));
+			}
+			m_bSelected = false;
+			input()->SetMouseCapture(NULL);
+		}
+	}
+
+private:
+	bool m_bSelected;
+	int m_textureID;
+	CUtlString m_szCommand;
+};
 
 ConVar vgui_message_dialog_modal( "vgui_message_dialog_modal", "1", FCVAR_ARCHIVE );
 ConVar cl_menu_background( "cl_menu_background", "1", FCVAR_ARCHIVE );
@@ -192,18 +269,8 @@ VPANEL GetGameUIBasePanel()
 	return BasePanel()->GetVPanel();
 }
 
-CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem")
+CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem") 
 {
-	m_pIcon = NULL;
-}
-
-CGameMenuItem::~CGameMenuItem()
-{
-	if ( m_pIcon )
-	{
-		m_pIcon->DeletePanel();
-		m_pIcon = NULL;
-	}
 }
 
 void CGameMenuItem::ApplySchemeSettings(IScheme *pScheme)
@@ -261,164 +328,6 @@ void CGameMenuItem::ApplySettings( KeyValues *inResourceData )
 	}
 
 	_activationType = (ActivationType_t)inResourceData->GetInt( "button_activation_type", Button::ACTIVATE_ONPRESSED );
-
-	// 读取图标配置
-	const char *iconName = inResourceData->GetString( "icon", "" );
-	if ( iconName && iconName[0] )
-	{
-		SetIcon( iconName );
-	}
-}
-
-// CPNGIconPanel 实现 - 使用 stb_image 加载 PNG 并绘制
-CPNGIconPanel::CPNGIconPanel( vgui::Panel *parent, const char *name ) : BaseClass( parent, name )
-{
-	m_textureId = -1;
-	m_texWidth = 0;
-	m_texHeight = 0;
-}
-
-CPNGIconPanel::~CPNGIconPanel()
-{
-	if ( m_textureId != -1 )
-	{
-		vgui::surface()->DestroyTextureID( m_textureId );
-		m_textureId = -1;
-	}
-}
-
-void CPNGIconPanel::SetPNGTexture( int textureId, int width, int height )
-{
-	m_textureId = textureId;
-	m_texWidth = width;
-	m_texHeight = height;
-}
-
-void CPNGIconPanel::Paint()
-{
-	if ( m_textureId == -1 )
-		return;
-
-	// 检查纹理是否有效
-	if ( !vgui::surface()->IsTextureIDValid( m_textureId ) )
-		return;
-
-	int x, y;
-	GetPos( x, y );
-	int wide, tall;
-	GetSize( wide, tall );
-
-	// 设置颜色（白色，不透明）
-	vgui::surface()->DrawSetColor( 255, 255, 255, 255 );
-
-	// 设置纹理并绘制
-	vgui::surface()->DrawSetTexture( m_textureId );
-	vgui::surface()->DrawTexturedRect( 0, 0, wide, tall );
-}
-
-void CGameMenuItem::SetIcon( const char *iconName )
-{
-	if ( !iconName || !iconName[0] )
-		return;
-
-	// 如果图标已存在，先删除
-	if ( m_pIcon )
-	{
-		m_pIcon->DeletePanel();
-		m_pIcon = NULL;
-	}
-
-	// 检查是否为 PNG 文件
-	bool isPNG = false;
-	size_t len = strlen( iconName );
-	if ( len >= 4 )
-	{
-		const char *ext = iconName + len - 4;
-		if ( ext[0] == '.' )
-		{
-			isPNG = (Q_stricmp(ext, ".png") == 0);
-		}
-	}
-
-	if ( isPNG )
-	{
-		// 使用 stb_image 加载 PNG
-		CUtlBuffer buf;
-		if ( g_pFullFileSystem->ReadFile( iconName, "MOD", buf ) )
-		{
-			int width, height, channels;
-			unsigned char *imageData = stbi_load_from_memory(
-				(unsigned char *)buf.Base(),
-				buf.TellPut(),
-				&width,
-				&height,
-				&channels,
-				STBI_rgb_alpha
-			);
-
-			if ( imageData )
-			{
-				// 创建自定义图标面板
-				m_pIcon = new CPNGIconPanel( this, "MenuIcon" );
-
-				// 缩放到固定大小（32x32）
-				int targetSize = 32;
-				unsigned char *resizedData = (unsigned char *)malloc(targetSize * targetSize * 4);
-				if ( resizedData )
-				{
-					stbir_resize_uint8( imageData, width, height, width * 4,
-						resizedData, targetSize, targetSize, targetSize * 4, 4 );
-
-					// 创建纹理 ID（使用 true 启用 procedural）
-					int textureId = vgui::surface()->CreateNewTextureID( true );
-					if ( textureId != -1 )
-					{
-						vgui::surface()->DrawSetTextureRGBA( textureId, resizedData, targetSize, targetSize, true, false );
-						m_pIcon->SetPNGTexture( textureId, targetSize, targetSize );
-					}
-
-					free( resizedData );
-				}
-
-				m_pIcon->SetVisible( true );
-				m_pIcon->SetZPos( 1 );
-
-				stbi_image_free( imageData );
-			}
-		}
-	}
-	else
-	{
-		// 非 PNG 文件，使用普通 ImagePanel
-		m_pIcon = new CPNGIconPanel( this, "MenuIcon" );
-		m_pIcon->SetVisible( true );
-		m_pIcon->SetZPos( 1 );
-	}
-
-	// 标记需要更新布局
-	InvalidateLayout( true );
-}
-
-void CGameMenuItem::PerformLayout()
-{
-	BaseClass::PerformLayout();
-
-	// 如果有图标，调整图标和文字位置
-	if ( m_pIcon && m_pIcon->IsVisible() )
-	{
-		int wide, tall;
-		GetSize( wide, tall );
-
-		int iconSize = 20;
-		int iconPadding = 8;
-
-		// 设置图标位置（左对齐，垂直居中）
-		m_pIcon->SetPos( iconPadding, (tall - iconSize) / 2 );
-		m_pIcon->SetSize( iconSize, iconSize );
-
-		// 调整文字位置，留出图标空间
-		SetTextInset( iconSize + iconPadding + 4, 0 );
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -522,38 +431,16 @@ public:
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
-
-		// 如果 userData 中有 icon 配置，设置图标
-		if ( userData )
-		{
-			const char *icon = userData->GetString( "icon", "" );
-			if ( icon && icon[0] )
-			{
-				item->SetIcon( icon );
-			}
-		}
-
 		return BaseClass::AddMenuItem(item);
 	}
 
 	virtual int AddMenuItem(const char *itemName, wchar_t *itemText, const char *command, Panel *target, KeyValues *userData = NULL)
 	{
-		CGameMenuItem *item = new CGameMenuItem(this, itemName);
+		MenuItem *item = new CGameMenuItem(this, itemName);
 		item->AddActionSignalTarget(target);
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
-
-		// 如果 userData 中有 icon 配置，设置图标
-		if ( userData )
-		{
-			const char *icon = userData->GetString( "icon", "" );
-			if ( icon && icon[0] )
-			{
-				item->SetIcon( icon );
-			}
-		}
-
 		return BaseClass::AddMenuItem(item);
 	}
 
@@ -564,17 +451,6 @@ public:
 		item->SetCommand(command);
 		item->SetText(itemText);
 		item->SetUserData(userData);
-
-		// 如果 userData 中有 icon 配置，设置图标
-		if ( userData )
-		{
-			const char *icon = userData->GetString( "icon", "" );
-			if ( icon && icon[0] )
-			{
-				item->SetIcon( icon );
-			}
-		}
-
 		return BaseClass::AddMenuItem(item);
 	}
 
@@ -1403,6 +1279,7 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_bUseMatchmaking = false;
 	m_bRestartFromInvite = false;
 	m_bRestartSameGame = false;
+	m_bUseCustomMenu = CommandLine()->CheckParm( "-custommenu" ) != NULL;
 	m_bUserRefusedSignIn = false;
 	m_bUserRefusedStorageDevice = false;
 	m_bWaitingForUserSignIn = false;
@@ -1463,16 +1340,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 
 		SteamClient()->BReleaseSteamPipe( steamPipe );
 	}
-
-	// Find or create NvgLeftBar before creating the game menu
-	m_pNvgLeftBar = dynamic_cast<vgui::EditablePanel*>( FindChildByName( "NvgLeftBar" ) );
-	if ( !m_pNvgLeftBar )
-	{
-		m_pNvgLeftBar = new vgui::EditablePanel( this, "NvgLeftBar" );
-	}
-	m_pNvgLeftBar->SetPaintBackgroundEnabled( true );
-	m_pNvgLeftBar->SetVisible( true );
-	m_pNvgLeftBar->SetZPos( 100 );
 
 	CreateGameMenu();
 	CreateGameLogo();
@@ -1541,9 +1408,15 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_iTWeapon = -1;
 	m_iAgentToUse = -1;
 
-	LoadControlSettings( "resource/mainmenu.res" );
-
-	InvalidateLayout();
+	if ( m_bUseCustomMenu )
+	{
+		LoadControlSettings( "resource/mainmenu.res" );
+	}
+	else
+	{
+		// Create UI elements using pure C++ implementation
+		CreateCustomMenuUI();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2353,6 +2226,157 @@ void CBaseModPanel::CreateGameLogo()
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Create custom menu UI using pure C++ implementation
+//-----------------------------------------------------------------------------
+void CBaseModPanel::CreateCustomMenuUI()
+{
+	// Get screen size
+	int screenWide, screenTall;
+	vgui::surface()->GetScreenSize( screenWide, screenTall );
+
+	// Set our own size to match screen
+	SetBounds( 0, 0, screenWide, screenTall );
+
+	// Calculate dimensions based on actual screen size
+	// Left/Right nav bar: 5% of screen width (smaller)
+	int navWidth = screenWide * 0.05f;
+	if ( navWidth > 100 ) navWidth = 100; // Max width
+	if ( navWidth < 60 ) navWidth = 60;   // Min width
+	int navHeight = navWidth; // Square buttons
+
+	// Left navigation bar X position (always at left edge)
+	int leftNavX = 0;
+
+	// Right navigation bar X position (always at right edge)
+	int rightNavX = screenWide - navWidth;
+
+	// Button size - slightly smaller than nav bar to have padding
+	int btnSize = navWidth - 8;
+	int btnOffset = (navWidth - btnSize) / 2;
+
+	// Create left navigation bar backgrounds (ImagePanels)
+	// left_nvgbar_up1 - top section
+	ImagePanel *left_nvgbar_up1 = new ImagePanel( this, "left_nvgbar_up1" );
+	left_nvgbar_up1->SetBounds( leftNavX, 0, navWidth, navHeight );
+	left_nvgbar_up1->SetFillColor( Color(90, 90, 90, 169) );
+	left_nvgbar_up1->SetVisible( true );
+	left_nvgbar_up1->SetPaintBackgroundType( 0 );
+
+	// left_nvgbar_up2 - middle section (2 buttons high)
+	ImagePanel *left_nvgbar_up2 = new ImagePanel( this, "left_nvgbar_up2" );
+	left_nvgbar_up2->SetBounds( leftNavX, navHeight, navWidth, navHeight * 2 );
+	left_nvgbar_up2->SetFillColor( Color(90, 90, 90, 169) );
+	left_nvgbar_up2->SetVisible( true );
+	left_nvgbar_up2->SetPaintBackgroundType( 0 );
+
+	// left_nvgbar_down - remaining space
+	ImagePanel *left_nvgbar_down = new ImagePanel( this, "left_nvgbar_down" );
+	left_nvgbar_down->SetBounds( leftNavX, navHeight * 3, navWidth, screenTall - navHeight * 3 );
+	left_nvgbar_down->SetFillColor( Color(90, 90, 90, 169) );
+	left_nvgbar_down->SetVisible( true );
+	left_nvgbar_down->SetPaintBackgroundType( 0 );
+
+	// Create left navigation buttons (centered in nav bar)
+	// left_top_logo (logo button)
+	ImageButton *left_top_logo = new ImageButton( this, "left_top_logo", "resource/ui/menu/logo.png", "" );
+	left_top_logo->SetBounds( leftNavX + btnOffset, btnOffset, btnSize, btnSize );
+	left_top_logo->SetVisible( true );
+
+	// playbtn
+	ImageButton *playbtn = new ImageButton( this, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
+	playbtn->SetBounds( leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
+	playbtn->SetVisible( true );
+
+	// openserversbtn
+	ImageButton *openserversbtn = new ImageButton( this, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
+	openserversbtn->SetBounds( leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize );
+	openserversbtn->SetVisible( true );
+
+	// modoptionsbtn
+	ImageButton *modoptionsbtn = new ImageButton( this, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
+	modoptionsbtn->SetBounds( leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize );
+	modoptionsbtn->SetVisible( true );
+
+	// demobtn
+	ImageButton *demobtn = new ImageButton( this, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
+	demobtn->SetBounds( leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize );
+	demobtn->SetVisible( true );
+
+	// settingsbtn
+	ImageButton *settingsbtn = new ImageButton( this, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
+	settingsbtn->SetBounds( leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize );
+	settingsbtn->SetVisible( true );
+
+	// quitbtn
+	ImageButton *quitbtn = new ImageButton( this, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
+	quitbtn->SetBounds( leftNavX + btnOffset, screenTall - navHeight + btnOffset, btnSize, btnSize );
+	quitbtn->SetVisible( true );
+
+	// Create right navigation bar backgrounds
+	// right_nvgbar_top
+	ImagePanel *right_nvgbar_top = new ImagePanel( this, "right_nvgbar_top" );
+	right_nvgbar_top->SetBounds( rightNavX, 0, navWidth, navHeight );
+	right_nvgbar_top->SetFillColor( Color(90, 90, 90, 169) );
+	right_nvgbar_top->SetVisible( true );
+	right_nvgbar_top->SetPaintBackgroundType( 0 );
+
+	// right_nvgbar_down
+	ImagePanel *right_nvgbar_down = new ImagePanel( this, "right_nvgbar_down" );
+	right_nvgbar_down->SetBounds( rightNavX, navHeight, navWidth, screenTall - navHeight );
+	right_nvgbar_down->SetFillColor( Color(90, 90, 90, 169) );
+	right_nvgbar_down->SetVisible( true );
+	right_nvgbar_down->SetPaintBackgroundType( 0 );
+
+	// rightbar_openachievement (centered in nav bar)
+	ImageButton *rightbar_openachievement = new ImageButton( this, "rightbar_openachievement", "resource/ui/menu/achievements.png", "OpenCSAchievementsDialog" );
+	rightbar_openachievement->SetBounds( rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
+	rightbar_openachievement->SetVisible( true );
+
+	// right_nvgbar_avatarview
+	ImagePanel *right_nvgbar_avatarview = new ImagePanel( this, "right_nvgbar_avatarview" );
+	right_nvgbar_avatarview->SetBounds( screenWide / 2 - 20, 10, 40, 40 );
+	right_nvgbar_avatarview->SetVisible( true );
+	right_nvgbar_avatarview->SetPaintBackgroundType( 0 );
+
+	// Create center info panels (positioned between nav bars)
+	int contentLeft = leftNavX + navWidth + 20;
+	int contentRight = rightNavX - 20;
+	int contentWidth = contentRight - contentLeft;
+	
+	// right_news_panel
+	ImagePanel *right_news_panel = new ImagePanel( this, "right_news_panel" );
+	right_news_panel->SetBounds( contentLeft, 20, contentWidth, screenTall * 0.6f );
+	right_news_panel->SetFillColor( Color(90, 90, 90, 169) );
+	right_news_panel->SetVisible( true );
+	right_news_panel->SetPaintBackgroundType( 0 );
+
+	// left_skinview_panel
+	ImagePanel *left_skinview_panel = new ImagePanel( this, "left_skinview_panel" );
+	left_skinview_panel->SetBounds( contentLeft, screenTall * 0.6f + 30, contentWidth, screenTall * 0.35f );
+	left_skinview_panel->SetFillColor( Color(90, 90, 90, 169) );
+	left_skinview_panel->SetVisible( true );
+	left_skinview_panel->SetPaintBackgroundType( 0 );
+
+	// Setup panels
+	SETUP_PANEL( left_nvgbar_up1 );
+	SETUP_PANEL( left_nvgbar_up2 );
+	SETUP_PANEL( left_nvgbar_down );
+	SETUP_PANEL( left_top_logo );
+	SETUP_PANEL( playbtn );
+	SETUP_PANEL( openserversbtn );
+	SETUP_PANEL( modoptionsbtn );
+	SETUP_PANEL( demobtn );
+	SETUP_PANEL( settingsbtn );
+	SETUP_PANEL( quitbtn );
+	SETUP_PANEL( right_nvgbar_top );
+	SETUP_PANEL( right_nvgbar_down );
+	SETUP_PANEL( rightbar_openachievement );
+	SETUP_PANEL( right_nvgbar_avatarview );
+	SETUP_PANEL( right_news_panel );
+	SETUP_PANEL( left_skinview_panel );
+}
+
 void CBaseModPanel::CheckBonusBlinkState()
 {
 #ifdef _X360
@@ -2400,7 +2424,7 @@ void CBaseModPanel::UpdateGameMenus()
 //-----------------------------------------------------------------------------
 CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 {
-	CGameMenu *menu = new CGameMenu(m_pNvgLeftBar, datafile->GetName());
+	CGameMenu *menu = new CGameMenu(this, datafile->GetName());
 
 	if (CommandLine()->CheckParm( "-console" )){	     		
 	    menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this); 
@@ -2584,34 +2608,14 @@ void CBaseModPanel::PerformLayout()
 		m_pGameLogo->SetPos( m_iGameMenuPos.x + m_pGameLogo->GetOffsetX(), idealMenuY - m_pGameLogo->GetTall() + m_pGameLogo->GetOffsetY() );
 	}
 
-	// Position NvgLeftBar on the left side of the screen
-	if ( m_pNvgLeftBar )
+	// position self along middle of screen
+	if ( GameUI().IsConsoleUI() )
 	{
-		int nvgLeftBarWidth = 260;
-		int nvgLeftBarPadding = 15;
-		int nvgTopBarPadding = 15;
-		m_pNvgLeftBar->SetPos( nvgLeftBarPadding, nvgTopBarPadding );
-		m_pNvgLeftBar->SetSize( nvgLeftBarWidth, tall - nvgTopBarPadding * 2 );
-		m_pNvgLeftBar->SetVisible( true );
-		m_pNvgLeftBar->MoveToFront();
-
-		// Position menu inside NvgLeftBar
-		int menuX = 10;
-		int menuY = nvgTopBarPadding + 10;
-		m_pGameMenu->SetPos( menuX, menuY );
-		m_pGameMenu->SetSize( nvgLeftBarWidth - 20, tall - nvgTopBarPadding * 2 - 20 );
+		int posx, posy;
+		m_pGameMenu->GetPos( posx, posy );
+		m_iGameMenuPos.x = posx;
 	}
-	else
-	{
-		// Fallback to original positioning if NvgLeftBar doesn't exist
-		if ( GameUI().IsConsoleUI() )
-		{
-			int posx, posy;
-			m_pGameMenu->GetPos( posx, posy );
-			m_iGameMenuPos.x = posx;
-		}
-		m_pGameMenu->SetPos(m_iGameMenuPos.x, idealMenuY);
-	}
+	m_pGameMenu->SetPos(m_iGameMenuPos.x, idealMenuY);
 
 	if ( m_iGameMenuWidth < m_pGameMenu->GetHighestItemWidth() )
 		m_iGameMenuWidth = m_pGameMenu->GetHighestItemWidth();
@@ -2628,13 +2632,6 @@ void CBaseModPanel::ApplySchemeSettings(IScheme *pScheme)
 {
 	int i;
 	BaseClass::ApplySchemeSettings(pScheme);
-
-	// Set NvgLeftBar border and background color
-	if ( m_pNvgLeftBar )
-	{
-		m_pNvgLeftBar->SetBorder( pScheme->GetBorder( "FrameBorder" ) );
-		m_pNvgLeftBar->SetBgColor( pScheme->GetColor( "Frame.BgColor", Color( 0, 0, 0, 200 ) ) );
-	}
 
 	m_iGameMenuInset = atoi(pScheme->GetResourceString("MainMenu.Inset"));
 	m_iGameMenuInset *= 2;

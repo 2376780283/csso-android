@@ -178,38 +178,14 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose: Transparent menu item designed to sit on the background ingame
 //-----------------------------------------------------------------------------
-class CPNGIconPanel : public vgui::Panel
-{
-	DECLARE_CLASS_SIMPLE( CPNGIconPanel, vgui::Panel );
-public:
-	CPNGIconPanel( vgui::Panel *parent, const char *name );
-	~CPNGIconPanel();
-
-	virtual void Paint();
-
-	void SetPNGTexture( int textureId, int width, int height );
-
-private:
-	int m_textureId;
-	int m_texWidth;
-	int m_texHeight;
-};
-
 class CGameMenuItem : public vgui::MenuItem
 {
 	DECLARE_CLASS_SIMPLE( CGameMenuItem, vgui::MenuItem );
 public:
 	CGameMenuItem(vgui::Menu *parent, const char *name);
-	~CGameMenuItem();
 
 	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void ApplySettings( KeyValues *inResourceData );
-	virtual void PerformLayout();
-
-	void SetIcon( const char *iconName );
-
-private:
-	CPNGIconPanel *m_pIcon;
 };
 
 //-----------------------------------------------------------------------------
@@ -436,6 +412,7 @@ private:
 	void CreatePlatformMenu();
 	void CreateGameMenu();
 	void CreateGameLogo();
+	void CreateCustomMenuUI();
 	void CheckBonusBlinkState();
 	void UpdateGameMenus();
 	CGameMenu *RecursiveLoadGameMenu(KeyValues *datafile);
@@ -528,11 +505,12 @@ private:
 	bool						m_bUseRenderTargetImage;
 	int							m_ExitingFrameCount;
 	bool						m_bXUIVisible;
-	bool						m_bUseMatchmaking;
-	bool						m_bRestartFromInvite;
-	bool						m_bRestartSameGame;
+		bool						m_bUseMatchmaking;
+		bool						m_bRestartFromInvite;
+		bool						m_bRestartSameGame;
+		bool						m_bUseCustomMenu;
 	
-	// Used for internal state dealing with blades
+		// Used for internal state dealing with blades
 	bool						m_bUserRefusedSignIn;
 	bool						m_bUserRefusedStorageDevice;
 	bool						m_bWaitingForUserSignIn;
@@ -564,7 +542,6 @@ private:
 	MESSAGE_FUNC( FinishDialogClose, "FinishDialogClose" );
 
 	CBaseModPlayerPanel* m_pPlayerModel;
-	vgui::EditablePanel* m_pNvgLeftBar;
 	int m_iCTAgent;
 	int m_iTAgent;
 	int m_iCTGloves;
