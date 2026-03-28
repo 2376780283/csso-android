@@ -509,6 +509,24 @@ private:
 		bool						m_bRestartFromInvite;
 		bool						m_bRestartSameGame;
 		bool						m_bUseCustomMenu;
+
+	// Custom menu UI elements (for resolution-independent layout)
+	vgui::ImagePanel *m_pLeftNvgbarUp1;
+	vgui::ImagePanel *m_pLeftNvgbarUp2;
+	vgui::ImagePanel *m_pLeftNvgbarDown;
+	vgui::ImagePanel *m_pRightNvgbarTop;
+	vgui::ImagePanel *m_pRightNvgbarDown;
+	class ImageButton *m_pLeftTopLogo;
+	class ImageButton *m_pPlayBtn;
+	class ImageButton *m_pOpenServersBtn;
+	class ImageButton *m_pModOptionsBtn;
+	class ImageButton *m_pDemoBtn;
+	class ImageButton *m_pSettingsBtn;
+	class ImageButton *m_pQuitBtn;
+	class ImageButton *m_pRightAchievementBtn;
+	vgui::ImagePanel *m_pRightAvatarView;
+	vgui::ImagePanel *m_pRightNewsPanel;
+	vgui::ImagePanel *m_pLeftSkinviewPanel;
 	
 		// Used for internal state dealing with blades
 	bool						m_bUserRefusedSignIn;

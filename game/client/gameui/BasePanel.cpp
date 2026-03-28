@@ -1280,6 +1280,25 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_bRestartFromInvite = false;
 	m_bRestartSameGame = false;
 	m_bUseCustomMenu = CommandLine()->CheckParm( "-custommenu" ) != NULL;
+
+	// Initialize custom menu UI pointers
+	m_pLeftNvgbarUp1 = NULL;
+	m_pLeftNvgbarUp2 = NULL;
+	m_pLeftNvgbarDown = NULL;
+	m_pRightNvgbarTop = NULL;
+	m_pRightNvgbarDown = NULL;
+	m_pLeftTopLogo = NULL;
+	m_pPlayBtn = NULL;
+	m_pOpenServersBtn = NULL;
+	m_pModOptionsBtn = NULL;
+	m_pDemoBtn = NULL;
+	m_pSettingsBtn = NULL;
+	m_pQuitBtn = NULL;
+	m_pRightAchievementBtn = NULL;
+	m_pRightAvatarView = NULL;
+	m_pRightNewsPanel = NULL;
+	m_pLeftSkinviewPanel = NULL;
+
 	m_bUserRefusedSignIn = false;
 	m_bUserRefusedStorageDevice = false;
 	m_bWaitingForUserSignIn = false;
@@ -2257,87 +2276,88 @@ void CBaseModPanel::CreateCustomMenuUI()
 
 	// Create left navigation bar backgrounds (ImagePanels)
 	// left_nvgbar_up1 - top section
-	ImagePanel *left_nvgbar_up1 = new ImagePanel( this, "left_nvgbar_up1" );
-	left_nvgbar_up1->SetBounds( leftNavX, 0, navWidth, navHeight );
-	left_nvgbar_up1->SetFillColor( Color(90, 90, 90, 169) );
-	left_nvgbar_up1->SetVisible( true );
-	left_nvgbar_up1->SetPaintBackgroundType( 0 );
+	m_pLeftNvgbarUp1 = new ImagePanel( this, "left_nvgbar_up1" );
+	m_pLeftNvgbarUp1->SetBounds( leftNavX, 0, navWidth, navHeight );
+	m_pLeftNvgbarUp1->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarUp1->SetVisible( true );
+	m_pLeftNvgbarUp1->SetPaintBackgroundType( 0 );
 
 	// left_nvgbar_up2 - middle section (2 buttons high)
-	ImagePanel *left_nvgbar_up2 = new ImagePanel( this, "left_nvgbar_up2" );
-	left_nvgbar_up2->SetBounds( leftNavX, navHeight, navWidth, navHeight * 2 );
-	left_nvgbar_up2->SetFillColor( Color(90, 90, 90, 169) );
-	left_nvgbar_up2->SetVisible( true );
-	left_nvgbar_up2->SetPaintBackgroundType( 0 );
+	m_pLeftNvgbarUp2 = new ImagePanel( this, "left_nvgbar_up2" );
+	m_pLeftNvgbarUp2->SetBounds( leftNavX, navHeight, navWidth, navHeight * 2 );
+	m_pLeftNvgbarUp2->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarUp2->SetVisible( true );
+	m_pLeftNvgbarUp2->SetPaintBackgroundType( 0 );
 
-	// left_nvgbar_down - remaining space
-	ImagePanel *left_nvgbar_down = new ImagePanel( this, "left_nvgbar_down" );
-	left_nvgbar_down->SetBounds( leftNavX, navHeight * 3, navWidth, screenTall - navHeight * 3 );
-	left_nvgbar_down->SetFillColor( Color(90, 90, 90, 169) );
-	left_nvgbar_down->SetVisible( true );
-	left_nvgbar_down->SetPaintBackgroundType( 0 );
+	// left_nvgbar_down - remaining space (with gap from up2)
+	int gap = 2; // gap between sections
+	m_pLeftNvgbarDown = new ImagePanel( this, "left_nvgbar_down" );
+	m_pLeftNvgbarDown->SetBounds( leftNavX, navHeight * 3 + gap, navWidth, screenTall - navHeight * 3 - gap );
+	m_pLeftNvgbarDown->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarDown->SetVisible( true );
+	m_pLeftNvgbarDown->SetPaintBackgroundType( 0 );
 
 	// Create left navigation buttons (centered in nav bar)
 	// left_top_logo (logo button)
-	ImageButton *left_top_logo = new ImageButton( this, "left_top_logo", "resource/ui/menu/logo.png", "" );
-	left_top_logo->SetBounds( leftNavX + btnOffset, btnOffset, btnSize, btnSize );
-	left_top_logo->SetVisible( true );
+	m_pLeftTopLogo = new ImageButton( this, "left_top_logo", "resource/ui/menu/logo.png", "" );
+	m_pLeftTopLogo->SetBounds( leftNavX + btnOffset, btnOffset, btnSize, btnSize );
+	m_pLeftTopLogo->SetVisible( true );
 
 	// playbtn
-	ImageButton *playbtn = new ImageButton( this, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
-	playbtn->SetBounds( leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
-	playbtn->SetVisible( true );
+	m_pPlayBtn = new ImageButton( this, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
+	m_pPlayBtn->SetBounds( leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
+	m_pPlayBtn->SetVisible( true );
 
 	// openserversbtn
-	ImageButton *openserversbtn = new ImageButton( this, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
-	openserversbtn->SetBounds( leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize );
-	openserversbtn->SetVisible( true );
+	m_pOpenServersBtn = new ImageButton( this, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
+	m_pOpenServersBtn->SetBounds( leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize );
+	m_pOpenServersBtn->SetVisible( true );
 
 	// modoptionsbtn
-	ImageButton *modoptionsbtn = new ImageButton( this, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
-	modoptionsbtn->SetBounds( leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize );
-	modoptionsbtn->SetVisible( true );
+	m_pModOptionsBtn = new ImageButton( this, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
+	m_pModOptionsBtn->SetBounds( leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize );
+	m_pModOptionsBtn->SetVisible( true );
 
 	// demobtn
-	ImageButton *demobtn = new ImageButton( this, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
-	demobtn->SetBounds( leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize );
-	demobtn->SetVisible( true );
+	m_pDemoBtn = new ImageButton( this, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
+	m_pDemoBtn->SetBounds( leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize );
+	m_pDemoBtn->SetVisible( true );
 
 	// settingsbtn
-	ImageButton *settingsbtn = new ImageButton( this, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
-	settingsbtn->SetBounds( leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize );
-	settingsbtn->SetVisible( true );
+	m_pSettingsBtn = new ImageButton( this, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
+	m_pSettingsBtn->SetBounds( leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize );
+	m_pSettingsBtn->SetVisible( true );
 
 	// quitbtn
-	ImageButton *quitbtn = new ImageButton( this, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
-	quitbtn->SetBounds( leftNavX + btnOffset, screenTall - navHeight + btnOffset, btnSize, btnSize );
-	quitbtn->SetVisible( true );
+	m_pQuitBtn = new ImageButton( this, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
+	m_pQuitBtn->SetBounds( leftNavX + btnOffset, screenTall - navHeight + btnOffset, btnSize, btnSize );
+	m_pQuitBtn->SetVisible( true );
 
 	// Create right navigation bar backgrounds
 	// right_nvgbar_top
-	ImagePanel *right_nvgbar_top = new ImagePanel( this, "right_nvgbar_top" );
-	right_nvgbar_top->SetBounds( rightNavX, 0, navWidth, navHeight );
-	right_nvgbar_top->SetFillColor( Color(90, 90, 90, 169) );
-	right_nvgbar_top->SetVisible( true );
-	right_nvgbar_top->SetPaintBackgroundType( 0 );
+	m_pRightNvgbarTop = new ImagePanel( this, "right_nvgbar_top" );
+	m_pRightNvgbarTop->SetBounds( rightNavX, 0, navWidth, navHeight );
+	m_pRightNvgbarTop->SetFillColor( Color(90, 90, 90, 169) );
+	m_pRightNvgbarTop->SetVisible( true );
+	m_pRightNvgbarTop->SetPaintBackgroundType( 0 );
 
 	// right_nvgbar_down
-	ImagePanel *right_nvgbar_down = new ImagePanel( this, "right_nvgbar_down" );
-	right_nvgbar_down->SetBounds( rightNavX, navHeight, navWidth, screenTall - navHeight );
-	right_nvgbar_down->SetFillColor( Color(90, 90, 90, 169) );
-	right_nvgbar_down->SetVisible( true );
-	right_nvgbar_down->SetPaintBackgroundType( 0 );
+	m_pRightNvgbarDown = new ImagePanel( this, "right_nvgbar_down" );
+	m_pRightNvgbarDown->SetBounds( rightNavX, navHeight, navWidth, screenTall - navHeight );
+	m_pRightNvgbarDown->SetFillColor( Color(90, 90, 90, 169) );
+	m_pRightNvgbarDown->SetVisible( true );
+	m_pRightNvgbarDown->SetPaintBackgroundType( 0 );
 
 	// rightbar_openachievement (centered in nav bar)
-	ImageButton *rightbar_openachievement = new ImageButton( this, "rightbar_openachievement", "resource/ui/menu/achievements.png", "OpenCSAchievementsDialog" );
-	rightbar_openachievement->SetBounds( rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
-	rightbar_openachievement->SetVisible( true );
+	m_pRightAchievementBtn = new ImageButton( this, "rightbar_openachievement", "resource/ui/menu/achievements.png", "OpenCSAchievementsDialog" );
+	m_pRightAchievementBtn->SetBounds( rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
+	m_pRightAchievementBtn->SetVisible( true );
 
 	// right_nvgbar_avatarview
-	ImagePanel *right_nvgbar_avatarview = new ImagePanel( this, "right_nvgbar_avatarview" );
-	right_nvgbar_avatarview->SetBounds( screenWide / 2 - 20, 10, 40, 40 );
-	right_nvgbar_avatarview->SetVisible( true );
-	right_nvgbar_avatarview->SetPaintBackgroundType( 0 );
+	m_pRightAvatarView = new ImagePanel( this, "right_nvgbar_avatarview" );
+	m_pRightAvatarView->SetBounds( screenWide / 2 - 20, 10, 40, 40 );
+	m_pRightAvatarView->SetVisible( true );
+	m_pRightAvatarView->SetPaintBackgroundType( 0 );
 
 	// Create center info panels (positioned between nav bars)
 	int contentLeft = leftNavX + navWidth + 20;
@@ -2345,36 +2365,36 @@ void CBaseModPanel::CreateCustomMenuUI()
 	int contentWidth = contentRight - contentLeft;
 	
 	// right_news_panel
-	ImagePanel *right_news_panel = new ImagePanel( this, "right_news_panel" );
-	right_news_panel->SetBounds( contentLeft, 20, contentWidth, screenTall * 0.6f );
-	right_news_panel->SetFillColor( Color(90, 90, 90, 169) );
-	right_news_panel->SetVisible( true );
-	right_news_panel->SetPaintBackgroundType( 0 );
+	m_pRightNewsPanel = new ImagePanel( this, "right_news_panel" );
+	m_pRightNewsPanel->SetBounds( contentLeft, 20, contentWidth, screenTall * 0.6f );
+	m_pRightNewsPanel->SetFillColor( Color(90, 90, 90, 169) );
+	m_pRightNewsPanel->SetVisible( true );
+	m_pRightNewsPanel->SetPaintBackgroundType( 0 );
 
 	// left_skinview_panel
-	ImagePanel *left_skinview_panel = new ImagePanel( this, "left_skinview_panel" );
-	left_skinview_panel->SetBounds( contentLeft, screenTall * 0.6f + 30, contentWidth, screenTall * 0.35f );
-	left_skinview_panel->SetFillColor( Color(90, 90, 90, 169) );
-	left_skinview_panel->SetVisible( true );
-	left_skinview_panel->SetPaintBackgroundType( 0 );
+	m_pLeftSkinviewPanel = new ImagePanel( this, "left_skinview_panel" );
+	m_pLeftSkinviewPanel->SetBounds( contentLeft, screenTall * 0.6f + 30, contentWidth, screenTall * 0.35f );
+	m_pLeftSkinviewPanel->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftSkinviewPanel->SetVisible( true );
+	m_pLeftSkinviewPanel->SetPaintBackgroundType( 0 );
 
 	// Setup panels
-	SETUP_PANEL( left_nvgbar_up1 );
-	SETUP_PANEL( left_nvgbar_up2 );
-	SETUP_PANEL( left_nvgbar_down );
-	SETUP_PANEL( left_top_logo );
-	SETUP_PANEL( playbtn );
-	SETUP_PANEL( openserversbtn );
-	SETUP_PANEL( modoptionsbtn );
-	SETUP_PANEL( demobtn );
-	SETUP_PANEL( settingsbtn );
-	SETUP_PANEL( quitbtn );
-	SETUP_PANEL( right_nvgbar_top );
-	SETUP_PANEL( right_nvgbar_down );
-	SETUP_PANEL( rightbar_openachievement );
-	SETUP_PANEL( right_nvgbar_avatarview );
-	SETUP_PANEL( right_news_panel );
-	SETUP_PANEL( left_skinview_panel );
+	SETUP_PANEL( m_pLeftNvgbarUp1 );
+	SETUP_PANEL( m_pLeftNvgbarUp2 );
+	SETUP_PANEL( m_pLeftNvgbarDown );
+	SETUP_PANEL( m_pLeftTopLogo );
+	SETUP_PANEL( m_pPlayBtn );
+	SETUP_PANEL( m_pOpenServersBtn );
+	SETUP_PANEL( m_pModOptionsBtn );
+	SETUP_PANEL( m_pDemoBtn );
+	SETUP_PANEL( m_pSettingsBtn );
+	SETUP_PANEL( m_pQuitBtn );
+	SETUP_PANEL( m_pRightNvgbarTop );
+	SETUP_PANEL( m_pRightNvgbarDown );
+	SETUP_PANEL( m_pRightAchievementBtn );
+	SETUP_PANEL( m_pRightAvatarView );
+	SETUP_PANEL( m_pRightNewsPanel );
+	SETUP_PANEL( m_pLeftSkinviewPanel );
 }
 
 void CBaseModPanel::CheckBonusBlinkState()
@@ -2577,6 +2597,58 @@ void CBaseModPanel::PerformLayout()
 	// Get the screen size
 	int wide, tall;
 	vgui::surface()->GetScreenSize(wide, tall);
+
+	// Update our own size to match screen
+	SetBounds(0, 0, wide, tall);
+
+	// Layout custom menu UI if enabled
+	if (m_bUseCustomMenu && m_pLeftNvgbarUp1)
+	{
+		// Calculate dimensions based on actual screen size
+		int navWidth = wide * 0.05f;
+		if (navWidth > 100) navWidth = 100;
+		if (navWidth < 60) navWidth = 60;
+		int navHeight = navWidth;
+
+		int leftNavX = 0;
+		int rightNavX = wide - navWidth;
+
+		int btnSize = navWidth - 8;
+		int btnOffset = (navWidth - btnSize) / 2;
+		int gap = 4;
+
+		// Left nav bar backgrounds
+		m_pLeftNvgbarUp1->SetBounds(leftNavX, 0, navWidth, navHeight);
+		m_pLeftNvgbarUp2->SetBounds(leftNavX, navHeight, navWidth, navHeight * 2);
+		m_pLeftNvgbarDown->SetBounds(leftNavX, navHeight * 3 + gap, navWidth, tall - navHeight * 3 - gap);
+
+		// Left buttons
+		m_pLeftTopLogo->SetBounds(leftNavX + btnOffset, btnOffset, btnSize, btnSize);
+		m_pPlayBtn->SetBounds(leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize);
+		m_pOpenServersBtn->SetBounds(leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize);
+		m_pModOptionsBtn->SetBounds(leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize);
+		m_pDemoBtn->SetBounds(leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize);
+		m_pSettingsBtn->SetBounds(leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize);
+		m_pQuitBtn->SetBounds(leftNavX + btnOffset, tall - navHeight + btnOffset, btnSize, btnSize);
+
+		// Right nav bar backgrounds
+		m_pRightNvgbarTop->SetBounds(rightNavX, 0, navWidth, navHeight);
+		m_pRightNvgbarDown->SetBounds(rightNavX, navHeight, navWidth, tall - navHeight);
+
+		// Right buttons
+		m_pRightAchievementBtn->SetBounds(rightNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize);
+
+		// Avatar view
+		m_pRightAvatarView->SetBounds(wide / 2 - 20, 10, 40, 40);
+
+		// Center panels
+		int contentLeft = leftNavX + navWidth + 20;
+		int contentRight = rightNavX - 20;
+		int contentWidth = contentRight - contentLeft;
+
+		m_pRightNewsPanel->SetBounds(contentLeft, 20, contentWidth, tall * 0.6f);
+		m_pLeftSkinviewPanel->SetBounds(contentLeft, tall * 0.6f + 30, contentWidth, tall * 0.35f);
+	}
 
 	// Get the size of the menu
 	int menuWide, menuTall;
