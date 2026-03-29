@@ -2344,7 +2344,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 
 	// Calculate base unit based on screen percentage for width
 	// Use 7% of screen width as reference, but clamp with proportional pixels
-	float navWidthPercent = 0.07f;
+	float navWidthPercent = 0.06f;
 	int navWidth = (int)(screenWide * navWidthPercent);
 
 	// Proportional constraints to keep it looks good on all resolutions
@@ -2354,8 +2354,8 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( navWidth > maxWidth ) navWidth = maxWidth;
 
 	int navHeight = navWidth; // Top sections stay square
-	int gap = scheme()->GetProportionalScaledValue( 4 );
-	int btnPadding = scheme()->GetProportionalScaledValue( 8 );
+	int gap = scheme()->GetProportionalScaledValue( 2 );
+	int btnPadding = scheme()->GetProportionalScaledValue( 1 );
 	int btnSize = navWidth - btnPadding;
 	int btnOffset = (navWidth - btnSize) / 2;
 
