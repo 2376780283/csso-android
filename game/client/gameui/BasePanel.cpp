@@ -81,11 +81,6 @@ using namespace vgui;
 #include "OptionsSubAudio.h"
 #include "hl2orange.spa.h"
 #include "CustomTabExplanationDialog.h"
-#if defined( _X360 )
-#include "xbox/xbox_launch.h"
-#else
-#include "xbox/xboxstubs.h"
-#endif
 
 #include "../engine/imatchmaking.h"
 #include "tier1/utlstring.h"
@@ -115,7 +110,6 @@ using namespace vgui;
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
 
 #define MAIN_MENU_INDENT_X360 10
 
@@ -391,20 +385,6 @@ public:
 			m_pConsoleFooter = new CFooterPanel( parent, "MainMenuFooter" );
 
 			int iFixedWidth = 245;
-
-#ifdef _X360
-			// In low def we need a smaller highlight
-			XVIDEO_MODE videoMode;
-			XGetVideoMode( &videoMode );
-			if ( !videoMode.fIsHiDef )
-			{
-				iFixedWidth = 240;
-			}
-			else
-			{
-				iFixedWidth = 350;
-			}
-#endif
 
 			SetFixedWidth( iFixedWidth );
 		}
@@ -1331,6 +1311,7 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftNvgbarUp2 = NULL;
 	m_pLeftNvgbarDown = NULL;
 	m_pRightNvgbar = NULL;
+	m_pNewsPanel = NULL;
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
@@ -1370,10 +1351,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 		{
 			m_pConsoleControlSettings->ProcessResolutionKeys( surface()->GetResolutionKey() );
 		}
-
-#ifdef _X360
-		x360_audio_english.SetValue( XboxLaunch()->GetForceEnglish() );
-#endif
 	}
 
 	m_pGameMenuButtons.AddToTail( CreateMenuButton( this, "GameMenuButton", ModInfo().GetGameTitle() ) );
@@ -1426,33 +1403,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 		m_pConsoleAnimationController->StartAnimationSequence( "InitializeUILayout" );
 	}
 
-	// Record data used for rich presence updates
-	if ( IsX360() )
-	{
-		// Get our active mod directory name
-		const char *pGameName = CommandLine()->ParmValue( "-game", "hl2" );;
-
-		// Set the game we're playing
-		m_iGameID = CONTEXT_GAME_GAME_HALF_LIFE_2;
-		m_bSinglePlayer = true;
-		if ( Q_stristr( pGameName, "episodic" ) )
-		{
-			m_iGameID = CONTEXT_GAME_GAME_EPISODE_ONE;
-		}
-		else if ( Q_stristr( pGameName, "ep2" ) )
-		{
-			m_iGameID = CONTEXT_GAME_GAME_EPISODE_TWO;
-		}
-		else if ( Q_stristr( pGameName, "portal" ) )
-		{
-			m_iGameID = CONTEXT_GAME_GAME_PORTAL;
-		}
-		else if ( Q_stristr( pGameName, "tf" ) )
-		{
-			m_iGameID = CONTEXT_GAME_GAME_TEAM_FORTRESS;
-			m_bSinglePlayer = false;
-		}
-	}
 	m_VideoMaterial = NULL;
 	m_pMaterial = NULL;
 	m_nPlaybackWidth = m_nPlaybackHeight = 0;
@@ -2338,6 +2288,13 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pRightNvgbar->SetPaintBackgroundEnabled(true);
 	m_pRightNvgbar->SetPaintBackgroundType( 0 );
 
+	// Create news panel between left nav bars and player model
+	m_pNewsPanel = new NvgBarPanel( this, "news_panel" );
+	m_pNewsPanel->SetBgColor( Color(90, 90, 90, 169) );
+	m_pNewsPanel->SetVisible( true );
+	m_pNewsPanel->SetPaintBackgroundEnabled(true);
+	m_pNewsPanel->SetPaintBackgroundType( 0 );
+
     m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, this, "left_top_logo", "resource/ui/menu/logo.png" );
     m_pLeftTopLogo->SetActions( NULL ); 
     m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, this, "playbtn", "resource/ui/menu/play.png" );
@@ -2482,6 +2439,37 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		m_pQuitBtn->SetBounds( btnOffset, quitY, btnSize, btnSize );
 	}
 
+	// Position the News Panel between left nav bars and PlayerModel
+	if ( m_pNewsPanel )
+	{
+		// Only show news panel when not in-game (in menu)
+		bool bShouldShowNews = !GameUI().IsInLevel();
+		
+		if ( bShouldShowNews )
+		{
+			int modelWidth = scheme()->GetProportionalScaledValue( 460 );  // PlayerModel width
+			int middleSpace = screenWide - navWidth - navWidth - modelWidth;  // Space between nav bars
+			int newsWidth = middleSpace;/*(int)(middleSpace * 0.7f);*/  // Wider: 70% of middle space (instead of 50%)
+			int newsHeight = screenTall;  // Start with full height
+			int newsX = navWidth;
+			int newsY = 0; 
+			
+			int padding = scheme()->GetProportionalScaledValue( 4 );  // Slightly larger padding
+			newsX += padding;  // Left padding
+			newsY += padding;  // Top padding
+			newsWidth -= padding * 2;  // Left + right padding
+			newsHeight -= padding * 2;  // Top + bottom padding
+			
+			// Set News Panel bounds
+			m_pNewsPanel->SetBounds( newsX, newsY, newsWidth, newsHeight );
+			m_pNewsPanel->SetVisible( true );
+		}
+		else
+		{
+			m_pNewsPanel->SetVisible( false );
+		}
+	}
+
 	// Position the PlayerModel panel on the right side with no vertical margins and larger size
 	if ( m_pPlayerModel )
 	{
@@ -2491,9 +2479,9 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		if ( bShouldShowModel )
 		{
 			// Use larger dimensions for the player model
-			int modelWidth = scheme()->GetProportionalScaledValue( 480 );  // 增大模型面板宽度
+			int modelWidth = scheme()->GetProportionalScaledValue( 460 );  // 增大模型面板宽度
 			int modelHeight = screenTall;  // 上下无边距，占满屏幕高度
-			int modelX = screenWide - modelWidth - navWidth - scheme()->GetProportionalScaledValue( 8 );  // 靠右放置，在右侧导航栏左侧
+			int modelX = screenWide - modelWidth - navWidth - scheme()->GetProportionalScaledValue( 2 );  // 靠右放置，在右侧导航栏左侧
 			int modelY = 0;  // 顶部无边界
 			
 			// 设置 PlayerModel 边界
@@ -2669,44 +2657,6 @@ void CBaseModPanel::RunFrame()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::UpdateRichPresenceInfo()
 {
-#if defined( _X360 )
-	// For all other users logged into this console (not primary), set to idle to satisfy cert
-	for( uint i = 0; i < XUSER_MAX_COUNT; ++i )
-	{
-		XUSER_SIGNIN_STATE State = XUserGetSigninState( i );
-
-		if( State != eXUserSigninState_NotSignedIn )
-		{
-			if ( i != XBX_GetPrimaryUserId() )
-			{
-				// Set rich presence as 'idle' for users logged in that can't participate in orange box.
-				if ( !xboxsystem->UserSetContext( i, X_CONTEXT_PRESENCE, CONTEXT_PRESENCE_IDLE, true ) )
-				{
-					Warning( "BasePanel: UserSetContext failed.\n" );
-				}
-			}
-		}
-	}
-
-	if ( !GameUI().IsInLevel() )
-	{
-		if ( !xboxsystem->UserSetContext( XBX_GetPrimaryUserId(), CONTEXT_GAME, m_iGameID, true ) )
-		{
-			Warning( "BasePanel: UserSetContext failed.\n" );
-		}
-		if ( !xboxsystem->UserSetContext( XBX_GetPrimaryUserId(), X_CONTEXT_PRESENCE, CONTEXT_PRESENCE_MENU, true ) )
-		{
-			Warning( "BasePanel: UserSetContext failed.\n" );
-		}
-		if ( m_bSinglePlayer )
-		{
-			if ( !xboxsystem->UserSetContext( XBX_GetPrimaryUserId(), X_CONTEXT_GAME_MODE, CONTEXT_GAME_MODE_SINGLEPLAYER, true ) )
-			{
-				Warning( "BasePanel: UserSetContext failed.\n" );
-			}
-		}
-	}
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -2938,35 +2888,6 @@ void CBaseModPanel::OnGameUIActivated()
 		// Layout the first time to avoid focus issues (setting menus visible will grab focus)
 		UpdateGameMenus();
 		m_bEverActivated = true;
-
-#if defined( _X360 )
-		
-		// Open all active containers if we have a valid storage device
-		if ( XBX_GetPrimaryUserId() != XBX_INVALID_USER_ID && XBX_GetStorageDeviceId() != XBX_INVALID_STORAGE_ID && XBX_GetStorageDeviceId() != XBX_STORAGE_DECLINED )
-		{
-			// Open user settings and save game container here
-			uint nRet = engine->OnStorageDeviceAttached();
-			if ( nRet != ERROR_SUCCESS )
-			{
-				// Invalidate the device
-				XBX_SetStorageDeviceId( XBX_INVALID_STORAGE_ID );
-
-				// FIXME: We don't know which device failed!
-				// Pop a dialog explaining that the user's data is corrupt
-				BasePanel()->ShowMessageDialog( MD_STORAGE_DEVICES_CORRUPT );
-			}
-		}
-
-		// determine if we're starting up because of a cross-game invite
-		int fLaunchFlags = XboxLaunch()->GetLaunchFlags();
-		if ( fLaunchFlags & LF_INVITERESTART )
-		{
-			XNKID nSessionID;
-			XboxLaunch()->GetInviteSessionID( &nSessionID );
-			matchmaking->JoinInviteSessionByID( nSessionID );
-		}
-#endif
-
 		// Brute force check to open tf matchmaking ui.
 		if ( GameUI().IsConsoleUI() )
 		{
@@ -3035,25 +2956,11 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	}
 	else if ( !Q_stricmp( command, "OpenLoadGameDialog" ) )
 	{
-		if ( !GameUI().IsConsoleUI() )
-		{
-			OnOpenLoadGameDialog();
-		}
-		else
-		{
-			OnOpenLoadGameDialog_Xbox();
-		}
+		OnOpenLoadGameDialog();
 	}
 	else if ( !Q_stricmp( command, "OpenSaveGameDialog" ) )
 	{
-		if ( !GameUI().IsConsoleUI() )
-		{
-			OnOpenSaveGameDialog();
-		}
-		else
-		{
-			OnOpenSaveGameDialog_Xbox();
-		}
+		OnOpenSaveGameDialog();
 	}
 	else if ( !Q_stricmp( command, "OpenBonusMapsDialog" ) )
 	{
@@ -3061,25 +2968,11 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	}
 	else if ( !Q_stricmp( command, "OpenOptionsDialog" ) )
 	{
-		if ( !GameUI().IsConsoleUI() )
-		{
-			OnOpenOptionsDialog();
-		}
-		else
-		{
-			OnOpenOptionsDialog_Xbox();
-		}
+		OnOpenOptionsDialog();
 	}
 	else if ( !Q_stricmp( command, "OpenModOptionsDialog" ) )
 	{
 		OnOpenModOptionsDialog();
-	}
-	else if ( !Q_stricmp( command, "OpenControllerDialog" ) )
-	{
-		if ( GameUI().IsConsoleUI() )
-		{
-			OnOpenControllerDialog();
-		}
 	}
 	else if ( !Q_stricmp( command, "OpenBenchmarkDialog" ) )
 	{
@@ -3123,22 +3016,15 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	}
 	else if ( !Q_stricmp( command, "OpenAchievementsDialog" ) )
 	{
-		if ( IsPC() )
+		/*#ifndef NO_STEAM
+		if ( !steamapicontext->SteamUser() || !steamapicontext->SteamUser()->BLoggedOn() )
 		{
-/*#ifndef NO_STEAM
-			if ( !steamapicontext->SteamUser() || !steamapicontext->SteamUser()->BLoggedOn() )
-			{
-				vgui::MessageBox *pMessageBox = new vgui::MessageBox("#GameUI_Achievements_SteamRequired_Title", "#GameUI_Achievements_SteamRequired_Message", this);
-				pMessageBox->DoModal();
-				return;
-			}
+			vgui::MessageBox *pMessageBox = new vgui::MessageBox("#GameUI_Achievements_SteamRequired_Title", "#GameUI_Achievements_SteamRequired_Message", this);
+			pMessageBox->DoModal();
+			return;
+		}
 #endif*/
-			OnOpenAchievementsDialog();
-		}
-		else
-		{
-			OnOpenAchievementsDialog_Xbox();
-		}
+		OnOpenAchievementsDialog();
 	}
     //=============================================================================
     // HPE_BEGIN:
@@ -3147,73 +3033,42 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 
     else if ( !Q_stricmp( command, "OpenCSAchievementsDialog" ) )
     {
-        if ( IsPC() )
+        /*if ( !steamapicontext->SteamUser() || !steamapicontext->SteamUser()->BLoggedOn() )
         {
-            /*if ( !steamapicontext->SteamUser() || !steamapicontext->SteamUser()->BLoggedOn() )
-            {
-                vgui::MessageBox *pMessageBox = new vgui::MessageBox("#GameUI_Achievements_SteamRequired_Title", "#GameUI_Achievements_SteamRequired_Message", this );
-                pMessageBox->DoModal();
-                return;
-            }*/
+            vgui::MessageBox *pMessageBox = new vgui::MessageBox("#GameUI_Achievements_SteamRequired_Title", "#GameUI_Achievements_SteamRequired_Message", this );
+            pMessageBox->DoModal();
+            return;
+        }*/
 
-			OnOpenCSAchievementsDialog();
-        }
+		OnOpenCSAchievementsDialog();
     }
     //=============================================================================
     // HPE_END
     //=============================================================================
-
-	else if ( !Q_stricmp( command, "AchievementsDialogClosing" ) )
-	{
-		if ( IsX360() )
-		{
-			if ( m_hAchievementsDialog.Get() )
-			{
-				m_hAchievementsDialog->Close();
-			}
-		}
-	}
 	else if ( !Q_stricmp( command, "Quit" ) )
 	{
 		OnOpenQuitConfirmationDialog();
 	}
 	else if ( !Q_stricmp( command, "QuitNoConfirm" ) )
 	{
-		if ( IsX360() )
-		{
-			// start the shutdown process
-			StartExitingProcess();
-		}
-		else
-		{
-            //=============================================================================
-            // HPE_BEGIN:
-            // [dwenger] Shut down achievements panel
-            //=============================================================================
+        //=============================================================================
+        // HPE_BEGIN:
+        // [dwenger] Shut down achievements panel
+        //=============================================================================
 
-            if ( GameClientExports() )
-            {
-                GameClientExports()->ShutdownAchievementPanel();
-            }
+        if ( GameClientExports() )
+        {
+            GameClientExports()->ShutdownAchievementPanel();
+        }
 
-            //=============================================================================
-            // HPE_END
-            //=============================================================================
+        //=============================================================================
+        // HPE_END
+        //=============================================================================
 
-            // hide everything while we quit
-			SetVisible( false );
-			vgui::surface()->RestrictPaintToSinglePanel( GetVPanel() );
-			engine->ClientCmd_Unrestricted( "quit\n" );
-		}
-	}
-	else if ( !Q_stricmp( command, "QuitRestartNoConfirm" ) )
-	{
-		if ( IsX360() )
-		{
-			// start the shutdown process
-			m_bRestartSameGame = true;
-			StartExitingProcess();
-		}
+        // hide everything while we quit
+		SetVisible( false );
+		vgui::surface()->RestrictPaintToSinglePanel( GetVPanel() );
+		engine->ClientCmd_Unrestricted( "quit\n" );
 	}
 	else if ( !Q_stricmp( command, "ResumeGame" ) )
 	{
@@ -3239,88 +3094,38 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 			engine->ClientCmd_Unrestricted( const_cast<char *>( engineCMD ) );
 		}
 	}
-	else if ( !Q_stricmp( command, "ShowSigninUI" ) )
-	{
-		m_bWaitingForUserSignIn = true;
-		xboxsystem->ShowSigninUI( 1, 0 ); // One user, no special flags
-	}
-	else if ( !Q_stricmp( command, "ShowDeviceSelector" ) )
-	{
-		OnChangeStorageDevice();
-	}
-	else if ( !Q_stricmp( command, "SignInDenied" ) )
-	{
-		// The user doesn't care, so re-send the command they wanted and mark that we want to skip checking
-		m_bUserRefusedSignIn = true;
-		if ( m_strPostPromptCommand.IsEmpty() == false )
-		{
-			OnCommand( m_strPostPromptCommand );		
-		}
-	}
-	else if ( !Q_stricmp( command, "RequiredSignInDenied" ) )
-	{
-		m_strPostPromptCommand = "";
-	}
-	else if ( !Q_stricmp( command, "RequiredStorageDenied" ) )
-	{
-		m_strPostPromptCommand = "";
-	}
-	else if ( !Q_stricmp( command, "StorageDeviceDenied" ) )
-	{
-		// The user doesn't care, so re-send the command they wanted and mark that we want to skip checking
-		m_bUserRefusedStorageDevice = true;
-		IssuePostPromptCommand();
-
-		// Set us as declined
-		XBX_SetStorageDeviceId( XBX_STORAGE_DECLINED );
-		m_iStorageID = XBX_INVALID_STORAGE_ID;
-
-		if ( m_pStorageDeviceValidatedNotify )
-		{
-			*m_pStorageDeviceValidatedNotify = 2;
-			m_pStorageDeviceValidatedNotify = NULL;
-		}
-	}
-	else if ( !Q_stricmp( command, "clear_storage_deviceID" ) )
-	{
-		XBX_SetStorageDeviceId( XBX_STORAGE_DECLINED );
-	}
 	else if ( !Q_stricmp( command, "RestartWithNewLanguage" ) )
 	{
-		if ( !IsX360() )
+		char szSteamURL[50];
+
+		// hide everything while we quit
+		SetVisible( false );
+		vgui::surface()->RestrictPaintToSinglePanel( GetVPanel() );
+		engine->ClientCmd_Unrestricted( "quit\n" );
+
+		// Construct Steam URL. Pattern is steam://run/<appid>/<language>. (e.g. Ep1 In French ==> steam://run/380/french)
+		V_snprintf( szSteamURL, sizeof(szSteamURL), "steam://run/%d/%s", engine->GetAppID(), COptionsSubAudio::GetUpdatedAudioLanguage() );
+
+		// Set Steam URL for re-launch in registry. Launcher will check this registry key and exec it in order to re-load the game in the proper language
+#if defined( WIN32 )
+		HKEY hKey;
+
+		if ( IsPC() && RegOpenKeyEx( HKEY_CURRENT_USER, "Software\\Valve\\Source", NULL, KEY_WRITE, &hKey) == ERROR_SUCCESS )
 		{
-			char szSteamURL[50];
+			RegSetValueEx( hKey, "Relaunch URL", 0, REG_SZ, (const unsigned char *)szSteamURL, sizeof( szSteamURL ) );
 
-			// hide everything while we quit
-			SetVisible( false );
-			vgui::surface()->RestrictPaintToSinglePanel( GetVPanel() );
-			engine->ClientCmd_Unrestricted( "quit\n" );
-
-			// Construct Steam URL. Pattern is steam://run/<appid>/<language>. (e.g. Ep1 In French ==> steam://run/380/french)
-			V_snprintf( szSteamURL, sizeof(szSteamURL), "steam://run/%d/%s", engine->GetAppID(), COptionsSubAudio::GetUpdatedAudioLanguage() );
-
-			// Set Steam URL for re-launch in registry. Launcher will check this registry key and exec it in order to re-load the game in the proper language
-#if defined( WIN32 ) && !defined( _X360 )
-			HKEY hKey;
-
-			if ( IsPC() && RegOpenKeyEx( HKEY_CURRENT_USER, "Software\\Valve\\Source", NULL, KEY_WRITE, &hKey) == ERROR_SUCCESS )
-			{
-				RegSetValueEx( hKey, "Relaunch URL", 0, REG_SZ, (const unsigned char *)szSteamURL, sizeof( szSteamURL ) );
-
-				RegCloseKey(hKey);
-			}
+			RegCloseKey(hKey);
+		}
 #elif defined( OSX ) || defined( LINUX ) || defined(PLATFORM_BSD)
-			FILE *fp = fopen( "/tmp/hl2_relaunch", "w+" );
-			if ( fp )
-			{
-				fprintf( fp, "%s\n", szSteamURL );
-			}
-			fclose( fp );
-#elif defined( _X360 )
+		FILE *fp = fopen( "/tmp/hl2_relaunch", "w+" );
+		if ( fp )
+		{
+			fprintf( fp, "%s\n", szSteamURL );
+		}
+		fclose( fp );
 #else
 #error
 #endif
-		}
 	}
 	else
 	{
@@ -3436,11 +3241,6 @@ void CBaseModPanel::ExecuteAsync( CAsyncJobContext *pAsync )
 #ifdef _WIN32
 	ThreadHandle_t hHandle = CreateSimpleThread( PanelJobWrapperFn, reinterpret_cast< void * >( pAsync ) );
 	pAsync->m_hThreadHandle = hHandle;
-
-#ifdef _X360
-	ThreadSetAffinity( hHandle, XBOX_PROCESSOR_3 );
-#endif
-
 #else
 	pAsync->ExecuteAsync();
 #endif
@@ -3608,26 +3408,6 @@ bool CBaseModPanel::ValidateStorageDevice( void )
 {
 	if ( m_bUserRefusedStorageDevice == false )
 	{
-#if defined( _X360 )
-		if ( XBX_GetStorageDeviceId() == XBX_INVALID_STORAGE_ID )
-		{
-			// Try to discover content on the user's storage devices
-			DWORD nFoundDevice = xboxsystem->DiscoverUserData( XBX_GetPrimaryUserId(), COM_GetModDirectory() );
-			if ( nFoundDevice == XBX_INVALID_STORAGE_ID )
-			{
-				// They don't have a device, so ask for one
-				ShowMessageDialog( MD_PROMPT_STORAGE_DEVICE );
-				return false;
-			}
-			else
-			{
-				// Take this device
-				XBX_SetStorageDeviceId( nFoundDevice );
-				OnDeviceAttached();
-			}
-			// Fall through
-		}
-#endif
 	}
 	return true;
 }
@@ -3750,18 +3530,6 @@ bool CBaseModPanel::HandleStorageDeviceRequest( const char *command )
 		// If the user refused the sign-in and we respect that on this command, we're done
 		if ( m_bUserRefusedStorageDevice && CommandRespectsSignInDenied( command ) )
 			return true;
-
-#if 0 // This attempts to find user data, but may not be cert-worthy even though it's a bit nicer for the user
-		// Attempt to automatically find a device
-		DWORD nFoundDevice = xboxsystem->DiscoverUserData( XBX_GetPrimaryUserId(), COM_GetModDirectory() );
-		if ( nFoundDevice != XBX_INVALID_STORAGE_ID )
-		{
-			// Take this device
-			XBX_SetStorageDeviceId( nFoundDevice );
-			OnDeviceAttached();
-			return true;
-		}
-#endif // 
 
 		// If the message is required first, then do that instead
 		if ( CommandRequiresStorageDevice( command ) )
