@@ -1333,7 +1333,7 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
-	m_pCustomLevelBtn = NULL;
+	m_pCallVoteLevelBtn = NULL;
 	m_pModOptionsBtn = NULL;
 	m_pDemoBtn = NULL;
 	m_pSettingsBtn = NULL;
@@ -2331,8 +2331,8 @@ void CBaseModPanel::CreateCustomMenuUI()
     m_pOpenServersBtn = new ImageButton( m_pLeftNvgbarUp2, this, "openserversbtn", "resource/ui/menu/servers.png" );
     m_pOpenServersBtn->SetActions( &CBaseModPanel::OnOpenServerBrowser );
 
-    m_pCustomLevelBtn = new ImageButton( m_pLeftNvgbarUp2, this, "customlevelbtn", "resource/ui/menu/custom_level.png" );
-    m_pCustomLevelBtn->SetActions( &CBaseModPanel::OnResumeGame ); // Placeholder action
+    m_pCallVoteLevelBtn = new ImageButton( m_pLeftNvgbarUp2, this, "customlevelbtn", "resource/ui/menu/vote.png" );
+    m_pCallVoteLevelBtn->SetActions( &CBaseModPanel::OnOpenVoteDialog ); // Placeholder action
     
     m_pModOptionsBtn = new ImageButton( m_pLeftNvgbarDown, this, "modoptionsbtn", "resource/ui/menu/modoptions.png" );
     m_pModOptionsBtn->SetActions( &CBaseModPanel::OnOpenModOptionsDialog );
@@ -2347,7 +2347,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pLeftTopLogo->SetVisible(true);
 	m_pPlayBtn->SetVisible(true);
 	m_pOpenServersBtn->SetVisible(true);
-    m_pCustomLevelBtn->SetVisible(false); // Initially invisible
+    m_pCallVoteLevelBtn->SetVisible(false); // Initially invisible
 	m_pModOptionsBtn->SetVisible(true);
 	m_pDemoBtn->SetVisible(true);
 	m_pSettingsBtn->SetVisible(true);
@@ -2360,7 +2360,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pLeftTopLogo );
 	SETUP_PANEL( m_pPlayBtn );
 	SETUP_PANEL( m_pOpenServersBtn );
-    SETUP_PANEL( m_pCustomLevelBtn );
+    SETUP_PANEL( m_pCallVoteLevelBtn );
 	SETUP_PANEL( m_pModOptionsBtn );
 	SETUP_PANEL( m_pDemoBtn );
 	SETUP_PANEL( m_pSettingsBtn );
@@ -2402,7 +2402,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( m_pLeftNvgbarUp1 )
 		m_pLeftNvgbarUp1->SetBounds( 0, 0, navWidth, navHeight );
 
-	bool bCustomLevelVisible = m_pCustomLevelBtn && m_pCustomLevelBtn->IsVisible();
+	bool bCustomLevelVisible = m_pCallVoteLevelBtn && m_pCallVoteLevelBtn->IsVisible();
 	int up2Multiplier = bCustomLevelVisible ? 3 : 2;
 
 	if ( m_pLeftNvgbarUp2 )
@@ -2423,9 +2423,9 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( m_pOpenServersBtn )
 		m_pOpenServersBtn->SetBounds( btnOffset, navHeight + btnOffset, btnSize, btnSize );
 
-	if ( m_pCustomLevelBtn )
+	if ( m_pCallVoteLevelBtn )
 	{
-		m_pCustomLevelBtn->SetBounds( btnOffset, ( navHeight * 2 ) + btnOffset, btnSize, btnSize );
+		m_pCallVoteLevelBtn->SetBounds( btnOffset, ( navHeight * 2 ) + btnOffset, btnSize, btnSize );
 	}
 
 	// In Down container
@@ -2485,9 +2485,9 @@ void CBaseModPanel::UpdateGameMenus()
 	if ( m_pPlayBtn ) 
         m_pPlayBtn->SetMarked( isInGame );
         
-	if ( m_pCustomLevelBtn )
+	if ( m_pCallVoteLevelBtn )
 	{
-		m_pCustomLevelBtn->SetVisible( isInGame );
+		m_pCallVoteLevelBtn->SetVisible( isInGame );
 		// No need to call another class, just update our layout directly
 		UpdateCustomMenuUI();
 	}
@@ -4254,6 +4254,14 @@ void CBaseModPanel::OnOpenFriendsDialog()
 void CBaseModPanel::OnOpenDemoDialog()
 {
 
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CBaseModPanel::OnOpenVoteDialog()
+{
+    engine->ClientCmd_Unrestricted("engine callvote;gameui_hide");
 }
 
 //-----------------------------------------------------------------------------

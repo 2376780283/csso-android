@@ -300,6 +300,7 @@ public:
 	void OnOpenServerBrowser();
 	void OnOpenFriendsDialog();
 	void OnOpenDemoDialog();
+	void OnOpenVoteDialog();
 	void OnOpenCreateMultiplayerGameDialog();
 	void OnOpenQuitConfirmationDialog();
 	void OnOpenDisconnectConfirmationDialog();
@@ -519,10 +520,11 @@ private:
 	vgui::Panel *m_pLeftNvgbarUp1;
 	vgui::Panel *m_pLeftNvgbarUp2;
 	vgui::Panel *m_pLeftNvgbarDown;
+	vgui::Panel *m_pRightNvgbar;
 	class ImageButton *m_pLeftTopLogo;
 	class ImageButton *m_pPlayBtn;
 	class ImageButton *m_pOpenServersBtn;
-	class ImageButton *m_pCustomLevelBtn;
+	class ImageButton *m_pCallVoteLevelBtn;
 	class ImageButton *m_pModOptionsBtn;
 	class ImageButton *m_pDemoBtn;
 	class ImageButton *m_pSettingsBtn;
