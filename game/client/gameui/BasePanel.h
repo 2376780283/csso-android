@@ -511,9 +511,9 @@ private:
 		bool						m_bUseCustomMenu;
 
 	// Custom menu UI elements (for resolution-independent layout)
-	vgui::ImagePanel *m_pLeftNvgbarUp1;
-	vgui::ImagePanel *m_pLeftNvgbarUp2;
-	vgui::ImagePanel *m_pLeftNvgbarDown;
+	vgui::Panel *m_pLeftNvgbarUp1;
+	vgui::Panel *m_pLeftNvgbarUp2;
+	vgui::Panel *m_pLeftNvgbarDown;
 	class ImageButton *m_pLeftTopLogo;
 	class ImageButton *m_pPlayBtn;
 	class ImageButton *m_pOpenServersBtn;

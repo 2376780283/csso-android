@@ -2268,26 +2268,26 @@ void CBaseModPanel::CreateCustomMenuUI()
 	int btnSize = navWidth - 8;
 	int btnOffset = (navWidth - btnSize) / 2;
 
-	// Create left navigation bar backgrounds (ImagePanels)
+	// Create left navigation bar backgrounds (Panels)
 	// left_nvgbar_up1 - top section
-	m_pLeftNvgbarUp1 = new ImagePanel( this, "left_nvgbar_up1" );
+	m_pLeftNvgbarUp1 = new Panel( this, "left_nvgbar_up1" );
 	m_pLeftNvgbarUp1->SetBounds( leftNavX, 0, navWidth, navHeight );
-	m_pLeftNvgbarUp1->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarUp1->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp1->SetVisible( true );
 	m_pLeftNvgbarUp1->SetPaintBackgroundType( 0 );
 
 	// left_nvgbar_up2 - middle section (2 buttons high)
-	m_pLeftNvgbarUp2 = new ImagePanel( this, "left_nvgbar_up2" );
+	m_pLeftNvgbarUp2 = new Panel( this, "left_nvgbar_up2" );
 	m_pLeftNvgbarUp2->SetBounds( leftNavX, navHeight, navWidth, navHeight * 2 );
-	m_pLeftNvgbarUp2->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarUp2->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp2->SetVisible( true );
 	m_pLeftNvgbarUp2->SetPaintBackgroundType( 0 );
 
 	// left_nvgbar_down - remaining space (with gap from up2)
 	int gap = 2; // gap between sections
-	m_pLeftNvgbarDown = new ImagePanel( this, "left_nvgbar_down" );
+	m_pLeftNvgbarDown = new Panel( this, "left_nvgbar_down" );
 	m_pLeftNvgbarDown->SetBounds( leftNavX, navHeight * 3 + gap, navWidth, screenTall - navHeight * 3 - gap );
-	m_pLeftNvgbarDown->SetFillColor( Color(90, 90, 90, 169) );
+	m_pLeftNvgbarDown->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarDown->SetVisible( true );
 	m_pLeftNvgbarDown->SetPaintBackgroundType( 0 );
 
