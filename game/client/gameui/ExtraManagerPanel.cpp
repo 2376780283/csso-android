@@ -764,7 +764,7 @@ void ExtraManagerPanel::PerformLayout() {
     BaseClass::PerformLayout();
     int sw, sh;
     GetSize(sw, sh);
-    int iPadding = PROPVAL(20), iGap = PROPVAL(20);
+    int iPadding = PROPVAL(0), iGap = PROPVAL(10);
     int leftW = (sw * 0.65) - (iPadding + iGap / 2);
     int rightW = sw - leftW - (iPadding * 2) - iGap;
     int panelH = sh - (iPadding * 2);

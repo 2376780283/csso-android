@@ -147,18 +147,21 @@ static int CreatePNGTextureHelper(const char *szPath) {
 	return textureID;
 }
 
+// 在 ImageButton 类定义上方前置声明
+class CBaseModPanel;
+
 class ImageButton : public vgui::Panel
 {
     DECLARE_CLASS_SIMPLE(ImageButton, vgui::Panel);
 
 public:
-    ImageButton(vgui::Panel *parent, const char *name, const char *imagePath, const char *command) : Panel(parent, name)
+    // 修改构造函数，接收 BaseModPanel 指针
+    ImageButton(vgui::Panel *parent, CBaseModPanel* pBasePanel, const char *name, const char *imagePath) 
+        : Panel(parent, name)
     {
-        m_szCommand = command;
+        m_pBasePanel = pBasePanel;
         m_bSelected = false;
-        m_bIsMarked = false;
-        
-        // 加载默认贴图
+        m_bIsMarked = false;       
         m_textureID = CreatePNGTextureHelper(imagePath);
         m_textureID_Marked = -1;
 
@@ -166,35 +169,32 @@ public:
         SetPaintBackgroundEnabled(false);
     }
 
-    virtual ~ImageButton() {
-        // 释放纹理资源
-        if (vgui::surface()->IsTextureIDValid(m_textureID)) 
-            vgui::surface()->DeleteTextureByID(m_textureID);
-        if (vgui::surface()->IsTextureIDValid(m_textureID_Marked)) 
-            vgui::surface()->DeleteTextureByID(m_textureID_Marked);
+    // 定义函数指针类型，方便存储不同按钮对应的动作
+    typedef void (CBaseModPanel::*PanelActionFunc_t)();
+
+    void SetActions(PanelActionFunc_t defaultAction, PanelActionFunc_t markedAction = NULL) {
+        m_pDefaultAction = defaultAction;
+        m_pMarkedAction = markedAction;
     }
-    void SetMarkedInfo(const char *imagePath, const char *command) {
-        m_szCommand_Marked = command;
+
+    void SetMarkedInfo(const char *imagePath) {
         if (m_textureID_Marked != -1) {
             vgui::surface()->DeleteTextureByID(m_textureID_Marked);
         }
         m_textureID_Marked = CreatePNGTextureHelper(imagePath);
     }
+
     void SetMarked(bool bMarked) {
         if (m_bIsMarked != bMarked) {
             m_bIsMarked = bMarked;
-            Repaint(); // 状态改变，请求重新渲染
+            Repaint();
         }
     }
 
     virtual void Paint() override {
-        // 渲染逻辑极简：仅根据布尔值选择 ID
-        int currentTexture = (m_bIsMarked && m_textureID_Marked != -1) ? m_textureID_Marked : m_textureID;
-        
+        int currentTexture = (m_bIsMarked && m_textureID_Marked != -1) ? m_textureID_Marked : m_textureID;        
         if (currentTexture == -1) return;
-
-        int alpha = m_bSelected ? 150 : 255;
-        vgui::surface()->DrawSetColor(255, 255, 255, alpha);
+        vgui::surface()->DrawSetColor(255, 255, 255, m_bSelected ? 150 : 255);
         vgui::surface()->DrawSetTexture(currentTexture);
         vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
     }
@@ -208,10 +208,11 @@ public:
 
     virtual void OnMouseReleased(vgui::MouseCode code) override {
         if (code == MOUSE_LEFT && m_bSelected) {
-            const char* pCmd = (m_bIsMarked && !m_szCommand_Marked.IsEmpty()) ? m_szCommand_Marked.String() : m_szCommand.String();
-
-            if (pCmd && pCmd[0]) {
-                PostMessage(GetParent(), new KeyValues("Command", "command", pCmd));
+            if (m_pBasePanel) {
+                PanelActionFunc_t action = (m_bIsMarked && m_pMarkedAction) ? m_pMarkedAction : m_pDefaultAction;
+                if (action) {
+                    (m_pBasePanel->*action)(); // 这里的语法是调用成员函数指针
+                }
             }
         }
         m_bSelected = false;
@@ -219,12 +220,14 @@ public:
     }
 
 private:
+    CBaseModPanel* m_pBasePanel;
+    PanelActionFunc_t m_pDefaultAction;
+    PanelActionFunc_t m_pMarkedAction;
+    
     bool m_bSelected;
-    bool m_bIsMarked;           // 当前状态标志
-    int m_textureID;            // 默认贴图 ID
-    int m_textureID_Marked;     // 标记贴图 ID
-    CUtlString m_szCommand;     // 默认指令
-    CUtlString m_szCommand_Marked; // 标记指令
+    bool m_bIsMarked;
+    int m_textureID;
+    int m_textureID_Marked;
 };
 
 ConVar vgui_message_dialog_modal( "vgui_message_dialog_modal", "1", FCVAR_ARCHIVE );
@@ -2308,17 +2311,22 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pLeftNvgbarDown->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarDown->SetPaintBackgroundType( 0 );
 
-	// Create left navigation buttons (now as children of containers)
-	m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, "left_top_logo", "resource/ui/menu/logo.png", "" );
-	m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
-	m_pOpenServersBtn = new ImageButton( m_pLeftNvgbarUp2, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
-	m_pModOptionsBtn = new ImageButton( m_pLeftNvgbarDown, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
-	m_pDemoBtn = new ImageButton( m_pLeftNvgbarDown, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
-	m_pSettingsBtn = new ImageButton( m_pLeftNvgbarDown, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
-	m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
-	
-	m_pQuitBtn->SetMarkedInfo( "resource/ui/menu/back.png", "disconnect" );
-	m_pPlayBtn->SetMarkedInfo( "resource/ui/menu/resume.png", "ResumeGame" );
+    m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, this, "left_top_logo", "resource/ui/menu/logo.png" );
+    m_pLeftTopLogo->SetActions( NULL ); 
+    m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, this, "playbtn", "resource/ui/menu/play.png" );
+    m_pPlayBtn->SetMarkedInfo( "resource/ui/menu/resume.png" );
+    m_pPlayBtn->SetActions( &CBaseModPanel::OnOpenCreateMultiplayerGameDialog, &CBaseModPanel::OnResumeGame );
+    m_pOpenServersBtn = new ImageButton( m_pLeftNvgbarUp2, this, "openserversbtn", "resource/ui/menu/servers.png" );
+    m_pOpenServersBtn->SetActions( &CBaseModPanel::OnOpenServerBrowser );
+    m_pModOptionsBtn = new ImageButton( m_pLeftNvgbarDown, this, "modoptionsbtn", "resource/ui/menu/modoptions.png" );
+    m_pModOptionsBtn->SetActions( &CBaseModPanel::OnOpenModOptionsDialog );
+    m_pDemoBtn = new ImageButton( m_pLeftNvgbarDown, this, "demobtn", "resource/ui/menu/demo.png" );
+    m_pDemoBtn->SetActions( &CBaseModPanel::OnOpenDemoDialog );
+    m_pSettingsBtn = new ImageButton( m_pLeftNvgbarDown, this, "settingsbtn", "resource/ui/menu/settings.png" );
+    m_pSettingsBtn->SetActions( &CBaseModPanel::OnOpenOptionsDialog );
+    m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, this, "quitbtn", "resource/ui/menu/quit.png" );
+    m_pQuitBtn->SetMarkedInfo( "resource/ui/menu/back.png" );
+    m_pQuitBtn->SetActions( &CBaseModPanel::OnOpenQuitConfirmationDialog, &CBaseModPanel::OnOpenDisconnectConfirmationDialog );
 
 	m_pLeftTopLogo->SetVisible(true);
 	m_pPlayBtn->SetVisible(true);
@@ -2357,7 +2365,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 
 	// Calculate base unit based on screen percentage for width
 	// Use 7% of screen width as reference, but clamp with proportional pixels
-	float navWidthPercent = 0.06f;
+	float navWidthPercent = 0.05f;
 	int navWidth = (int)(screenWide * navWidthPercent);
 
 	// Proportional constraints to keep it looks good on all resolutions
@@ -2367,7 +2375,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( navWidth > maxWidth ) navWidth = maxWidth;
 
 	int navHeight = navWidth; // Top sections stay square
-	int gap = scheme()->GetProportionalScaledValue( 2 );
+	int gap = scheme()->GetProportionalScaledValue( 1 );
 	int btnPadding = scheme()->GetProportionalScaledValue( 1 );
 	int btnSize = navWidth - btnPadding;
 	int btnOffset = (navWidth - btnSize) / 2;
@@ -2473,7 +2481,7 @@ CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 	    menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this); 
     }
 
-	bool bFoundServerBrowser = false;
+/*	bool bFoundServerBrowser = false;
 
 	for (KeyValues *dat = datafile->GetFirstSubKey(); dat != NULL; dat = dat->GetNextKey())
 	{
@@ -2500,7 +2508,7 @@ CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 			continue;
 
 		menu->AddMenuItem(name, label, cmd, this, dat);
-	}
+	}*/
 
 	return menu;
 }
@@ -4159,6 +4167,10 @@ void CBaseModPanel::OnOpenModOptionsDialog()
 	m_hModOptionsDialog->Activate();
 }
 
+void CBaseModPanel::OnResumeGame()
+{
+    GameUI().HideGameUI(); 
+}
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -4236,12 +4248,7 @@ void CBaseModPanel::OnOpenFriendsDialog()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenDemoDialog()
 {
-/*	if ( !m_hDemoPlayerDialog.Get() )
-	{
-		m_hDemoPlayerDialog = new CDemoPlayerDialog(this);
-		PositionDialog( m_hDemoPlayerDialog );
-	}
-	m_hDemoPlayerDialog->Activate();*/
+
 }
 
 //-----------------------------------------------------------------------------

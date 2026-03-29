@@ -309,6 +309,7 @@ public:
 	void ShowExtraManager();
 	void OnOpenOptionsDialog();
 	void OnOpenModOptionsDialog();
+	void OnResumeGame();
 	void OnOpenOptionsDialog_Xbox();
 	void OnOpenLoadCommentaryDialog();
 	void OpenLoadSingleplayerCommentaryDialog();
