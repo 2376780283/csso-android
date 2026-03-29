@@ -125,16 +125,13 @@ using namespace vgui;
 static int CreatePNGTextureHelper(const char *szPath) {
 	CUtlBuffer buf;
 	if (!g_pFullFileSystem->ReadFile(szPath, "MOD", buf)) return -1;
-
 	int width, height, channels;
 	unsigned char *data = stbi_load_from_memory((unsigned char *)buf.Base(), buf.TellPut(), &width, &height, &channels, 4);
 	if (!data) return -1;
-
 	int targetW = 128; // 统一缩放大小
 	int targetH = 128;
 	unsigned char *resizedData = (unsigned char *)malloc(targetW * targetH * 4);
 	int textureID = -1;
-
 	if (resizedData) {
 		if (stbir_resize_uint8(data, width, height, width * 4, resizedData, targetW, targetH, targetW * 4, 4)) {
 			textureID = vgui::surface()->CreateNewTextureID(true);
@@ -142,20 +139,15 @@ static int CreatePNGTextureHelper(const char *szPath) {
 		}
 		free(resizedData);
 	}
-
 	stbi_image_free(data);
 	return textureID;
 }
 
-// 在 ImageButton 类定义上方前置声明
 class CBaseModPanel;
-
 class ImageButton : public vgui::Panel
 {
     DECLARE_CLASS_SIMPLE(ImageButton, vgui::Panel);
-
 public:
-    // 修改构造函数，接收 BaseModPanel 指针
     ImageButton(vgui::Panel *parent, CBaseModPanel* pBasePanel, const char *name, const char *imagePath) 
         : Panel(parent, name)
     {
@@ -168,29 +160,23 @@ public:
         SetMouseInputEnabled(true);
         SetPaintBackgroundEnabled(false);
     }
-
-    // 定义函数指针类型，方便存储不同按钮对应的动作
     typedef void (CBaseModPanel::*PanelActionFunc_t)();
-
     void SetActions(PanelActionFunc_t defaultAction, PanelActionFunc_t markedAction = NULL) {
         m_pDefaultAction = defaultAction;
         m_pMarkedAction = markedAction;
     }
-
     void SetMarkedInfo(const char *imagePath) {
         if (m_textureID_Marked != -1) {
             vgui::surface()->DeleteTextureByID(m_textureID_Marked);
         }
         m_textureID_Marked = CreatePNGTextureHelper(imagePath);
     }
-
     void SetMarked(bool bMarked) {
         if (m_bIsMarked != bMarked) {
             m_bIsMarked = bMarked;
             Repaint();
         }
     }
-
     virtual void Paint() override {
         int currentTexture = (m_bIsMarked && m_textureID_Marked != -1) ? m_textureID_Marked : m_textureID;        
         if (currentTexture == -1) return;
@@ -198,14 +184,12 @@ public:
         vgui::surface()->DrawSetTexture(currentTexture);
         vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
     }
-
     virtual void OnMousePressed(vgui::MouseCode code) override {
         if (code == MOUSE_LEFT) { 
             m_bSelected = true; 
             vgui::input()->SetMouseCapture(GetVPanel()); 
         }
     }
-
     virtual void OnMouseReleased(vgui::MouseCode code) override {
         if (code == MOUSE_LEFT && m_bSelected) {
             if (m_pBasePanel) {
@@ -218,7 +202,6 @@ public:
         m_bSelected = false;
         vgui::input()->SetMouseCapture(NULL);
     }
-
 private:
     CBaseModPanel* m_pBasePanel;
     PanelActionFunc_t m_pDefaultAction;
@@ -228,6 +211,27 @@ private:
     bool m_bIsMarked;
     int m_textureID;
     int m_textureID_Marked;
+};
+
+class NvgBarPanel : public vgui::Panel
+{
+    DECLARE_CLASS_SIMPLE(NvgBarPanel, vgui::Panel);
+public:
+    NvgBarPanel(vgui::Panel *parent, const char *name) : BaseClass(parent, name)
+    {
+        SetPaintBackgroundEnabled(true);
+        SetPaintBackgroundType(2);               
+        SetVisible(true);
+    }
+    virtual void PaintBackground() override
+    {
+        int wide, tall;
+        GetSize(wide, tall);
+        vgui::surface()->DrawSetColor(Color(90, 90, 90, 169));
+        vgui::surface()->DrawFilledRect(0, 0, wide, tall);        
+        // vgui::surface()->DrawSetColor(255, 255, 255, 30);
+        // vgui::surface()->DrawOutlinedRect(0, 0, wide, tall);
+    }
 };
 
 ConVar vgui_message_dialog_modal( "vgui_message_dialog_modal", "1", FCVAR_ARCHIVE );
@@ -2293,19 +2297,19 @@ void CBaseModPanel::CreateGameLogo()
 void CBaseModPanel::CreateCustomMenuUI()
 {
 	// Create left navigation bar backgrounds (Panels)
-	m_pLeftNvgbarUp1 = new Panel( this, "left_nvgbar_up1" );
+	m_pLeftNvgbarUp1 = new NvgBarPanel( this, "left_nvgbar_up1" );
 	m_pLeftNvgbarUp1->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp1->SetVisible( true );
 	m_pLeftNvgbarUp1->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarUp1->SetPaintBackgroundType( 0 );
 
-	m_pLeftNvgbarUp2 = new Panel( this, "left_nvgbar_up2" );
+	m_pLeftNvgbarUp2 = new NvgBarPanel( this, "left_nvgbar_up2" );
 	m_pLeftNvgbarUp2->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp2->SetVisible( true );
 	m_pLeftNvgbarUp2->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarUp2->SetPaintBackgroundType( 0 );
 
-	m_pLeftNvgbarDown = new Panel( this, "left_nvgbar_down" );
+	m_pLeftNvgbarDown = new NvgBarPanel( this, "left_nvgbar_down" );
 	m_pLeftNvgbarDown->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarDown->SetVisible( true );
 	m_pLeftNvgbarDown->SetPaintBackgroundEnabled(true);
@@ -2364,19 +2368,19 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	SetBounds( 0, 0, screenWide, screenTall );
 
 	// Calculate base unit based on screen percentage for width
-	// Use 7% of screen width as reference, but clamp with proportional pixels
+	// Use 5% of screen width as reference, but clamp with proportional pixels
 	float navWidthPercent = 0.05f;
 	int navWidth = (int)(screenWide * navWidthPercent);
 
 	// Proportional constraints to keep it looks good on all resolutions
-	int minWidth = scheme()->GetProportionalScaledValue( 64 );
-	int maxWidth = scheme()->GetProportionalScaledValue( 100 );
+	int minWidth = scheme()->GetProportionalScaledValue( 56 );
+	int maxWidth = scheme()->GetProportionalScaledValue( 64 );
 	if ( navWidth < minWidth ) navWidth = minWidth;
 	if ( navWidth > maxWidth ) navWidth = maxWidth;
 
 	int navHeight = navWidth; // Top sections stay square
-	int gap = scheme()->GetProportionalScaledValue( 1 );
-	int btnPadding = scheme()->GetProportionalScaledValue( 1 );
+	int gap = scheme()->GetProportionalScaledValue( 2 );
+	int btnPadding = scheme()->GetProportionalScaledValue( 0 );
 	int btnSize = navWidth - btnPadding;
 	int btnOffset = (navWidth - btnSize) / 2;
 

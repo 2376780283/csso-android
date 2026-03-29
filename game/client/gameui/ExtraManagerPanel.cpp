@@ -223,7 +223,7 @@ void MapCardPanel::PerformLayout() {
     int iMargin = PROPVAL(6);
     int contentW = w - iMargin;
     int drawX = iMargin / 2;
-    int drawY = iMargin / 2;
+    int drawY = iMargin / 4;
     int imgSize = contentW;
     m_pImagePanelPlaceholder->SetBounds(drawX, drawY, imgSize, imgSize);
     int labelH = PROPVAL(26);
