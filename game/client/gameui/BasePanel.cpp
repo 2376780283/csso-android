@@ -149,72 +149,82 @@ static int CreatePNGTextureHelper(const char *szPath) {
 
 class ImageButton : public vgui::Panel
 {
+    DECLARE_CLASS_SIMPLE(ImageButton, vgui::Panel);
+
 public:
-	ImageButton(Panel *parent, const char *name, const char *imagePath, const char *command) : Panel(parent, name)
-	{
-		m_szCommand = command;
-		m_bSelected = false;
-		m_textureID = CreatePNGTextureHelper(imagePath);
-		
-		SetMouseInputEnabled(true);
-		SetPaintBackgroundEnabled(false);
-	}
+    ImageButton(vgui::Panel *parent, const char *name, const char *imagePath, const char *command) : Panel(parent, name)
+    {
+        m_szCommand = command;
+        m_bSelected = false;
+        m_bIsMarked = false;
+        
+        // 加载默认贴图
+        m_textureID = CreatePNGTextureHelper(imagePath);
+        m_textureID_Marked = -1;
 
-	virtual ~ImageButton() {
-		if (vgui::surface()->IsTextureIDValid(m_textureID)) {
-			vgui::surface()->DeleteTextureByID(m_textureID);
-		}
-	}
+        SetMouseInputEnabled(true);
+        SetPaintBackgroundEnabled(false);
+    }
 
-	virtual void Paint()
-	{
-		if (m_textureID == -1) return;
-		int alpha = m_bSelected ? 150 : 255;        
-		vgui::surface()->DrawSetColor(255, 255, 255, alpha);
-		vgui::surface()->DrawSetTexture(m_textureID);
-		vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
-	}
+    virtual ~ImageButton() {
+        // 释放纹理资源
+        if (vgui::surface()->IsTextureIDValid(m_textureID)) 
+            vgui::surface()->DeleteTextureByID(m_textureID);
+        if (vgui::surface()->IsTextureIDValid(m_textureID_Marked)) 
+            vgui::surface()->DeleteTextureByID(m_textureID_Marked);
+    }
+    void SetMarkedInfo(const char *imagePath, const char *command) {
+        m_szCommand_Marked = command;
+        if (m_textureID_Marked != -1) {
+            vgui::surface()->DeleteTextureByID(m_textureID_Marked);
+        }
+        m_textureID_Marked = CreatePNGTextureHelper(imagePath);
+    }
+    void SetMarked(bool bMarked) {
+        if (m_bIsMarked != bMarked) {
+            m_bIsMarked = bMarked;
+            Repaint(); // 状态改变，请求重新渲染
+        }
+    }
 
-	virtual void OnMousePressed(MouseCode code) {
-		if (code == MOUSE_LEFT) { m_bSelected = true; input()->SetMouseCapture(GetVPanel()); }
-	}
+    virtual void Paint() override {
+        // 渲染逻辑极简：仅根据布尔值选择 ID
+        int currentTexture = (m_bIsMarked && m_textureID_Marked != -1) ? m_textureID_Marked : m_textureID;
+        
+        if (currentTexture == -1) return;
 
-	virtual void OnMouseReleased(MouseCode code) {
-		if (code == MOUSE_LEFT) {
-			if (m_bSelected)
-			{
-				// 发送命令消息。由于按钮现在嵌套在容器 Panel 中，
-				// 我们需要确保消息能够到达处理它的 BaseModPanel。
-				KeyValues *msg = new KeyValues("Command", "command", m_szCommand.String());
-				if (GetParent())
-				{
-					// 发给直接父级（容器）
-					PostMessage(GetParent(), msg->MakeCopy());
-					
-					// 发给祖父级（BaseModPanel）
-					if (GetParent()->GetParent())
-					{
-						PostMessage(GetParent()->GetParent(), msg);
-					}
-					else
-					{
-						msg->deleteThis();
-					}
-				}
-				else
-				{
-					msg->deleteThis();
-				}
-			}
-			m_bSelected = false;
-			input()->SetMouseCapture(NULL);
-		}
-	}
+        int alpha = m_bSelected ? 150 : 255;
+        vgui::surface()->DrawSetColor(255, 255, 255, alpha);
+        vgui::surface()->DrawSetTexture(currentTexture);
+        vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
+    }
+
+    virtual void OnMousePressed(vgui::MouseCode code) override {
+        if (code == MOUSE_LEFT) { 
+            m_bSelected = true; 
+            vgui::input()->SetMouseCapture(GetVPanel()); 
+        }
+    }
+
+    virtual void OnMouseReleased(vgui::MouseCode code) override {
+        if (code == MOUSE_LEFT && m_bSelected) {
+            const char* pCmd = (m_bIsMarked && !m_szCommand_Marked.IsEmpty()) ? m_szCommand_Marked.String() : m_szCommand.String();
+
+            if (pCmd && pCmd[0]) {
+                PostMessage(GetParent(), new KeyValues("Command", "command", pCmd));
+            }
+        }
+        m_bSelected = false;
+        vgui::input()->SetMouseCapture(NULL);
+    }
 
 private:
-	bool m_bSelected;
-	int m_textureID;
-	CUtlString m_szCommand;
+    bool m_bSelected;
+    bool m_bIsMarked;           // 当前状态标志
+    int m_textureID;            // 默认贴图 ID
+    int m_textureID_Marked;     // 标记贴图 ID
+    CUtlString m_szCommand;     // 默认指令
+    CUtlString m_szCommand_Marked; // 标记指令
 };
 
 ConVar vgui_message_dialog_modal( "vgui_message_dialog_modal", "1", FCVAR_ARCHIVE );
@@ -2306,6 +2316,9 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pDemoBtn = new ImageButton( m_pLeftNvgbarDown, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
 	m_pSettingsBtn = new ImageButton( m_pLeftNvgbarDown, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
 	m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
+	
+	m_pQuitBtn->SetMarkedInfo( "resource/ui/menu/back.png", "disconnect" );
+	m_pPlayBtn->SetMarkedInfo( "resource/ui/menu/resume.png", "ResumeGame" );
 
 	m_pLeftTopLogo->SetVisible(true);
 	m_pPlayBtn->SetVisible(true);
@@ -2437,6 +2450,11 @@ void CBaseModPanel::UpdateGameMenus()
 	{
 		vgui::ivgui()->PostMessage( m_hMainMenuOverridePanel, new KeyValues( "UpdateMenu" ), NULL );
 	}
+	if ( m_pPlayBtn ) 
+        m_pPlayBtn->SetMarked( isInGame );
+        
+	if ( m_pQuitBtn ) 
+        m_pQuitBtn->SetMarked( isInGame );
 
 	// position the menu
 	InvalidateLayout();
