@@ -1330,6 +1330,7 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftNvgbarUp1 = NULL;
 	m_pLeftNvgbarUp2 = NULL;
 	m_pLeftNvgbarDown = NULL;
+	m_pRightNvgbar = NULL;
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
@@ -2026,6 +2027,17 @@ void CBaseModPanel::UpdateAgentModel()
 {
 	// PiMoN: I hate this spaghetti code.
 
+	// 如果正在游戏中，不加载模型以节省性能
+	if ( GameUI().IsInLevel() )
+	{
+		if ( m_pPlayerModel )
+		{
+			m_pPlayerModel->SetVisible( false );
+			m_pPlayerModel->ClearMergeMDLs();  // 释放合并模型以节省内存
+		}
+		return;
+	}
+
 	bool bUpdateAgent = false;
 
 	if ( m_iAgentToUse != loadout_mainmenu_agent.GetInt() )
@@ -2041,9 +2053,6 @@ void CBaseModPanel::UpdateAgentModel()
 	}
 	else
 	{
-		int wide, tall;
-		surface()->GetScreenSize( wide, tall );
-		m_pPlayerModel->SetBounds( wide / 2, 0, wide / 2, tall );
 		m_pPlayerModel->SetVisible( true );
 	}
 
@@ -2323,6 +2332,12 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pLeftNvgbarDown->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarDown->SetPaintBackgroundType( 0 );
 
+	m_pRightNvgbar = new NvgBarPanel( this, "right_nvgbar" );
+	m_pRightNvgbar->SetBgColor( Color(90, 90, 90, 169) );
+	m_pRightNvgbar->SetVisible( true );
+	m_pRightNvgbar->SetPaintBackgroundEnabled(true);
+	m_pRightNvgbar->SetPaintBackgroundType( 0 );
+
     m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, this, "left_top_logo", "resource/ui/menu/logo.png" );
     m_pLeftTopLogo->SetActions( NULL ); 
     m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, this, "playbtn", "resource/ui/menu/play.png" );
@@ -2353,10 +2368,28 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pSettingsBtn->SetVisible(true);
 	m_pQuitBtn->SetVisible(true);
 
+    // Apply camera and light settings to PlayerModel
+    KeyValues *pPlayerModelKV = new KeyValues( "PlayerModel" );
+    pPlayerModelKV->SetString( "fov", "42.0" );
+    pPlayerModelKV->SetString( "camera_origin", "117.27 5.7 50.58" );
+    pPlayerModelKV->SetString( "camera_angles", "0.00 -180.00 0.00" );
+    KeyValues *pLights = pPlayerModelKV->FindKey( "lights", true );
+    pLights->SetString( "ambient_light", "0.17 0.20 0.26" );
+    KeyValues *pSpotLight = pLights->FindKey( "spot_light_0", true );
+    pSpotLight->SetString( "position", "46.28 -8.61 143.56" );
+    pSpotLight->SetString( "color", "0.81 0.92 1.00" );
+    pSpotLight->SetString( "lookat", "0.0 0.0 0.0" );
+    pSpotLight->SetString( "inner_cone", "0.5" );
+    pSpotLight->SetString( "outer_cone", "1.0" );
+    
+    m_pPlayerModel->ApplySettings( pPlayerModelKV );
+    pPlayerModelKV->deleteThis();
+
 	// Setup panels
 	SETUP_PANEL( m_pLeftNvgbarUp1 );
 	SETUP_PANEL( m_pLeftNvgbarUp2 );
 	SETUP_PANEL( m_pLeftNvgbarDown );
+	SETUP_PANEL( m_pRightNvgbar );
 	SETUP_PANEL( m_pLeftTopLogo );
 	SETUP_PANEL( m_pPlayBtn );
 	SETUP_PANEL( m_pOpenServersBtn );
@@ -2412,6 +2445,9 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( m_pLeftNvgbarDown )
 		m_pLeftNvgbarDown->SetBounds( 0, downStartY, navWidth, screenTall - downStartY );
 
+	if ( m_pRightNvgbar )
+		m_pRightNvgbar->SetBounds( screenWide - navWidth, 0, navWidth, screenTall );
+
 	// 2. Buttons (Relative to their respective containers)
 	if ( m_pLeftTopLogo )
 		m_pLeftTopLogo->SetBounds( btnOffset, btnOffset, btnSize, btnSize );
@@ -2444,6 +2480,30 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		int containerHeight = screenTall - downStartY;
 		int quitY = containerHeight - btnSize - btnOffset;
 		m_pQuitBtn->SetBounds( btnOffset, quitY, btnSize, btnSize );
+	}
+
+	// Position the PlayerModel panel on the right side with no vertical margins and larger size
+	if ( m_pPlayerModel )
+	{
+		// Only show player model when not in-game (in menu)
+		bool bShouldShowModel = !GameUI().IsInLevel();
+		
+		if ( bShouldShowModel )
+		{
+			// Use larger dimensions for the player model
+			int modelWidth = scheme()->GetProportionalScaledValue( 480 );  // 增大模型面板宽度
+			int modelHeight = screenTall;  // 上下无边距，占满屏幕高度
+			int modelX = screenWide - modelWidth - navWidth - scheme()->GetProportionalScaledValue( 8 );  // 靠右放置，在右侧导航栏左侧
+			int modelY = 0;  // 顶部无边界
+			
+			// 设置 PlayerModel 边界
+			m_pPlayerModel->SetBounds( modelX, modelY, modelWidth, modelHeight );
+		}
+		
+		// 确保 PlayerModel 可见性状态正确
+		m_pPlayerModel->SetVisible( bShouldShowModel );
+		m_pPlayerModel->SetEnabled( bShouldShowModel );
+		m_pPlayerModel->SetZPos( 2 );  // 设置 zpos 为 2，与 mainmenu.res 配置一致
 	}
 }
 
@@ -4261,7 +4321,7 @@ void CBaseModPanel::OnOpenDemoDialog()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenVoteDialog()
 {
-    engine->ClientCmd_Unrestricted("engine callvote;gameui_hide");
+    engine->ClientCmd_Unrestricted("callvote;gameui_hide");
 }
 
 //-----------------------------------------------------------------------------
