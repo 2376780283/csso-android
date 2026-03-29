@@ -232,6 +232,13 @@ public:
         // vgui::surface()->DrawSetColor(255, 255, 255, 30);
         // vgui::surface()->DrawOutlinedRect(0, 0, wide, tall);
     }
+    void UpdateLayout()
+    {
+        if ( BasePanel() )
+        {
+            BasePanel()->UpdateCustomMenuUI();
+        }
+    }
 };
 
 ConVar vgui_message_dialog_modal( "vgui_message_dialog_modal", "1", FCVAR_ARCHIVE );
@@ -1326,6 +1333,7 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
+	m_pCustomLevelBtn = NULL;
 	m_pModOptionsBtn = NULL;
 	m_pDemoBtn = NULL;
 	m_pSettingsBtn = NULL;
@@ -2322,6 +2330,10 @@ void CBaseModPanel::CreateCustomMenuUI()
     m_pPlayBtn->SetActions( &CBaseModPanel::OnOpenCreateMultiplayerGameDialog, &CBaseModPanel::OnResumeGame );
     m_pOpenServersBtn = new ImageButton( m_pLeftNvgbarUp2, this, "openserversbtn", "resource/ui/menu/servers.png" );
     m_pOpenServersBtn->SetActions( &CBaseModPanel::OnOpenServerBrowser );
+
+    m_pCustomLevelBtn = new ImageButton( m_pLeftNvgbarUp2, this, "customlevelbtn", "resource/ui/menu/custom_level.png" );
+    m_pCustomLevelBtn->SetActions( &CBaseModPanel::OnResumeGame ); // Placeholder action
+    
     m_pModOptionsBtn = new ImageButton( m_pLeftNvgbarDown, this, "modoptionsbtn", "resource/ui/menu/modoptions.png" );
     m_pModOptionsBtn->SetActions( &CBaseModPanel::OnOpenModOptionsDialog );
     m_pDemoBtn = new ImageButton( m_pLeftNvgbarDown, this, "demobtn", "resource/ui/menu/demo.png" );
@@ -2335,6 +2347,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pLeftTopLogo->SetVisible(true);
 	m_pPlayBtn->SetVisible(true);
 	m_pOpenServersBtn->SetVisible(true);
+    m_pCustomLevelBtn->SetVisible(false); // Initially invisible
 	m_pModOptionsBtn->SetVisible(true);
 	m_pDemoBtn->SetVisible(true);
 	m_pSettingsBtn->SetVisible(true);
@@ -2347,6 +2360,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pLeftTopLogo );
 	SETUP_PANEL( m_pPlayBtn );
 	SETUP_PANEL( m_pOpenServersBtn );
+    SETUP_PANEL( m_pCustomLevelBtn );
 	SETUP_PANEL( m_pModOptionsBtn );
 	SETUP_PANEL( m_pDemoBtn );
 	SETUP_PANEL( m_pSettingsBtn );
@@ -2388,10 +2402,13 @@ void CBaseModPanel::UpdateCustomMenuUI()
 	if ( m_pLeftNvgbarUp1 )
 		m_pLeftNvgbarUp1->SetBounds( 0, 0, navWidth, navHeight );
 
-	if ( m_pLeftNvgbarUp2 )
-		m_pLeftNvgbarUp2->SetBounds( 0, navHeight, navWidth, navHeight * 2 );
+	bool bCustomLevelVisible = m_pCustomLevelBtn && m_pCustomLevelBtn->IsVisible();
+	int up2Multiplier = bCustomLevelVisible ? 3 : 2;
 
-	int downStartY = ( navHeight * 3 ) + gap;
+	if ( m_pLeftNvgbarUp2 )
+		m_pLeftNvgbarUp2->SetBounds( 0, navHeight, navWidth, navHeight * up2Multiplier );
+
+	int downStartY = navHeight + ( navHeight * up2Multiplier ) + gap;
 	if ( m_pLeftNvgbarDown )
 		m_pLeftNvgbarDown->SetBounds( 0, downStartY, navWidth, screenTall - downStartY );
 
@@ -2405,6 +2422,11 @@ void CBaseModPanel::UpdateCustomMenuUI()
 
 	if ( m_pOpenServersBtn )
 		m_pOpenServersBtn->SetBounds( btnOffset, navHeight + btnOffset, btnSize, btnSize );
+
+	if ( m_pCustomLevelBtn )
+	{
+		m_pCustomLevelBtn->SetBounds( btnOffset, ( navHeight * 2 ) + btnOffset, btnSize, btnSize );
+	}
 
 	// In Down container
 	if ( m_pModOptionsBtn )
@@ -2423,8 +2445,6 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		int quitY = containerHeight - btnSize - btnOffset;
 		m_pQuitBtn->SetBounds( btnOffset, quitY, btnSize, btnSize );
 	}
-
-	InvalidateLayout( true, true );
 }
 
 void CBaseModPanel::CheckBonusBlinkState()
@@ -2465,6 +2485,13 @@ void CBaseModPanel::UpdateGameMenus()
 	if ( m_pPlayBtn ) 
         m_pPlayBtn->SetMarked( isInGame );
         
+	if ( m_pCustomLevelBtn )
+	{
+		m_pCustomLevelBtn->SetVisible( isInGame );
+		// No need to call another class, just update our layout directly
+		UpdateCustomMenuUI();
+	}
+
 	if ( m_pQuitBtn ) 
         m_pQuitBtn->SetMarked( isInGame );
 
@@ -2637,35 +2664,9 @@ void CBaseModPanel::PerformLayout()
 	SetBounds(0, 0, wide, tall);
 
 	// Layout custom menu UI if enabled
-	if (m_bUseCustomMenu && m_pLeftNvgbarUp1)
+	if (m_bUseCustomMenu)
 	{
-		// Calculate dimensions based on actual screen size
-		int navWidth = wide * 0.05f;
-		if (navWidth > 100) navWidth = 100;
-		if (navWidth < 60) navWidth = 60;
-		int navHeight = navWidth;
-
-		int leftNavX = 0;
-		int rightNavX = wide - navWidth;
-
-		int btnSize = navWidth - 8;
-		int btnOffset = (navWidth - btnSize) / 2;
-		int gap = 4;
-
-		// Left nav bar backgrounds
-		m_pLeftNvgbarUp1->SetBounds(leftNavX, 0, navWidth, navHeight);
-		m_pLeftNvgbarUp2->SetBounds(leftNavX, navHeight, navWidth, navHeight * 2);
-		m_pLeftNvgbarDown->SetBounds(leftNavX, navHeight * 3 + gap, navWidth, tall - navHeight * 3 - gap);
-
-		// Left buttons
-		m_pLeftTopLogo->SetBounds(leftNavX + btnOffset, btnOffset, btnSize, btnSize);
-		m_pPlayBtn->SetBounds(leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize);
-		m_pOpenServersBtn->SetBounds(leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize);
-		m_pModOptionsBtn->SetBounds(leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize);
-		m_pDemoBtn->SetBounds(leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize);
-		m_pSettingsBtn->SetBounds(leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize);
-		m_pQuitBtn->SetBounds(leftNavX + btnOffset, tall - navHeight + btnOffset, btnSize, btnSize);
-
+		UpdateCustomMenuUI();
 	}
 
 	// Get the size of the menu

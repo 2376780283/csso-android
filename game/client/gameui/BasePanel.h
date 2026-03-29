@@ -373,6 +373,9 @@ public:
 
 	void SetMainMenuOverride( vgui::VPANEL panel );
 	void RestartBackgroundVideo();
+	
+	void CreateCustomMenuUI();
+	void UpdateCustomMenuUI();
 
 	void UpdateAgentModel();
 
@@ -414,10 +417,9 @@ private:
 	void CreatePlatformMenu();
 	void CreateGameMenu();
 	void CreateGameLogo();
-	void CreateCustomMenuUI();
-	void UpdateCustomMenuUI();
 	void CheckBonusBlinkState();
 	void UpdateGameMenus();
+private:
 	CGameMenu *RecursiveLoadGameMenu(KeyValues *datafile);
 
 	void StartExitingProcess();
@@ -520,6 +522,7 @@ private:
 	class ImageButton *m_pLeftTopLogo;
 	class ImageButton *m_pPlayBtn;
 	class ImageButton *m_pOpenServersBtn;
+	class ImageButton *m_pCustomLevelBtn;
 	class ImageButton *m_pModOptionsBtn;
 	class ImageButton *m_pDemoBtn;
 	class ImageButton *m_pSettingsBtn;
