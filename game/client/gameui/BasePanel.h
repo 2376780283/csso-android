@@ -378,6 +378,7 @@ public:
 protected:
 	virtual void PaintBackground();
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
+	virtual void OnScreenSizeChanged( int iOldWide, int iOldTall );
 
 public:
 	// FIXME: This should probably become a friend relationship between the classes
@@ -413,6 +414,7 @@ private:
 	void CreateGameMenu();
 	void CreateGameLogo();
 	void CreateCustomMenuUI();
+	void UpdateCustomMenuUI();
 	void CheckBonusBlinkState();
 	void UpdateGameMenus();
 	CGameMenu *RecursiveLoadGameMenu(KeyValues *datafile);

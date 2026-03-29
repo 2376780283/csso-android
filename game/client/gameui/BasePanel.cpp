@@ -183,7 +183,28 @@ public:
 		if (code == MOUSE_LEFT) {
 			if (m_bSelected)
 			{
-				PostMessage(GetParent(), new KeyValues("Command", "command", m_szCommand.String()));
+				// 发送命令消息。由于按钮现在嵌套在容器 Panel 中，
+				// 我们需要确保消息能够到达处理它的 BaseModPanel。
+				KeyValues *msg = new KeyValues("Command", "command", m_szCommand.String());
+				if (GetParent())
+				{
+					// 发给直接父级（容器）
+					PostMessage(GetParent(), msg->MakeCopy());
+					
+					// 发给祖父级（BaseModPanel）
+					if (GetParent()->GetParent())
+					{
+						PostMessage(GetParent()->GetParent(), msg);
+					}
+					else
+					{
+						msg->deleteThis();
+					}
+				}
+				else
+				{
+					msg->deleteThis();
+				}
 			}
 			m_bSelected = false;
 			input()->SetMouseCapture(NULL);
@@ -1763,6 +1784,20 @@ void CBaseModPanel::OnSizeChanged( int newWide, int newTall )
 
 	// resize agent panel
 	UpdateAgentModel();
+
+	// Update custom menu layout if enabled
+	UpdateCustomMenuUI();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Called when screen resolution changes
+//-----------------------------------------------------------------------------
+void CBaseModPanel::OnScreenSizeChanged( int iOldWide, int iOldTall )
+{
+	BaseClass::OnScreenSizeChanged( iOldWide, iOldTall );
+	
+	// Update custom menu layout when resolution changes
+	UpdateCustomMenuUI();
 }
 
 //-----------------------------------------------------------------------------
@@ -2244,88 +2279,41 @@ void CBaseModPanel::CreateGameLogo()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::CreateCustomMenuUI()
 {
-	// Get screen size
-	int screenWide, screenTall;
-	vgui::surface()->GetScreenSize( screenWide, screenTall );
-
-	// Set our own size to match screen
-	SetBounds( 0, 0, screenWide, screenTall );
-
-	// Calculate dimensions based on actual screen size
-	// Left/Right nav bar: 5% of screen width (smaller)
-	int navWidth = screenWide * 0.05f;
-	if ( navWidth > 100 ) navWidth = 100; // Max width
-	if ( navWidth < 60 ) navWidth = 60;   // Min width
-	int navHeight = navWidth; // Square buttons
-
-	// Left navigation bar X position (always at left edge)
-	int leftNavX = 0;
-
-	// Right navigation bar X position (always at right edge)
-	int rightNavX = screenWide - navWidth;
-
-	// Button size - slightly smaller than nav bar to have padding
-	int btnSize = navWidth - 8;
-	int btnOffset = (navWidth - btnSize) / 2;
-
 	// Create left navigation bar backgrounds (Panels)
-	// left_nvgbar_up1 - top section
 	m_pLeftNvgbarUp1 = new Panel( this, "left_nvgbar_up1" );
-	m_pLeftNvgbarUp1->SetBounds( leftNavX, 0, navWidth, navHeight );
 	m_pLeftNvgbarUp1->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp1->SetVisible( true );
+	m_pLeftNvgbarUp1->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarUp1->SetPaintBackgroundType( 0 );
 
-	// left_nvgbar_up2 - middle section (2 buttons high)
 	m_pLeftNvgbarUp2 = new Panel( this, "left_nvgbar_up2" );
-	m_pLeftNvgbarUp2->SetBounds( leftNavX, navHeight, navWidth, navHeight * 2 );
 	m_pLeftNvgbarUp2->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarUp2->SetVisible( true );
+	m_pLeftNvgbarUp2->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarUp2->SetPaintBackgroundType( 0 );
 
-	// left_nvgbar_down - remaining space (with gap from up2)
-	int gap = 2; // gap between sections
 	m_pLeftNvgbarDown = new Panel( this, "left_nvgbar_down" );
-	m_pLeftNvgbarDown->SetBounds( leftNavX, navHeight * 3 + gap, navWidth, screenTall - navHeight * 3 - gap );
 	m_pLeftNvgbarDown->SetBgColor( Color(90, 90, 90, 169) );
 	m_pLeftNvgbarDown->SetVisible( true );
+	m_pLeftNvgbarDown->SetPaintBackgroundEnabled(true);
 	m_pLeftNvgbarDown->SetPaintBackgroundType( 0 );
 
-	// Create left navigation buttons (centered in nav bar)
-	// left_top_logo (logo button)
-	m_pLeftTopLogo = new ImageButton( this, "left_top_logo", "resource/ui/menu/logo.png", "" );
-	m_pLeftTopLogo->SetBounds( leftNavX + btnOffset, btnOffset, btnSize, btnSize );
-	m_pLeftTopLogo->SetVisible( true );
+	// Create left navigation buttons (now as children of containers)
+	m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, "left_top_logo", "resource/ui/menu/logo.png", "" );
+	m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
+	m_pOpenServersBtn = new ImageButton( m_pLeftNvgbarUp2, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
+	m_pModOptionsBtn = new ImageButton( m_pLeftNvgbarDown, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
+	m_pDemoBtn = new ImageButton( m_pLeftNvgbarDown, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
+	m_pSettingsBtn = new ImageButton( m_pLeftNvgbarDown, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
+	m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
 
-	// playbtn
-	m_pPlayBtn = new ImageButton( this, "playbtn", "resource/ui/menu/play.png", "OpenCreateMultiplayerGameDialog" );
-	m_pPlayBtn->SetBounds( leftNavX + btnOffset, navHeight + btnOffset, btnSize, btnSize );
-	m_pPlayBtn->SetVisible( true );
-
-	// openserversbtn
-	m_pOpenServersBtn = new ImageButton( this, "openserversbtn", "resource/ui/menu/servers.png", "OpenServerBrowser" );
-	m_pOpenServersBtn->SetBounds( leftNavX + btnOffset, navHeight * 2 + btnOffset, btnSize, btnSize );
-	m_pOpenServersBtn->SetVisible( true );
-
-	// modoptionsbtn
-	m_pModOptionsBtn = new ImageButton( this, "modoptionsbtn", "resource/ui/menu/modoptions.png", "OpenModOptionsDialog" );
-	m_pModOptionsBtn->SetBounds( leftNavX + btnOffset, navHeight * 3 + btnOffset, btnSize, btnSize );
-	m_pModOptionsBtn->SetVisible( true );
-
-	// demobtn
-	m_pDemoBtn = new ImageButton( this, "demobtn", "resource/ui/menu/demo.png", "engine demoui" );
-	m_pDemoBtn->SetBounds( leftNavX + btnOffset, navHeight * 4 + btnOffset, btnSize, btnSize );
-	m_pDemoBtn->SetVisible( true );
-
-	// settingsbtn
-	m_pSettingsBtn = new ImageButton( this, "settingsbtn", "resource/ui/menu/settings.png", "OpenOptionsDialog" );
-	m_pSettingsBtn->SetBounds( leftNavX + btnOffset, navHeight * 6 + btnOffset, btnSize, btnSize );
-	m_pSettingsBtn->SetVisible( true );
-
-	// quitbtn
-	m_pQuitBtn = new ImageButton( this, "quitbtn", "resource/ui/menu/quit.png", "QUIT" );
-	m_pQuitBtn->SetBounds( leftNavX + btnOffset, screenTall - navHeight + btnOffset, btnSize, btnSize );
-	m_pQuitBtn->SetVisible( true );
+	m_pLeftTopLogo->SetVisible(true);
+	m_pPlayBtn->SetVisible(true);
+	m_pOpenServersBtn->SetVisible(true);
+	m_pModOptionsBtn->SetVisible(true);
+	m_pDemoBtn->SetVisible(true);
+	m_pSettingsBtn->SetVisible(true);
+	m_pQuitBtn->SetVisible(true);
 
 	// Setup panels
 	SETUP_PANEL( m_pLeftNvgbarUp1 );
@@ -2338,6 +2326,80 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pDemoBtn );
 	SETUP_PANEL( m_pSettingsBtn );
 	SETUP_PANEL( m_pQuitBtn );
+
+	// Initial layout update
+	UpdateCustomMenuUI();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Update custom menu UI layout when resolution changes
+//-----------------------------------------------------------------------------
+void CBaseModPanel::UpdateCustomMenuUI()
+{
+	int screenWide, screenTall;
+	vgui::surface()->GetScreenSize( screenWide, screenTall );
+
+	// Base panel always covers the screen
+	SetBounds( 0, 0, screenWide, screenTall );
+
+	// Calculate base unit based on screen percentage for width
+	// Use 7% of screen width as reference, but clamp with proportional pixels
+	float navWidthPercent = 0.07f;
+	int navWidth = (int)(screenWide * navWidthPercent);
+
+	// Proportional constraints to keep it looks good on all resolutions
+	int minWidth = scheme()->GetProportionalScaledValue( 64 );
+	int maxWidth = scheme()->GetProportionalScaledValue( 100 );
+	if ( navWidth < minWidth ) navWidth = minWidth;
+	if ( navWidth > maxWidth ) navWidth = maxWidth;
+
+	int navHeight = navWidth; // Top sections stay square
+	int gap = scheme()->GetProportionalScaledValue( 4 );
+	int btnPadding = scheme()->GetProportionalScaledValue( 8 );
+	int btnSize = navWidth - btnPadding;
+	int btnOffset = (navWidth - btnSize) / 2;
+
+	// 1. Containers
+	if ( m_pLeftNvgbarUp1 )
+		m_pLeftNvgbarUp1->SetBounds( 0, 0, navWidth, navHeight );
+
+	if ( m_pLeftNvgbarUp2 )
+		m_pLeftNvgbarUp2->SetBounds( 0, navHeight, navWidth, navHeight * 2 );
+
+	int downStartY = ( navHeight * 3 ) + gap;
+	if ( m_pLeftNvgbarDown )
+		m_pLeftNvgbarDown->SetBounds( 0, downStartY, navWidth, screenTall - downStartY );
+
+	// 2. Buttons (Relative to their respective containers)
+	if ( m_pLeftTopLogo )
+		m_pLeftTopLogo->SetBounds( btnOffset, btnOffset, btnSize, btnSize );
+
+	// In Up2 container
+	if ( m_pPlayBtn )
+		m_pPlayBtn->SetBounds( btnOffset, btnOffset, btnSize, btnSize );
+
+	if ( m_pOpenServersBtn )
+		m_pOpenServersBtn->SetBounds( btnOffset, navHeight + btnOffset, btnSize, btnSize );
+
+	// In Down container
+	if ( m_pModOptionsBtn )
+		m_pModOptionsBtn->SetBounds( btnOffset, btnOffset, btnSize, btnSize );
+
+	if ( m_pDemoBtn )
+		m_pDemoBtn->SetBounds( btnOffset, navHeight + btnOffset, btnSize, btnSize );
+
+	if ( m_pSettingsBtn )
+		m_pSettingsBtn->SetBounds( btnOffset, ( navHeight * 2 ) + btnOffset, btnSize, btnSize );
+
+	// Quit button at the very bottom of the screen (inside m_pLeftNvgbarDown)
+	if ( m_pQuitBtn )
+	{
+		int containerHeight = screenTall - downStartY;
+		int quitY = containerHeight - btnSize - btnOffset;
+		m_pQuitBtn->SetBounds( btnOffset, quitY, btnSize, btnSize );
+	}
+
+	InvalidateLayout( true, true );
 }
 
 void CBaseModPanel::CheckBonusBlinkState()
