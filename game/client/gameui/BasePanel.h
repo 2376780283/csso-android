@@ -531,6 +531,7 @@ private:
 	class ImageButton *m_pDemoBtn;
 	class ImageButton *m_pSettingsBtn;
 	class ImageButton *m_pQuitBtn;
+	class ImageButton *m_pAchievementsBtn;
 	
 		// Used for internal state dealing with blades
 	bool						m_bUserRefusedSignIn;

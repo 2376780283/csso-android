@@ -2312,19 +2312,24 @@ void CBaseModPanel::CreateCustomMenuUI()
     m_pDemoBtn->SetActions( &CBaseModPanel::OnOpenDemoDialog );
     m_pSettingsBtn = new ImageButton( m_pLeftNvgbarDown, this, "settingsbtn", "resource/ui/menu/settings.png" );
     m_pSettingsBtn->SetActions( &CBaseModPanel::OnOpenOptionsDialog );
-    m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, this, "quitbtn", "resource/ui/menu/quit.png" );
-    m_pQuitBtn->SetMarkedInfo( "resource/ui/menu/back.png" );
-    m_pQuitBtn->SetActions( &CBaseModPanel::OnOpenQuitConfirmationDialog, &CBaseModPanel::OnOpenDisconnectConfirmationDialog );
-
-	m_pLeftTopLogo->SetVisible(true);
-	m_pPlayBtn->SetVisible(true);
-	m_pOpenServersBtn->SetVisible(true);
-    m_pCallVoteLevelBtn->SetVisible(false); // Initially invisible
-	m_pModOptionsBtn->SetVisible(true);
-	m_pDemoBtn->SetVisible(true);
-	m_pSettingsBtn->SetVisible(true);
-	m_pQuitBtn->SetVisible(true);
-
+    	m_pQuitBtn = new ImageButton( m_pLeftNvgbarDown, this, "quitbtn", "resource/ui/menu/quit.png" );
+        m_pQuitBtn->SetMarkedInfo( "resource/ui/menu/back.png" );
+        m_pQuitBtn->SetActions( &CBaseModPanel::OnOpenQuitConfirmationDialog, &CBaseModPanel::OnOpenDisconnectConfirmationDialog );
+    
+    	// Create achievement button in the right navigation bar
+    	m_pAchievementsBtn = new ImageButton( m_pRightNvgbar, this, "achievementsbtn", "resource/ui/menu/achievements.png" );
+    	m_pAchievementsBtn->SetActions( &CBaseModPanel::OnOpenCSAchievementsDialog );
+    	m_pAchievementsBtn->SetVisible(true);
+    
+    	m_pLeftTopLogo->SetVisible(true);
+    	m_pPlayBtn->SetVisible(true);
+    	m_pOpenServersBtn->SetVisible(true);
+        m_pCallVoteLevelBtn->SetVisible(false); // Initially invisible
+    	m_pModOptionsBtn->SetVisible(true);
+    	m_pDemoBtn->SetVisible(true);
+    	m_pSettingsBtn->SetVisible(true);
+    	m_pQuitBtn->SetVisible(true);
+    	m_pAchievementsBtn->SetVisible(true);
     // Apply camera and light settings to PlayerModel
     KeyValues *pPlayerModelKV = new KeyValues( "PlayerModel" );
     pPlayerModelKV->SetString( "fov", "42.0" );
@@ -2355,6 +2360,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pDemoBtn );
 	SETUP_PANEL( m_pSettingsBtn );
 	SETUP_PANEL( m_pQuitBtn );
+	SETUP_PANEL( m_pAchievementsBtn );
 
 	// Initial layout update
 	UpdateCustomMenuUI();
@@ -2437,6 +2443,14 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		int containerHeight = screenTall - downStartY;
 		int quitY = containerHeight - btnSize - btnOffset;
 		m_pQuitBtn->SetBounds( btnOffset, quitY, btnSize, btnSize );
+	}
+
+	// Achievement button in the right navigation bar (positioned at the top)
+	if ( m_pAchievementsBtn )
+	{
+		// Position at the top of the right navigation bar with some top padding
+		int achievementsY = btnOffset + scheme()->GetProportionalScaledValue( 10 );
+		m_pAchievementsBtn->SetBounds( btnOffset, achievementsY, btnSize, btnSize );
 	}
 
 	// Position the News Panel between left nav bars and PlayerModel
