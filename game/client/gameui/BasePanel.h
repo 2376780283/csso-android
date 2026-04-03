@@ -58,6 +58,7 @@ static MenuBackground s_MenuBackgrounds[] =
 	{ "media/background/sirocco_night.bik",	"#GameUI_HUD_MenuBackground_sirocco_night"	},
 	{ "media/background/swamp.bik",			"#GameUI_HUD_MenuBackground_swamp"			},
 	{ "media/background/vertigo.bik",		"#GameUI_HUD_MenuBackground_vertigo"		},
+	{ "media/background/aatest.webm",      "WEBM"                                         },
 };
 
 enum
