@@ -26,7 +26,11 @@ def build(bld):
 		'../../public/tier0',
 		'../../public/tier1',
 		'../../common',
-		'../../webm'
+		'../../webm',
+		'../../thirdparty/libvpx-main',
+		'../../thirdparty/libwebm-main',
+		'../../thirdparty/vorbis-main/include',
+		'../../thirdparty/ogg-main/include',
 	] + bld.env.INCLUDES_SDL2
 
 	defines = []
