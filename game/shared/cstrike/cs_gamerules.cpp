@@ -412,7 +412,7 @@ ConVar mp_do_warmup_period(
 
 ConVar mp_do_warmup_offline( 
     "mp_do_warmup_offline", 
-    "0",
+    "1",
     FCVAR_REPLICATED,
     "Whether or not to do a warmup period at the start of a match in an offline (bot) match.",
     true, 0,
@@ -4838,7 +4838,7 @@ ConVar cl_autohelp(
 			
 			extern ConVar mp_do_warmup_period;
 
-            if ( UTIL_HumansInGame( true, true ) > 0 && ( GetWarmupPeriodEndTime() - 5 < gpGlobals->curtime) )
+            if ( (UTIL_HumansInGame( true, true ) > 0 || IsPlayingOffline()) && ( GetWarmupPeriodEndTime() - 5 < gpGlobals->curtime) )
             {
 				mp_warmup_pausetimer.SetValue( 0 ); // Timer is unpausable within 5 seconds of its end.
 
@@ -4902,7 +4902,7 @@ ConVar cl_autohelp(
 		
 		if ( m_flRestartRoundTime > 0.0f && m_flRestartRoundTime <= gpGlobals->curtime )
 		{
-			if ( IsWarmupPeriod() && m_match.GetPhase() != GAMEPHASE_MATCH_ENDED && GetWarmupPeriodEndTime() <= gpGlobals->curtime && UTIL_HumansInGame( false, true ) && m_flGameStartTime != 0 )
+			if ( IsWarmupPeriod() && m_match.GetPhase() != GAMEPHASE_MATCH_ENDED && GetWarmupPeriodEndTime() <= gpGlobals->curtime && (UTIL_HumansInGame( false, true ) || IsPlayingOffline()) && m_flGameStartTime != 0 )
             {
                 m_bCompleteReset = true;
                 m_flRestartRoundTime = gpGlobals->curtime + 1;
@@ -4950,7 +4950,7 @@ ConVar cl_autohelp(
 					{
 						if (IsWarmupPeriod() &&
 							(GetWarmupPeriodEndTime() <= gpGlobals->curtime) &&
-							UTIL_HumansInGame(false, true))
+							(UTIL_HumansInGame(false, true) || IsPlayingOffline()))
 						{
 							m_bCompleteReset = true;
 							m_flRestartRoundTime = gpGlobals->curtime + 1;
@@ -7637,7 +7637,8 @@ bool CCSGameRules::IsFreezePeriod()
 bool CCSGameRules::IsWarmupPeriod() const
 {
 	if ( IsPlayingOffline() && !mp_do_warmup_offline.GetBool() )
-		return false;
+	// always true for game
+    return true;
 
 	return m_bWarmupPeriod;
 }
