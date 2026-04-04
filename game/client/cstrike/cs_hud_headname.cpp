@@ -21,6 +21,7 @@
 #include "filesystem.h"
 #include "utlmap.h"
 #include "utlstring.h"
+#include "mathlib/vector.h"
 #include "tier0/memdbgon.h"
 
 extern int ScreenTransform(const Vector &point, Vector &screen);
@@ -167,6 +168,11 @@ CPlayerNamePanel::CPlayerNamePanel(vgui::Panel *pParent)
     // -2 = bone not yet looked up for this player
     m_nHeadBone      = -2;
 
+    // Position smoothing to reduce jitter
+    m_flSmoothPosX   = 0.0f;
+    m_flSmoothPosY   = 0.0f;
+    m_bHasSmoothPos  = false;
+
     SetSize(HN_W, 100);
 }
 
@@ -188,6 +194,9 @@ void CPlayerNamePanel::Reset()
     m_nLastPanelW    = -1;
     m_nHeadBone      = -2;
     m_hBoneCachePlayer = NULL;
+    m_flSmoothPosX   = 0.0f;
+    m_flSmoothPosY   = 0.0f;
+    m_bHasSmoothPos  = false;
 
     for (int i = 0; i < 6; i++)
     {
@@ -477,12 +486,41 @@ void CPlayerNamePanel::Update(C_CSPlayer *pPlayer, int screenX, int screenY)
     m_nLastAlpha = iAlpha;
 
     //--------------------------------------------------------------------------
-    // Position — centered above head, updated every frame
+    // Position — centered above head, updated every frame with smoothing
     //--------------------------------------------------------------------------
-    int posX = screenX - panelW / 2;
-    int posY = screenY - GetTall() - 4;
+    float targetX = (float)screenX - panelW / 2.0f;
+    float targetY = (float)screenY - GetTall() - 4.0f;
 
-    SetPos(posX, posY);
+    // Apply position smoothing (lerp) to reduce jitter
+    // First frame uses target directly; subsequent frames lerp toward target
+    if (!m_bHasSmoothPos)
+    {
+        m_flSmoothPosX = targetX;
+        m_flSmoothPosY = targetY;
+        m_bHasSmoothPos = true;
+    }
+    else
+    {
+        // Use smaller lerp factor for better smoothing during movement
+        const float flSmoothing = 0.25f;
+
+        // Apply lerp to smooth the movement
+        m_flSmoothPosX = Lerp(flSmoothing, m_flSmoothPosX, targetX);
+        m_flSmoothPosY = Lerp(flSmoothing, m_flSmoothPosY, targetY);
+
+        // Threshold filter: if target moved significantly, snap directly to target
+        // This prevents lag when player moves fast while still smoothing small jitters
+        const float flThreshold = 50.0f;  // pixels
+        float dx = targetX - m_flSmoothPosX;
+        float dy = targetY - m_flSmoothPosY;
+        if (dx * dx + dy * dy > flThreshold * flThreshold)
+        {
+            m_flSmoothPosX = targetX;
+            m_flSmoothPosY = targetY;
+        }
+    }
+
+    SetPos((int)round(m_flSmoothPosX), (int)round(m_flSmoothPosY));
     SetVisible(true);
 }
 
@@ -657,8 +695,9 @@ bool CHudPlayerName::GetHeadScreenPos(C_CSPlayer *pPlayer, int &sx, int &sy, int
     if (ScreenTransform(worldPos, screen) != 0)
         return false;
 
-    sx = (int)(0.5f * (1.0f + screen.x) * sw);
-    sy = (int)(0.5f * (1.0f - screen.y) * sh);
+    // Use round() instead of truncation to reduce jitter when near integer boundaries
+    sx = (int)round(0.5f * (1.0f + screen.x) * sw);
+    sy = (int)round(0.5f * (1.0f - screen.y) * sh);
 
     // Hide the panel if the projected point is outside the viewport.
     // A small margin (HN_EDGE_MARGIN) prevents flicker when the head

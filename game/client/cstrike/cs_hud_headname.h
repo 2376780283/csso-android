@@ -56,6 +56,12 @@ private:
     // -2 = not yet looked up, -1 = not found, >= 0 = valid index.
     int                         m_nHeadBone;
     CHandle<C_CSPlayer>         m_hBoneCachePlayer;
+
+    // --- Position smoothing ---
+    // Lerp toward target position each frame to reduce jitter
+    float                       m_flSmoothPosX;
+    float                       m_flSmoothPosY;
+    bool                        m_bHasSmoothPos;
 };
 
 //-----------------------------------------------------------------------------
