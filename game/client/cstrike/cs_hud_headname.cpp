@@ -450,8 +450,8 @@ void CPlayerNamePanel::Update(C_CSPlayer *pPlayer, int screenX, int screenY)
     {
         bool bIsCT = (pPlayer->GetTeamNumber() == TEAM_CT);
         Color nameColor = bIsCT
-            ? Color(100, 180, 255, iAlpha)   // CT Blue
-            : Color(100, 255, 100, iAlpha);  // T Green
+            ? Color(74, 155, 214, iAlpha)   // CT Blue
+            : Color(190, 189, 144, iAlpha);  // T Green
         m_pNameLabel->SetFgColor(nameColor);
     }
 
