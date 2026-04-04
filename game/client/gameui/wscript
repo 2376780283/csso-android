@@ -20,6 +20,7 @@ def build(bld):
 	source = [
 		'BackgroundMenuButton.cpp',
 		'BasePanel.cpp',
+		'CustomMenu.cpp',
 		'GameConsole.cpp',
 		'GameUI_Interface.cpp',
 		'ModInfo.cpp',

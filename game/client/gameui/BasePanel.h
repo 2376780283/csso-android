@@ -23,6 +23,7 @@
 #include "tier2/camerautils.h"
 #include "tier3/mdlutils.h"
 #include "materialsystem/MaterialSystemUtil.h"
+#include "CustomMenu.h"
 
 #include "ixboxsystem.h"
 
@@ -523,15 +524,16 @@ private:
 	vgui::Panel *m_pLeftNvgbarDown;
 	vgui::Panel *m_pRightNvgbar;
 	vgui::Panel *m_pNewsPanel;
-	class ImageButton *m_pLeftTopLogo;
-	class ImageButton *m_pPlayBtn;
-	class ImageButton *m_pOpenServersBtn;
-	class ImageButton *m_pCallVoteLevelBtn;
-	class ImageButton *m_pModOptionsBtn;
-	class ImageButton *m_pDemoBtn;
-	class ImageButton *m_pSettingsBtn;
-	class ImageButton *m_pQuitBtn;
-	class ImageButton *m_pAchievementsBtn;
+	ImageButton *m_pLeftTopLogo;
+	ImageButton *m_pPlayBtn;
+	ImageButton *m_pOpenServersBtn;
+	ImageButton *m_pCallVoteLevelBtn;
+	ImageButton *m_pModOptionsBtn;
+	ImageButton *m_pDemoBtn;
+	ImageButton *m_pSettingsBtn;
+	ImageButton *m_pQuitBtn;
+	ImageButton *m_pAchievementsBtn;
+	NewsListPanel *m_pNewsList;
 	
 		// Used for internal state dealing with blades
 	bool						m_bUserRefusedSignIn;
