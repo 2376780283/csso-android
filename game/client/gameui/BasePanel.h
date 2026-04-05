@@ -523,7 +523,6 @@ private:
 	vgui::Panel *m_pLeftNvgbarUp2;
 	vgui::Panel *m_pLeftNvgbarDown;
 	vgui::Panel *m_pRightNvgbar;
-	vgui::Panel *m_pNewsPanel;
 	ImageButton *m_pLeftTopLogo;
 	ImageButton *m_pPlayBtn;
 	ImageButton *m_pOpenServersBtn;

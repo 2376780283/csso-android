@@ -1189,7 +1189,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pLeftNvgbarUp2 = NULL;
 	m_pLeftNvgbarDown = NULL;
 	m_pRightNvgbar = NULL;
-	m_pNewsPanel = NULL;
 	m_pLeftTopLogo = NULL;
 	m_pPlayBtn = NULL;
 	m_pOpenServersBtn = NULL;
@@ -2166,13 +2165,6 @@ void CBaseModPanel::CreateCustomMenuUI()
 	m_pRightNvgbar->SetPaintBackgroundEnabled(true);
 	m_pRightNvgbar->SetPaintBackgroundType( 0 );
 
-	// Create news panel between left nav bars and player model
-	m_pNewsPanel = new NvgBarPanel( this, "news_panel" );
-	m_pNewsPanel->SetBgColor( Color(90, 90, 90, 169) );
-	m_pNewsPanel->SetVisible( true );
-	m_pNewsPanel->SetPaintBackgroundEnabled(true);
-	m_pNewsPanel->SetPaintBackgroundType( 0 );
-
     m_pLeftTopLogo = new ImageButton( m_pLeftNvgbarUp1, this, "left_top_logo", "resource/ui/menu/logo.png" );
     m_pLeftTopLogo->SetActions( NULL ); 
     m_pPlayBtn = new ImageButton( m_pLeftNvgbarUp2, this, "playbtn", "resource/ui/menu/play.png" );
@@ -2329,37 +2321,6 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		// Position at the top of the right navigation bar with some top padding
 		int achievementsY = btnOffset + scheme()->GetProportionalScaledValue( 10 );
 		m_pAchievementsBtn->SetBounds( btnOffset, achievementsY, btnSize, btnSize );
-	}
-
-	// Position the News Panel between left nav bars and PlayerModel
-	if ( m_pNewsPanel )
-	{
-		// Only show news panel when not in-game (in menu)
-		bool bShouldShowNews = !GameUI().IsInLevel();
-		
-		if ( bShouldShowNews )
-		{
-			int modelWidth = scheme()->GetProportionalScaledValue( 460 );  // PlayerModel width
-			int middleSpace = screenWide - navWidth - navWidth - modelWidth;  // Space between nav bars
-			int newsWidth = middleSpace;/*(int)(middleSpace * 0.7f);*/  // Wider: 70% of middle space (instead of 50%)
-			int newsHeight = screenTall;  // Start with full height
-			int newsX = navWidth;
-			int newsY = 0; 
-			
-			int padding = scheme()->GetProportionalScaledValue( 4 );  // Slightly larger padding
-			newsX += padding;  // Left padding
-			newsY += padding;  // Top padding
-			newsWidth -= padding * 2;  // Left + right padding
-			newsHeight -= padding * 2;  // Top + bottom padding
-			
-			// Set News Panel bounds
-			m_pNewsPanel->SetBounds( newsX, newsY, newsWidth, newsHeight );
-			m_pNewsPanel->SetVisible( true );
-		}
-		else
-		{
-			m_pNewsPanel->SetVisible( false );
-		}
 	}
 
 	// Position the PlayerModel panel on the right side with no vertical margins and larger size
