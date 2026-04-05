@@ -39,12 +39,12 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CWebMVideoSubSystem, IVideoSubSystem, VIDEO_S
 // ===========================================================================
 VideoFileExtensionInfo_t s_WebMExtensions[] =
 {
-	{ ".webm", VideoSystem::WEBM,  VideoSystemFeature::PLAY_VIDEO_FILE_IN_MATERIAL | VideoSystemFeature::FULL_ENCODE },
+	{ ".webm", VideoSystem::WEBM,  VideoSystemFeature::PLAY_VIDEO_FILE_IN_MATERIAL | VideoSystemFeature::PLAY_VIDEO_FILE_FULL_SCREEN | VideoSystemFeature::FULL_ENCODE },
 };
 
 const int s_WebMExtensionCount = ARRAYSIZE( s_WebMExtensions );
 
-const VideoSystemFeature_t	CWebMVideoSubSystem::DEFAULT_FEATURE_SET = VideoSystemFeature::PLAY_VIDEO_FILE_IN_MATERIAL | VideoSystemFeature::FULL_ENCODE;
+const VideoSystemFeature_t	CWebMVideoSubSystem::DEFAULT_FEATURE_SET = VideoSystemFeature::PLAY_VIDEO_FILE_IN_MATERIAL | VideoSystemFeature::PLAY_VIDEO_FILE_FULL_SCREEN | VideoSystemFeature::FULL_ENCODE;
 
 
 // ===========================================================================
