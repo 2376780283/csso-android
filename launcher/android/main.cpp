@@ -131,7 +131,11 @@ DLL_EXPORT int LauncherMainAndroid( int argc, char **argv )
 
 	SetLauncherArgs();
 
-	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");	
+	SDL_SetHint(SDL_HINT_RENDER_LOGICAL_SIZE_MODE, "overscan");
+	SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
+	SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "1");
+	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
 	DeclareCurrentThreadIsMainThread(); // Init thread propertly on Android
 
 	return LauncherMain(iLastArgs, LauncherArgv);
