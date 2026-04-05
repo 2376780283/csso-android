@@ -36,8 +36,8 @@ using namespace vgui;
 ConVar hud_playercount_pos( "hud_playercount_pos", "0", FCVAR_ARCHIVE,
         "0 = top of screen, 1 = bottom of screen" );
 
-ConVar hud_teamcounter_showavatar( "hud_teamcounter_showavatar", "1", FCVAR_ARCHIVE,
-        "1 = avatar mode (cs_hud_teamcounter), 0 = digital mode (cs_hud_teamcounter_digital)" );
+ConVar hud_teamcounter_style( "hud_teamcounter_style", "1", FCVAR_ARCHIVE,
+        "Display style: 0 = digital (text only), 1 = avatar (2-column), 2 = avatar (1-column singerline)" );
 
 static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 
@@ -439,7 +439,8 @@ void CHudTeamCounter::Reset()
 //-----------------------------------------------------------------------------
 bool CHudTeamCounter::ShouldDraw()
 {
-        if ( !hud_teamcounter_showavatar.GetBool() )
+        // Only show when hud_teamcounter_style = 1 (avatar mode)
+        if ( hud_teamcounter_style.GetInt() != 1 )
                 return false;
 
         C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();

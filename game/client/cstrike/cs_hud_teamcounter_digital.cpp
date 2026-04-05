@@ -24,7 +24,7 @@ using namespace vgui;
 
 extern ConVar cl_draw_only_deathnotices;
 extern ConVar hud_playercount_pos;
-extern ConVar hud_teamcounter_showavatar;
+extern ConVar hud_teamcounter_style;
 
 class CHudTeamCounterDigital: public CHudElement, public EditablePanel
 {
@@ -33,13 +33,16 @@ class CHudTeamCounterDigital: public CHudElement, public EditablePanel
 public:
 	CHudTeamCounterDigital( const char *pElementName );
 	virtual void Init( void );
-	virtual void ApplySettings( KeyValues *inResourceData );
+	virtual void PerformLayout();
 	virtual void Reset( void );
 	virtual bool ShouldDraw();
 	virtual void OnThink();
 	virtual void OnScreenSizeChanged( int iOldWide, int iOldTall );
 
 private:
+	int ScalePx( float basePixels ) const;
+	void Layout();
+
 	Label				*m_pCTWinCounterLabel;
 	Label				*m_pCTAliveCounterLabel;
 	Label				*m_pCTAliveTextLabel;
@@ -52,9 +55,6 @@ private:
 	ImagePanel			*m_pTSkullImage;
 
 	int m_iRoundTime;
-
-	int m_iOriginalXPos;
-	int m_iOriginalYPos;
 	bool m_bIsAtTheBottom;
 
 	CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
@@ -70,24 +70,24 @@ CHudTeamCounterDigital::CHudTeamCounterDigital( const char *pElementName ): CHud
 
 	SetHiddenBits( HIDEHUD_PLAYERDEAD );
 
-	m_pCTWinCounterLabel = new Label( this, "CTWinCounterLabel", "0" );
-	m_pCTAliveCounterLabel = new Label( this, "CTAliveCounterLabel", "0" );
-	m_pCTAliveTextLabel = new Label( this, "CTAliveTextLabel", "#Cstrike_PlayerCount_Alive" );
-	m_pTWinCounterLabel = new Label( this, "TWinCounterLabel", "0" );
-	m_pTAliveCounterLabel = new Label( this, "TAliveCounterLabel", "0" );
-	m_pTAliveTextLabel = new Label( this, "TAliveTextLabel", "#Cstrike_PlayerCount_Alive" );
-	m_pRoundTimerLabel = new Label( this, "RoundTimerLabel", "0:00" );
-	m_pBombIcon = new VectorImagePanel( this, "BombIcon" );
-	m_pCTSkullImage = new ImagePanel( this, "CTSkullImage" );
-	m_pTSkullImage = new ImagePanel( this, "TSkullImage" );
+	m_pCTWinCounterLabel = new Label( this, "DigitalCTWinCounterLabel", "0" );
+	m_pCTAliveCounterLabel = new Label( this, "DigitalCTAliveCounterLabel", "0" );
+	m_pCTAliveTextLabel = new Label( this, "DigitalCTAliveTextLabel", "#Cstrike_PlayerCount_Alive" );
+	m_pTWinCounterLabel = new Label( this, "DigitalTWinCounterLabel", "0" );
+	m_pTAliveCounterLabel = new Label( this, "DigitalTAliveCounterLabel", "0" );
+	m_pTAliveTextLabel = new Label( this, "DigitalTAliveTextLabel", "#Cstrike_PlayerCount_Alive" );
+	m_pRoundTimerLabel = new Label( this, "DigitalRoundTimerLabel", "0:00" );
+	m_pBombIcon = new VectorImagePanel( this, "DigitalBombIcon" );
+	m_pCTSkullImage = new ImagePanel( this, "DigitalCTSkullImage" );
+	m_pTSkullImage = new ImagePanel( this, "DigitalTSkullImage" );
 
-	LoadControlSettings( "resource/hud/teamcounter_digital.res" );
+	LoadControlSettings( "resource/hud/teamcounterdigital.res" );
 }
 
 void CHudTeamCounterDigital::OnScreenSizeChanged( int iOldWide, int iOldTall )
 {
 	// reload the .res file so items are rescaled
-	LoadControlSettings( "resource/hud/teamcounter_digital.res" );
+	LoadControlSettings( "resource/hud/teamcounterdigital.res" );
 
 	// force recalculation of some stuff
 	m_bIsAtTheBottom = false;
@@ -96,15 +96,39 @@ void CHudTeamCounterDigital::OnScreenSizeChanged( int iOldWide, int iOldTall )
 void CHudTeamCounterDigital::Init( void )
 {
 	m_iRoundTime = 0;
-
 	m_bIsAtTheBottom = false;
 }
 
-void CHudTeamCounterDigital::ApplySettings( KeyValues *inResourceData )
+int CHudTeamCounterDigital::ScalePx( float basePixels ) const
 {
-	BaseClass::ApplySettings( inResourceData );
+	float flScale = (float)ScreenHeight() / 1080.0f;
+	int result = (int)( basePixels * flScale );
+	return MAX( 1, result );
+}
 
-	GetPos( m_iOriginalXPos, m_iOriginalYPos );
+void CHudTeamCounterDigital::Layout()
+{
+	// Panel size - computed from .res file values at 1080p, then scaled
+	// CT block (51px) + gap + timer (84px) + gap + T block (51px) = ~192px at 1080p
+	int panelW = ScalePx( 192 );
+	int panelH = ScalePx( 55 );  // matches DigitalCTAliveBgImage tall
+
+	// Panel position: centered horizontally, at top (or bottom) of screen
+	int panelX = ( ScreenWidth() - panelW ) / 2;
+	int panelY;
+	if ( m_bIsAtTheBottom )
+		panelY = ScreenHeight() - panelH - ScalePx( 4 );
+	else
+		panelY = ScalePx( 2 );  // 2px top margin
+
+	SetPos( panelX, panelY );
+	SetSize( panelW, panelH );
+}
+
+void CHudTeamCounterDigital::PerformLayout()
+{
+	BaseClass::PerformLayout();
+	Layout();
 }
 
 void CHudTeamCounterDigital::Reset()
@@ -114,7 +138,7 @@ void CHudTeamCounterDigital::Reset()
 
 bool CHudTeamCounterDigital::ShouldDraw()
 {
-	if ( hud_teamcounter_showavatar.GetBool() )
+	if ( hud_teamcounter_style.GetInt() != 0 )
 		return false;
 
 	if ( cl_draw_only_deathnotices.GetBool() )
@@ -126,25 +150,16 @@ bool CHudTeamCounterDigital::ShouldDraw()
 
 	if ( pPlayer->IsObserver() )
 		return false;
-
+			
 	return CHudElement::ShouldDraw();
 }
 
 void CHudTeamCounterDigital::OnThink()
 {
+	// Position toggle (top / bottom) - trigger relayout when changed
 	if ( m_bIsAtTheBottom != hud_playercount_pos.GetBool() )
 	{
-		m_bIsAtTheBottom = hud_playercount_pos.GetBool();
-
-		if ( m_bIsAtTheBottom )
-		{
-			int ypos = ScreenHeight() - m_iOriginalYPos - GetTall(); // inverse its Y pos
-			SetPos( m_iOriginalXPos, ypos );
-		}
-		else
-		{
-			SetPos( m_iOriginalXPos, m_iOriginalYPos );
-		}
+		m_bIsAtTheBottom = hud_playercount_pos.GetBool();		
 	}
 
 	C_CSTeam *teamCT = GetGlobalCSTeam( TEAM_CT );
