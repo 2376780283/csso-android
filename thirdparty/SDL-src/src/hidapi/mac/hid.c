@@ -504,7 +504,7 @@ int HID_API_EXPORT hid_exit(void)
 	return 0;
 }
 
-static void process_pending_events() {
+static void process_pending_events(void) {
 	SInt32 res;
 	do {
 		res = CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.001, FALSE);
@@ -772,7 +772,7 @@ static void *read_thread(void *param)
 	while (!dev->shutdown_thread && !dev->disconnected) {
 		code = CFRunLoopRunInMode(dev->run_loop_mode, 1000/*sec*/, FALSE);
 		/* Return if the device has been disconnected */
-		if (code == kCFRunLoopRunFinished) {
+		if (code == kCFRunLoopRunFinished || code == kCFRunLoopRunStopped) {
 			dev->disconnected = 1;
 			break;
 		}
@@ -819,10 +819,12 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path, int bExclusive)
 	/* Set up the HID Manager if it hasn't been done */
 	if (hid_init() < 0)
 		return NULL;
-	
+
+#if 0 /* We have a path because the IOHIDManager is already updated */
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
-	
+#endif
+
 	device_set = IOHIDManagerCopyDevices(hid_mgr);
 	if (!device_set)
 		return NULL;
@@ -853,7 +855,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path, int bExclusive)
 				
 				/* Create the Run Loop Mode for this device.
 				 printing the reference seems to work. */
-				sprintf(str, "HIDAPI_%p", os_dev);
+				snprintf(str, sizeof(str), "HIDAPI_%p", os_dev);
 				dev->run_loop_mode = 
 				CFStringCreateWithCString(NULL, str, kCFStringEncodingASCII);
 				
@@ -955,7 +957,9 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 	size_t len = 0;
 	if (rpt != NULL) {
 		len = (length < rpt->len)? length: rpt->len;
-		memcpy(data, rpt->data, len);
+		if (data != NULL) {
+			memcpy(data, rpt->data, len);
+		}
 		dev->input_reports = rpt->next;
 		free(rpt->data);
 		free(rpt);
@@ -1131,11 +1135,14 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 void HID_API_EXPORT hid_close(hid_device *dev)
 {
+	int disconnected;
+
 	if (!dev)
 		return;
 	
 	/* Disconnect the report callback before close. */
-	if (!dev->disconnected) {
+	disconnected = dev->disconnected;
+	if (!disconnected) {
 		IOHIDDeviceRegisterInputReportCallback(
 											   dev->device_handle, dev->input_report_buf, dev->max_input_report_len,
 											   NULL, dev);
@@ -1159,7 +1166,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	/* Close the OS handle to the device, but only if it's not
 	 been unplugged. If it's been unplugged, then calling
 	 IOHIDDeviceClose() will crash. */
-	if (!dev->disconnected) {
+	if (!disconnected) {
 		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
 	}
 	
