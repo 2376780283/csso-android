@@ -573,6 +573,40 @@ void CHudWeaponSelection::SelectSpecificWeapon( CSWeaponID weaponID )
 	}
 }
 
+void CHudWeaponSelection::SelectSpecificWeapon( C_BaseCombatWeapon *pWeapon )
+{
+	C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();
+
+	if ( !pPlayer )
+	{
+		return;
+	}
+
+	// Note[pfreese] This could probably just be replaced by a call to CBasePlayer::SelectItem().
+	// It's interesting, and perhaps a bit worrying, that SelectItem() does additional
+	// tests that the code in this file does not, such as verifying that the current
+	// weapon can be holstered.
+	//
+	// Players who bind keys to the use command, e.g. "bind 6 use weapon_hegrenade" will
+	// get weapons selected via the CBasePlayer::SelectItem() code path, which means they will
+	// see slightly different behavior than players who switch weapons using the redirected
+	// slotN commands above (the default configured through the Options UI.
+
+	if ( pWeapon != NULL )
+	{
+		// Make sure the player's allowed to switch weapons
+		if ( pPlayer->IsAllowedToSwitchWeapons() == false )
+			return;
+
+		// Mark the change
+		SetSelectedWeapon( pWeapon );
+		SelectWeapon();
+
+		if( m_bPlaySelectionSounds )
+			pPlayer->EmitSound( "Player.WeaponSelectionMoveSlot" );
+	}
+}
+
 void CHudWeaponSelection::SetSelectedWeapon( C_BaseCombatWeapon *pWeapon ) 
 { 
 	m_hSelectedWeapon = pWeapon;
@@ -624,15 +658,30 @@ void CHudWeaponSelection::UserCmd_Slot9( void )
 // Switch to molotov
 void CHudWeaponSelection::UserCmd_Slot10( void )
 {
-	C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();
+	// PiMoN: menu slots 1-9 are handled in a different code path since
+	// keys for those match their slot numbers, however slot 10
+	// (0 on keyboard) that is used to close most of the menus,
+	// is handled ONLY in call below because even if it's key 0, technically
+	// it's slot 10, and since there is no key 10 on keyboard, it can't be
+	// handeled like other menu slots, that's why I need to do this
+	//SelectSlot( 10 );
+	if ( !HandleHudMenuInput( 10 ) )
+	{
+		C_CSPlayer* pPlayer = C_CSPlayer::GetLocalCSPlayer();
 
-	if ( !pPlayer )
-		return;
+		if ( pPlayer )
+		{
+			C_BaseCombatWeapon* pWeapon = pPlayer->GetCSWeapon( WEAPON_MOLOTOV );
+			if ( !pWeapon )
+				pWeapon = pPlayer->GetCSWeapon( WEAPON_INCGRENADE );
 
-	if ( pPlayer->HasWeaponOfType( WEAPON_MOLOTOV ) )
-		SelectSpecificWeapon( WEAPON_MOLOTOV );
-	else
-		SelectSpecificWeapon( WEAPON_INCGRENADE );
+			if ( pWeapon )
+			{
+				SelectSpecificWeapon( pWeapon );
+				return;
+			}
+		}
+	}
 }
 
 // Switch to taser
