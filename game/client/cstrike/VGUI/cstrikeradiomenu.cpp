@@ -152,7 +152,35 @@ void CCSRadioMenu::ApplySchemeSettings( vgui::IScheme *pScheme )
 	BaseClass::ApplySchemeSettings( pScheme );	
 	SetPaintBackgroundType( 2 );
 	SetPaintBorderEnabled( true );
-	SetPaintBackgroundEnabled( true );	
+	SetPaintBackgroundEnabled( true );
 	LoadControlSettings( "Resource/UI/RadioMenu.res" );
 
+	// Apply custom color scheme
+	Color colorTransparent( 0, 0, 0, 0 );
+	Color colorDim( 180, 180, 180, 255 );
+	Color colorButtonText( 160, 160, 160, 255 );
+	Color colorWhite( 255, 255, 255, 255 );
+	Color colorPanelBg( 0, 0, 0, 192 );
+	Color colorRichTextBg( 0, 0, 0, 153 );
+	Color colorSelectedBg( 50, 129, 172, 64 );
+
+	// Apply to main frame
+	SetBorder( pScheme->GetBorder( "NoBorder" ) );
+	SetBgColor( colorPanelBg );
+
+	// Apply to radio list (SectionedListPanel)
+	if ( m_pRadioList )
+	{
+		m_pRadioList->SetBorder( pScheme->GetBorder( "NoBorder" ) );
+		m_pRadioList->SetBgColor( colorRichTextBg );
+		m_pRadioList->SetFgColor( colorDim );
+
+		// Style the scrollbar
+		vgui::ScrollBar *pScrollBar = m_pRadioList->GetScrollBar();
+		if ( pScrollBar )
+		{
+			pScrollBar->SetBgColor( colorTransparent );
+			pScrollBar->SetFgColor( colorDim );
+		}
+	}
 }
