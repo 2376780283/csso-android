@@ -375,7 +375,7 @@ void CHudTeamCounterSingerline::Layout()
 
         // TWinCounterLabel: centered in right half of center block
         int tWinX = centerBlockX + centerW / 2 + ( 2 + centerW / 2 - tWinWide ) / 2;
-        m_pTWinCounterLabel->SetPos( tWinX, ScalePx( 29 ) );
+        m_pTWinCounterLabel->SetPos( tWinX + 1, ScalePx( 29 ) );
 
         // --- T block origin (right side) ---
         int centerOriginX = teamBlockW + centerGap;
