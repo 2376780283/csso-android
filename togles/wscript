@@ -31,6 +31,7 @@ def build(bld):
 		'linuxwin/cglmbuffer.cpp',	
 		'linuxwin/cglmquery.cpp',
 		'linuxwin/asanstubs.cpp',
+		'linuxwin/asanstubs.cpp'
 	]
 
 	if bld.env.DEST_OS == "darwin":
