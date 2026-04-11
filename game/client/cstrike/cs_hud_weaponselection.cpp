@@ -15,6 +15,7 @@
 #include <vgui_controls/AnimationController.h>
 
 ConVar cl_showloadout( "cl_showloadout", "1", FCVAR_ARCHIVE, "Toggles display of current loadout." );
+ConVar cl_weapon_icon_blur( "cl_weapon_icon_blur", "1", FCVAR_ARCHIVE, "Enable edge blur and rarity coloring on weapon icons" );
 extern ConVar cl_hud_color;
 extern ConVar cl_draw_only_deathnotices;
 
@@ -138,6 +139,7 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 	if ( !m_weaponPanels[nWepSlot][nWepPos].bInitialized )
 	{
 		m_weaponPanels[nWepSlot][nWepPos] = CreateNewPanel( nWepSlot, nWepPos, pWeapon, bSelected );
+		m_weaponPanels[nWepSlot][nWepPos].JustPickedUp = true;
 	}
 	else
 	{
@@ -202,17 +204,25 @@ void CCSHudWeaponSelection::RemoveWeapon( int nSlot, int nPos )
 
 void CCSHudWeaponSelection::RemoveAllItems( void )
 {
-	//Remove all items before we exit
-	for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
-	{
-		for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
-		{
-			//Remove all items before we exit
-			RemoveWeapon( i, j );
-		}
-	}
+    bool savedJustPickedUp[MAX_WEP_SELECT_PANELS][MAX_WEP_SELECT_POSITIONS];
+    for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
+    {
+        for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
+        {
+            savedJustPickedUp[i][j] = m_weaponPanels[i][j].JustPickedUp;
+            RemoveWeapon( i, j );
+        }
+    }
 
-	V_memset( m_weaponPanels, 0, sizeof( m_weaponPanels ) );
+    V_memset( m_weaponPanels, 0, sizeof( m_weaponPanels ) );
+    
+    for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
+    {
+        for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
+        {
+            m_weaponPanels[i][j].JustPickedUp = savedJustPickedUp[i][j];
+        }
+    }
 }
 
 WeaponSelectPanel CCSHudWeaponSelection::CreateNewPanel( int nSlot, int nPos, C_BaseCombatWeapon *pWeapon, bool bSelected )
@@ -327,6 +337,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 						if ( !pGrenade || (pGrenade && !pGrenade->IsPinPulled() && !pGrenade->IsBeingThrown() && !pGrenade->GetIsThrown()) )
 						{
 							AddWeapon( pNextWeapon, (GetSelectedWeapon() == pNextWeapon) );
+                            m_weaponPanels[i][j].JustPickedUp = false;
 						}
 					}
 					
@@ -348,6 +359,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
  							{
  								RemoveWeapon( i, j );
  								bJustRemovedGrenade = true;
+                                 m_weaponPanels[i][j].JustPickedUp = false;
  							}
 
 //							pGrenade = static_cast<CBaseCSGrenade*>( pPanelWeapon );
@@ -435,6 +447,9 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 void CCSHudWeaponSelection::UpdatePanelPositions( void )
 {
 	SetAlpha( 255 );
+    
+    vgui::AnimationController* pAnim = g_pClientMode->GetViewportAnimationController();
+    const float moveTime = 0.4f;
 
 	int nYPos = 0;
 	int nXPos = 0;
@@ -522,13 +537,52 @@ void CCSHudWeaponSelection::UpdatePanelPositions( void )
 						nYPos -= weapon_icon_slot_margin;
 					}
 				}
+                
+                int currentX = m_weaponPanels[i][j].pSVGPanel->GetXPos();
+                int currentY = m_weaponPanels[i][j].pSVGPanel->GetYPos();
 
-				m_weaponPanels[i][j].pSVGPanel->SetPos( nXPos, nYPos );
-				m_weaponPanels[i][j].pNameLabel->SetPos( nXPos + nIconWide - nNameLabelWide + name_label_xpos, nYPos + name_label_ypos );
+                if ( m_weaponPanels[i][j].bNew && m_weaponPanels[i][j].JustPickedUp )
+                {
+                    m_weaponPanels[i][j].bAnimating = gpGlobals->curtime >= m_weaponPanels[i][j].flAnimationEndTime;
+                    
+                    m_weaponPanels[i][j].pSVGPanel->SetPos(nXPos + nIconWide + 10, nYPos);
+                    pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "xpos", nXPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+                    
+                    m_weaponPanels[i][j].bNew = false;
+                    m_weaponPanels[i][j].JustPickedUp = false;
+                    
+                    m_weaponPanels[i][j].nTargetX = nXPos;
+                    m_weaponPanels[i][j].nTargetY = nYPos;
+                }
+                else if ( m_weaponPanels[i][j].bNew )
+                {
+                    if ( m_weaponPanels[i][j].bAnimating == false )
+                    {
+                        m_weaponPanels[i][j].pSVGPanel->SetPos(nXPos, nYPos);
+                        m_weaponPanels[i][j].bNew = false;
+                    
+                        m_weaponPanels[i][j].nTargetX = nXPos;
+                        m_weaponPanels[i][j].nTargetY = nYPos;
+                    }
+                }
+                else
+                {
+                    if (m_weaponPanels[i][j].nTargetX != nXPos || m_weaponPanels[i][j].nTargetY != nYPos )
+                    {
+                        pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "xpos", nXPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+                        pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "ypos", nYPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+        
+                        m_weaponPanels[i][j].nTargetX = nXPos;
+                        m_weaponPanels[i][j].nTargetY = nYPos;
+                    }
+                }
+                
 				m_weaponPanels[i][j].pNameLabel->SetVisible( bSelected );
-				if ( bShowCountNumber )
+                m_weaponPanels[i][j].pNameLabel->SetPos( nXPos + nIconWide - nNameLabelWide + name_label_xpos, nYPos + name_label_ypos );
+                    
+                if ( bShowCountNumber )
 					m_weaponPanels[i][j].pCountLabel->SetPos( nXPos + count_label_xpos, nYPos + count_label_ypos );
-
+                
 				m_nPrevWepAlignSlot = nSlot;
 			}
 		}
