@@ -420,6 +420,11 @@ def check_deps(conf):
 		conf.check(lib='png', uselib_store='PNG', define_name='HAVE_PNG')
 		conf.check(lib='curl', uselib_store='CURL', define_name='HAVE_CURL')
 		conf.check(lib='z', uselib_store='ZLIB', define_name='HAVE_ZLIB')
+		conf.check_cfg(package='libavformat', uselib_store='avformat', args=['--cflags', '--libs'])
+		conf.check_cfg(package='libavcodec', uselib_store='avcodec', args=['--cflags', '--libs'])
+		conf.check_cfg(package='libavutil', uselib_store='avutil', args=['--cflags', '--libs'])
+		if conf.options.DEDICATED:
+			conf.check_cfg(package='libedit', uselib_store='EDIT', args=['--cflags', '--libs'])
 		if conf.env.DEST_CPU != 'aarch64':
 			conf.check(lib='unwind', uselib_store='UNWIND')
 			conf.check(lib='crypto', uselib_store='CRYPTO')
