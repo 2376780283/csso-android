@@ -423,8 +423,10 @@ def check_deps(conf):
 		conf.check_cfg(package='libavformat', uselib_store='avformat', args=['--cflags', '--libs'])
 		conf.check_cfg(package='libavcodec', uselib_store='avcodec', args=['--cflags', '--libs'])
 		conf.check_cfg(package='libavutil', uselib_store='avutil', args=['--cflags', '--libs'])
+		
 		if conf.options.DEDICATED:
 			conf.check_cfg(package='libedit', uselib_store='EDIT', args=['--cflags', '--libs'])
+			
 		if conf.env.DEST_CPU != 'aarch64':
 			conf.check(lib='unwind', uselib_store='UNWIND')
 			conf.check(lib='crypto', uselib_store='CRYPTO')
