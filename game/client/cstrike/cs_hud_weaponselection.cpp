@@ -147,8 +147,23 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 		m_weaponPanels[nWepSlot][nWepPos].bInitialized = true;
 		m_weaponPanels[nWepSlot][nWepPos].bSelected = bSelected;
 	}
+	
+	bool bApplyGlow = cl_weapon_icon_blur.GetBool() && bSelected;    
+    int glowRadius = 4;    
+    Color glowColor = Color( 255, 0, 0, 155 );
+    
+//    if ( pSkinDef )
+//	{
+//		glowColor = GetRarityColor( NULL );			
+/*	}
+	else
+	{
+		
+	}*/
 	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetRenderSize( weapon_icon_wide, weapon_icon_tall );
-	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7 ) );
+	// m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7 ) );
+	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7), bApplyGlow, glowRadius, glowColor );
+    
 
 	if ( pCSWeapon->HasStatTrak() )
 	{
