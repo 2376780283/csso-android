@@ -27,8 +27,6 @@
 #include "OptionsSubVideo.h"
 #include "OptionsSubVoice.h"
 #include "OptionsSubMultiplayer.h"
-#include "OptionsSubDifficulty.h"
-#include "OptionsSubPortal.h"
 #ifdef WIN32
 // NVNT haptic configuration dialog
 #include "OptionsSubHaptics.h"
@@ -46,17 +44,17 @@ using namespace vgui;
 COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "OptionsDialog")
 {
 	SetDeleteSelfOnClose(true);
-	SetMoveable(false);
-    SetSizeable(false);
-    SetCloseButtonVisible(false);
 
-	// Get screen size for fullscreen
-	int screenW, screenH;
-	vgui::surface()->GetScreenSize(screenW, screenH);
+	int w = 512;
+	int h = 406;
+	if (IsProportional())
+	{
+		w = scheme()->GetProportionalScaledValueEx(GetScheme(), w);
+		h = scheme()->GetProportionalScaledValueEx(GetScheme(), h);
+	}
 
-	// Set fullscreen bounds
-	SetBounds(0, 0, screenW, screenH);
-	
+	SetBounds(0, 0, w, h);
+
 	SetSizeable( false );
 
 	SetTitle("#GameUI_Options", true);
@@ -72,11 +70,14 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	{
 		AddPage(new COptionsSubHaptics(this), "#GameUI_Haptics_TabTitle");
 	}
-	// NVNT END
+// NVNT END
 #endif
 
+#ifndef ANDROID
 	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
 	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
+#endif
+
 #ifdef ANDROID
 	AddPage(new COptionsSubTouch(this), "Touch");
 #endif
@@ -85,9 +86,8 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	AddPage(m_pOptionsSubAudio, "#GameUI_Audio");
 	m_pOptionsSubVideo = new COptionsSubVideo(this);
 	AddPage(m_pOptionsSubVideo, "#GameUI_Video");
-    AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
+	AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
 	
-	// add the multiplay page last, if we're combo single/multi or just multi
 	m_pOptionsSubMultiplayer = new COptionsSubMultiplayer(this);
 	AddPage(m_pOptionsSubMultiplayer, "#GameUI_Multiplayer");
 	

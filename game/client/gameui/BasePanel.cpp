@@ -64,7 +64,6 @@ using namespace vgui;
 #include "PlayerListDialog.h"
 #include "BenchmarkDialog.h"
 #include "LoadCommentaryDialog.h"
-#include "ControllerDialog.h"
 #include "BonusMapsDatabase.h"
 #include "engine/IEngineSound.h"
 #include "bitbuf.h"
@@ -3028,7 +3027,6 @@ bool CBaseModPanel::IsPromptableCommand( const char *command )
 		 !Q_stricmp( command, "OpenBonusMapsDialog" ) ||
 		 !Q_stricmp( command, "OpenOptionsDialog" ) ||
 		 !Q_stricmp( command, "OpenModOptionsDialog" ) ||
-		 !Q_stricmp( command, "OpenControllerDialog" ) ||
 		 !Q_stricmp( command, "OpenLoadCommentaryDialog" ) ||
          !Q_stricmp( command, "OpenLoadSingleplayerCommentaryDialog" ) ||
          !Q_stricmp( command, "OpenAchievementsDialog" ) ||
@@ -3142,8 +3140,7 @@ bool CBaseModPanel::CommandRequiresStorageDevice( const char *command )
 bool CBaseModPanel::CommandRespectsSignInDenied( const char *command )
 {
 	// Anything which touches the user profile must prompt
-	if ( !Q_stricmp( command, "OpenOptionsDialog" ) ||
-		 !Q_stricmp( command, "OpenControllerDialog" ) )
+	if ( !Q_stricmp( command, "OpenOptionsDialog" ))
 		return true;
 
 	return false;
@@ -3227,18 +3224,6 @@ void CBaseModPanel::OnCompletedAsyncDeviceAttached( CAsyncCtxOnDeviceAttached *j
 
 	BonusMapsDatabase()->ReadBonusMapSaveData();
 
-	if ( m_hSaveGameDialog_Xbox.Get() )
-	{
-		m_hSaveGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-	}
-	if ( m_hLoadGameDialog_Xbox.Get() )
-	{
-		m_hLoadGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-	}
-	if ( m_hOptionsDialog_Xbox.Get() )
-	{
-		m_hOptionsDialog_Xbox->OnCommand( "RefreshOptions" );
-	}
 	if ( m_pStorageDeviceValidatedNotify )
 	{
 		*m_pStorageDeviceValidatedNotify = 1;
@@ -3783,19 +3768,6 @@ void CBaseModPanel::OnOpenLoadGameDialog()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenLoadGameDialog_Xbox()
-{
-	if ( !m_hLoadGameDialog_Xbox.Get() )
-	{
-		m_hLoadGameDialog_Xbox = new CLoadGameDialogXbox(this);
-		PositionDialog( m_hLoadGameDialog_Xbox );
-	}
-	m_hLoadGameDialog_Xbox->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenSaveGameDialog()
 {
 	if ( !m_hSaveGameDialog.Get() )
@@ -3806,18 +3778,6 @@ void CBaseModPanel::OnOpenSaveGameDialog()
 	m_hSaveGameDialog->Activate();
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenSaveGameDialog_Xbox()
-{
-	if ( !m_hSaveGameDialog_Xbox.Get() )
-	{
-		m_hSaveGameDialog_Xbox = new CSaveGameDialogXbox(this);
-		PositionDialog( m_hSaveGameDialog_Xbox );
-	}
-	m_hSaveGameDialog_Xbox->Activate();
-}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -3852,19 +3812,6 @@ void CBaseModPanel::OnResumeGame()
 {
     GameUI().HideGameUI(); 
 }
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenOptionsDialog_Xbox()
-{
-	if ( !m_hOptionsDialog_Xbox.Get() )
-	{
-		m_hOptionsDialog_Xbox = new COptionsDialogXbox( this );
-		PositionDialog( m_hOptionsDialog_Xbox );
-	}
-
-	m_hOptionsDialog_Xbox->Activate();
-}
 
 //-----------------------------------------------------------------------------
 // Purpose: forces any changed options dialog settings to be applied immediately, if it's open
@@ -3879,20 +3826,6 @@ void CBaseModPanel::ApplyOptionsDialogSettings()
 	{
 		m_hModOptionsDialog->ApplyChanges();
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenControllerDialog()
-{
-	if ( !m_hControllerDialog.Get() )
-	{
-		m_hControllerDialog = new CControllerDialog( this );
-		PositionDialog( m_hControllerDialog );
-	}
-
-	m_hControllerDialog->Activate();
 }
 
 //-----------------------------------------------------------------------------
@@ -4270,12 +4203,7 @@ void CBaseModPanel::SystemNotification( const int notification )
 		OnCommand( "OpenMainMenu" );
 	}
 	else if ( notification == SYSTEMNOTIFY_STORAGEDEVICES_CHANGED )
-	{
-		if ( m_hSaveGameDialog_Xbox.Get() )
-			m_hSaveGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-		if ( m_hLoadGameDialog_Xbox.Get() )
-			m_hLoadGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-
+	{	
 		// FIXME: This code is incorrect, they do NOT need a storage device, it is only recommended that they do
 		if ( GameUI().IsInLevel() )
 		{
@@ -5587,18 +5515,6 @@ void CBaseModPanel::CloseBaseDialogs( void )
 	if ( m_hBonusMapsDialog.Get() )
 		m_hBonusMapsDialog->Close();
 	
-	if ( m_hControllerDialog.Get() )
-		m_hControllerDialog->Close();
-
-	if ( m_hLoadGameDialog_Xbox.Get() )
-		m_hLoadGameDialog_Xbox->Close();
-
-	if ( m_hOptionsDialog_Xbox.Get() )
-		m_hOptionsDialog_Xbox->Close();
-
-	if ( m_hSaveGameDialog_Xbox.Get() )
-		m_hSaveGameDialog_Xbox->Close();
-
 	if ( m_hLoadCommentaryDialog.Get() )
 		m_hLoadCommentaryDialog->Close();
 
