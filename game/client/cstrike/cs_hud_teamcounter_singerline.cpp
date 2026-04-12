@@ -482,8 +482,24 @@ void CHudTeamCounterSingerline::Reset()
 //-----------------------------------------------------------------------------
 bool CHudTeamCounterSingerline::ShouldDraw()
 {
-        // Only show when hud_teamcounter_style = 2 (singerline mode)
-        if ( hud_teamcounter_style.GetInt() != 2 )
+        // Part of hud_teamcounter_style = 1
+        if ( hud_teamcounter_style.GetInt() != 1 )
+                return false;
+
+        // Use this single-row layout when there are 10 or fewer players
+        int iPlayerCount = 0;
+        if ( g_PR )
+        {
+                for ( int i = 1; i <= MAX_PLAYERS; i++ )
+                {
+                        if ( g_PR->IsConnected( i ) && ( g_PR->GetTeam( i ) == TEAM_CT || g_PR->GetTeam( i ) == TEAM_TERRORIST ) )
+                        {
+                                iPlayerCount++;
+                        }
+                }
+        }
+
+        if ( iPlayerCount > 10 )
                 return false;
 
         C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();

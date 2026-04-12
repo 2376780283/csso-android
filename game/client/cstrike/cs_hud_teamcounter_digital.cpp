@@ -138,7 +138,7 @@ void CHudTeamCounterDigital::Reset()
 
 bool CHudTeamCounterDigital::ShouldDraw()
 {
-	if ( hud_teamcounter_style.GetInt() != 0 )
+	if ( hud_teamcounter_style.GetInt() != 2 )
 		return false;
 
 	if ( cl_draw_only_deathnotices.GetBool() )

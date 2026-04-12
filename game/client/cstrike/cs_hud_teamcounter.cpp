@@ -443,6 +443,22 @@ bool CHudTeamCounter::ShouldDraw()
         if ( hud_teamcounter_style.GetInt() != 1 )
                 return false;
 
+        // Use this 2-row layout only when there are more than 10 players
+        int iPlayerCount = 0;
+        if ( g_PR )
+        {
+                for ( int i = 1; i <= MAX_PLAYERS; i++ )
+                {
+                        if ( g_PR->IsConnected( i ) && ( g_PR->GetTeam( i ) == TEAM_CT || g_PR->GetTeam( i ) == TEAM_TERRORIST ) )
+                        {
+                                iPlayerCount++;
+                        }
+                }
+        }
+
+        if ( iPlayerCount <= 10 )
+                return false;
+
         C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();
         if ( !pPlayer )
                 return false;

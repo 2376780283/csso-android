@@ -1162,6 +1162,14 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	if( NeedProportional() )
 		SetProportional( true );
 
+    vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFile("resource/menuscheme.res", "MenuScheme");
+    // vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ClientScheme.res", "ClientScheme");
+    if (scheme)
+    {
+       // vgui::scheme()->SetDefaultScheme(scheme);
+       SetScheme(scheme);
+    }	
+
 	g_pBasePanel = this;
 	m_bLevelLoading = false;
 	m_eBackgroundState = BACKGROUND_INITIAL;
