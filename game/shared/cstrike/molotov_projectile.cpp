@@ -26,6 +26,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar molotov_throw_detonate_time( "molotov_throw_detonate_time", "2.0", FCVAR_CHEAT | FCVAR_REPLICATED );
+ConVar molotov_trace_distance( "molotov_trace_distance", "256.0", FCVAR_CHEAT | FCVAR_REPLICATED, "Distance to trace downward when checking ground for molotov detonation" );
 
 #if defined( CLIENT_DLL )
 
@@ -309,7 +310,8 @@ void CMolotovProjectile::DetonateThink( void )
 	}
 	else
 	{
-		SetNextThink( gpGlobals->curtime + 0.1f );
+		// FIX: Reduce think rate from 0.1f to 0.2f to reduce jitter (50% less frequency)
+		SetNextThink( gpGlobals->curtime + 0.2f );
 	}
 
 	TheBots->SetGrenadeRadius( this, 0.0f );
@@ -352,7 +354,10 @@ void CMolotovProjectile::Detonate( void )
 		// exploded in the air, or hit an object or player.
 		// find the world normal under them (if close enough) and explode there
 		trace_t tr;
-		UTIL_TraceLine( GetAbsOrigin() + Vector( 0, 0, 10 ), GetAbsOrigin() + Vector( 0, 0, -128.0f ), MASK_SOLID, this, COLLISION_GROUP_NONE, &tr );
+		// FIX: Trace from a higher starting point to avoid detecting player's own feet
+		Vector traceStart = GetAbsOrigin() + Vector( 0, 0, 32 );
+		Vector traceEnd = GetAbsOrigin() + Vector( 0, 0, -molotov_trace_distance.GetFloat() );
+		UTIL_TraceLine( traceStart, traceEnd, MASK_SOLID, this, COLLISION_GROUP_NONE, &tr );
 
 		if ( tr.fraction == 1 )
 		{
@@ -387,8 +392,8 @@ void CMolotovProjectile::Detonate( void )
 			return;
 		}
 
-		// otherwise explode normally
-		burnPos = tr.endpos;
+		// FIX: Add offset to avoid spawning fire inside players
+		burnPos = tr.endpos + tr.plane.normal * 2.0f;
 		splashNormal = tr.plane.normal;
 	}
 	

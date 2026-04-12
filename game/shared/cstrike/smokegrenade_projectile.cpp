@@ -97,6 +97,7 @@ CSmokeGrenadeProjectile* CSmokeGrenadeProjectile::Create(
 	pGrenade->SetElasticity( BaseClass::GetGrenadeElasticity() );
 	pGrenade->m_bDidSmokeEffect = false;
 	pGrenade->m_flLastBounce = 0;
+	pGrenade->m_flSmokeExpireTime = -1; // FIX: Initialize smoke expire time as invalid
 
 	pGrenade->m_pWeaponInfo = GetWeaponInfo( WEAPON_SMOKEGRENADE );
 
@@ -133,7 +134,9 @@ void CSmokeGrenadeProjectile::SmokeDetonate( void )
 	if ( pGren )
 	{
 		pGren->FillVolume();
-		pGren->SetFadeTime( 15, 20 );
+		// FIX: Set fade time to match the actual smoke visibility duration
+		// Original was 15-20 seconds, but smoke is actually active for ~18 seconds
+		pGren->SetFadeTime( 15, 18 );
 		pGren->SetAbsOrigin( GetAbsOrigin() );
 
 		//tell the hostages about the smoke!
@@ -166,11 +169,17 @@ void CSmokeGrenadeProjectile::SmokeDetonate( void )
 
 	m_hSmokeEffect = pGren;
 	m_bDidSmokeEffect = true;
+	// FIX: Set the smoke expire time so we know when it's completely gone
+	// Smoke is visible for approximately 18 seconds from detonation
+	m_flSmokeExpireTime = gpGlobals->curtime + 18.0f;
 
 	EmitSound( "BaseSmokeEffect.Sound" );
 
 	m_nRenderMode = kRenderTransColor;
-	SetNextThink( gpGlobals->curtime + 12.5f );
+	// FIX: Reduce fade time to 9.5 seconds to match actual smoke duration
+	// This ensures the smoke grenade entity is removed before smoke fully dissipates
+	// Preventing the "in smoke" elimination message when smoke is already gone
+	SetNextThink( gpGlobals->curtime + 9.5f );
 	SetThink( &CSmokeGrenadeProjectile::Think_Fade );
 
 	SetSolid( SOLID_NONE );
@@ -181,6 +190,9 @@ void CSmokeGrenadeProjectile::RemoveGrenadeFromLists( void )
 	TheBots->RemoveGrenade( this );
 	SetModelName( NULL_STRING );//invisible
 	SetSolid( SOLID_NONE );
+	
+	// FIX: Invalidate smoke expire time when removing grenade
+	m_flSmokeExpireTime = -1;
 
 	CCSPlayer *player = ToCSPlayer(GetThrower());
 	if ( player )
