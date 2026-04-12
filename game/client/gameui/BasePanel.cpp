@@ -80,6 +80,7 @@ using namespace vgui;
 #include "OptionsDialog/OptionsSubAudio.h"
 #include "hl2orange.spa.h"
 #include "CustomTabExplanationDialog.h"
+#include "ResetsData/image_bilibili.h"
 
 #include "../engine/imatchmaking.h"
 #include "tier1/utlstring.h"
@@ -184,6 +185,105 @@ VPANEL GetGameUIBasePanel()
 {
 	return BasePanel()->GetVPanel();
 }
+
+// =========================================================
+// ImageUrlButton
+// =========================================================
+class ImageUrlButton : public vgui::Panel
+{
+public:
+    ImageUrlButton(Panel *parent, const char *name, const unsigned char *imageData, int imageSize, unsigned char xorKey, const char *url) : Panel(parent, name)
+    {
+        m_szUrl = url;
+        m_bSelected = false;
+        m_textureID = -1;
+        
+        SetMouseInputEnabled(true);
+        SetPaintBackgroundEnabled(false);
+        
+        LoadImageFromEmbedded(imageData, imageSize, xorKey);
+    }
+
+    virtual ~ImageUrlButton() {
+        if (m_textureID != -1 && vgui::surface()->IsTextureIDValid(m_textureID)) {
+            vgui::surface()->DeleteTextureByID(m_textureID);
+        }
+    }
+    
+    void LoadImageFromEmbedded(const unsigned char *imageData, int imageSize, unsigned char xorKey)
+    {
+        if (!imageData || imageSize <= 0) {
+            Msg("ImageUrlButton: Invalid image data\n");
+            return;
+        }
+        
+        unsigned char *decrypted = new unsigned char[imageSize];
+        for (int i = 0; i < imageSize; i++) {
+            decrypted[i] = imageData[i] ^ xorKey;
+        }
+        
+        int width = 0, height = 0, channels = 0;
+        // Force 4 channels (RGBA)
+        unsigned char *imagePixels = stbi_load_from_memory(
+            decrypted, imageSize, &width, &height, &channels, 4);
+        
+        delete[] decrypted;
+        
+        if (!imagePixels) {
+            Msg("ImageUrlButton: Failed to load image from memory\n");
+            return;
+        }
+        
+        if (width <= 0 || height <= 0) {
+            Msg("ImageUrlButton: Invalid image dimensions: %dx%d\n", width, height);
+            stbi_image_free(imagePixels);
+            return;
+        }
+        
+        // Create as procedural texture (very important for DrawSetTextureRGBA to work)
+        m_textureID = vgui::surface()->CreateNewTextureID(true);
+        
+        // Use DrawSetTextureRGBAEx with IMAGE_FORMAT_RGBA8888 (0)
+        vgui::surface()->DrawSetTextureRGBAEx(m_textureID, imagePixels, width, height, IMAGE_FORMAT_RGBA8888);
+        
+        Msg("ImageUrlButton: Texture loaded successfully. TextureID: %d, Size: %dx%d\n", m_textureID, width, height);
+        stbi_image_free(imagePixels);
+    }
+
+    virtual void Paint()
+    {
+        if (m_textureID == -1) return;
+        
+        int alpha = m_bSelected ? 200 : 255;
+        // Use neutral color to avoid tinting the texture
+        vgui::surface()->DrawSetColor(255, 255, 255, alpha);
+        vgui::surface()->DrawSetTexture(m_textureID);
+        vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
+    }
+
+    virtual void OnMousePressed(MouseCode code) {
+        if (code == MOUSE_LEFT) { m_bSelected = true; input()->SetMouseCapture(GetVPanel()); }
+    }
+
+    virtual void OnMouseReleased(MouseCode code) {
+        if (code == MOUSE_LEFT) {
+            m_bSelected = false;
+            input()->SetMouseCapture(NULL);
+            if (IsCursorOver() && m_szUrl) {
+#ifdef ANDROID
+                SDL_OpenURL(m_szUrl);
+#else
+                vgui::system()->ShellExecute("open", m_szUrl);
+#endif
+            }
+        }
+    }
+
+private:
+    bool m_bSelected;
+    int m_textureID;
+    const char *m_szUrl;
+};
 
 CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem") 
 {
@@ -1204,6 +1304,8 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pDemoBtn = NULL;
 	m_pSettingsBtn = NULL;
 	m_pQuitBtn = NULL;
+	m_pAchievementsBtn = NULL;
+	m_pBilibiliBtn = NULL;
 
 	m_bUserRefusedSignIn = false;
 	m_bUserRefusedStorageDevice = false;
@@ -2192,6 +2294,12 @@ void CBaseModPanel::CreateCustomMenuUI()
     	m_pAchievementsBtn = new ImageButton( m_pRightNvgbar, this, "achievementsbtn", "resource/ui/menu/achievements.png" );
     	m_pAchievementsBtn->SetActions( &CBaseModPanel::OnOpenCSAchievementsDialog );
     	m_pAchievementsBtn->SetVisible(true);
+    	
+    	// Create Bilibili button with embedded image
+    	m_pBilibiliBtn = new ImageUrlButton( this, "bilibilibtn", 
+    		ResourceData::g_zzhBiliData, ResourceData::g_zzhBiliData_size, 
+    		ResourceData::g_xorKey, "https://www.bilibili.com" );
+    	m_pBilibiliBtn->SetVisible(true);
     
     	m_pLeftTopLogo->SetVisible(true);
     	m_pPlayBtn->SetVisible(true);
@@ -2233,6 +2341,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pSettingsBtn );
 	SETUP_PANEL( m_pQuitBtn );
 	SETUP_PANEL( m_pAchievementsBtn );
+	SETUP_PANEL( m_pBilibiliBtn );
 
 	// Initial layout update
 	UpdateCustomMenuUI();
@@ -2323,6 +2432,17 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		// Position at the top of the right navigation bar with some top padding
 		int achievementsY = btnOffset + scheme()->GetProportionalScaledValue( 10 );
 		m_pAchievementsBtn->SetBounds( btnOffset, achievementsY, btnSize, btnSize );
+	}
+
+	// Bilibili button positioned at the bottom of the left navigation bar's right side
+	if ( m_pBilibiliBtn )
+	{
+		// Position in the blank area to the right of the left nav bar, at the bottom
+		int bilibiliWidth = scheme()->GetProportionalScaledValue( 100 );  // 600px image at typical resolution
+		int bilibiliHeight = scheme()->GetProportionalScaledValue( 50 );  // 300px image scaled down
+		int bilibiliX = navWidth + gap;  // Start after the left nav bar
+		int bilibiliY = screenTall - bilibiliHeight - gap ;
+		m_pBilibiliBtn->SetBounds( bilibiliX, bilibiliY, bilibiliWidth, bilibiliHeight );
 	}
 
 	// Position the PlayerModel panel on the right side with no vertical margins and larger size

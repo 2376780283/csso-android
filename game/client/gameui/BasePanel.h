@@ -75,6 +75,7 @@ class CGameMenu;
 class CAsyncCtxOnDeviceAttached;
 class IVideoMaterial;
 class IMaterial;
+class ImageUrlButton;
 
 // X360TBD: Move into a separate module when finished
 class CMessageDialogHandler
@@ -524,6 +525,7 @@ private:
 	ImageButton *m_pSettingsBtn;
 	ImageButton *m_pQuitBtn;
 	ImageButton *m_pAchievementsBtn;
+	ImageUrlButton *m_pBilibiliBtn;
 	NewsListPanel *m_pNewsList;
 	
 		// Used for internal state dealing with blades
