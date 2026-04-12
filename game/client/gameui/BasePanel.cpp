@@ -2298,7 +2298,7 @@ void CBaseModPanel::CreateCustomMenuUI()
     	// Create Bilibili button with embedded image
     	m_pBilibiliBtn = new ImageUrlButton( this, "bilibilibtn", 
     		ResourceData::g_zzhBiliData, ResourceData::g_zzhBiliData_size, 
-    		ResourceData::g_xorKey, "https://www.bilibili.com" );
+    		ResourceData::g_xorKey, "https://m.bilibili.com/space/3493284326410960" );
     	m_pBilibiliBtn->SetVisible(true);
     
     	m_pLeftTopLogo->SetVisible(true);

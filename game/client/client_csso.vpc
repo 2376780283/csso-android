@@ -189,6 +189,7 @@ $Project "Client (CStrike)"
 					$File	"gameui\VGuiSystemModuleLoader.h"
 					$File	"gameui\GameDialogs\SaveGameBrowserDialog.h"
 					$File   "gameui\ResetsData\image_bilibili.h"
+					$File   "gameui\GameDialogs\CardPanel.h"
 				}
 
 				$Folder	"Public Header Files"
@@ -344,6 +345,7 @@ $Project "Client (CStrike)"
 					$File	"gameui\ModSettingsDialog\ModOptionsSubCrosshair.cpp"
 					$File	"gameui\ModSettingsDialog\ModOptionsSubHUD.cpp"
 					$File	"gameui\GameDialogs\ExtraManagerPanel.cpp"
+					$File    "gameui\GameDialogs\CardPanel.cpp"
 					{
 						$Configuration
 						{

@@ -98,6 +98,7 @@ def build(bld):
 		'ModSettingsDialog/ModOptionsSubAgents.cpp',
 		'ModSettingsDialog/ModOptionsSubGloves.cpp',
 		'ModSettingsDialog/ModOptionsSubHUD.cpp',
+		'GameDialogs/CardPanel.cpp',
 	]
 
 	if bld.env.DEST_OS == 'win32':

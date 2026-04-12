@@ -101,6 +101,7 @@ $Project "GameUI"
 		$File	"VGuiSystemModuleLoader.h"
 		$File	"GameDialogs\SaveGameBrowserDialog.h"
 		$File   "ResetsData\image_bilibili.h"
+		$File   "GameDialogs/CardPanel.h"
 	}
 
 	$Folder	"Public Header Files"
@@ -145,6 +146,7 @@ $Project "GameUI"
 		$File	"URLButton.h"
 		$File	"vcontrolslistpanel.cpp"
 		$File	"vcontrolslistpanel.h"
+		$File    "GameDialogs/CardPanel.cpp"
 	}
 
 	$Folder	"Dialogs"
