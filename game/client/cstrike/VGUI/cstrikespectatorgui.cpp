@@ -686,6 +686,7 @@ CCSMapOverview::CCSMapOverview( const char *pElementName ) : BaseClass( pElement
 	m_nCircleBackgroundTextureID = -1;
 	m_nCircleOverlayTextureID = -1;
 	m_nSquareOverlayTextureID = -1;
+	m_nCircleOutlineTextureID = -1;
 
 	g_pMapOverview = this;  // for cvars access etc
 
@@ -708,6 +709,11 @@ void CCSMapOverview::Init( void )
 	{
 		m_nCircleOverlayTextureID = surface()->CreateNewTextureID();
 		surface()->DrawSetTextureFile( m_nCircleOverlayTextureID, "vgui/hud/circle_radar_overlay", true, false );
+	}
+	if ( m_nCircleOutlineTextureID == -1 )
+	{
+		m_nCircleOutlineTextureID = surface()->CreateNewTextureID();
+		surface()->DrawSetTextureFile( m_nCircleOutlineTextureID, "vgui/hud/circle_radar_outline", true, false );
 	}
 	if ( m_nSquareOverlayTextureID == -1 )
 	{

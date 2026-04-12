@@ -105,7 +105,6 @@ protected:
 
 private:
 	void SelectSpecificWeapon( CSWeaponID weaponID );
-	void SelectSpecificWeapon( C_BaseCombatWeapon *pWeapon );
 
 	virtual	void SetSelectedWeapon( C_BaseCombatWeapon *pWeapon );
 

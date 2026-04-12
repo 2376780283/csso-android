@@ -137,14 +137,14 @@ extern ConVar mat_blur_strength;
 extern ConVar mat_blur_desaturate;
 void CCSRadioMenu::PaintBackground()
 {
-        if ( engine->GetDXSupportLevel() < 90 )
+    //      if ( engine->GetDXSupportLevel() < 90 )
                 BaseClass::PaintBackground();
-        else
+/*        else
         {
                 int x, y, w, h;
                 GetBounds( x, y, w, h );
                 DoBlurFade( mat_blur_strength.GetFloat(), mat_blur_desaturate.GetFloat(), x, y, w, h );
-        }
+        }*/
 }
 
 void CCSRadioMenu::ApplySchemeSettings( vgui::IScheme *pScheme )
