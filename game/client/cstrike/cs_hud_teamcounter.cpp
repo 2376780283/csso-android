@@ -133,7 +133,7 @@ private:
         // C4 colors (from original script - CPanelAnimationVar style)
         //-------------------------------------------------------------------------
         CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
-        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "White" );
+        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "SteamLightGreen" );
 };
 
 DECLARE_HUDELEMENT( CHudTeamCounter );

@@ -57,8 +57,8 @@ private:
 	int m_iRoundTime;
 	bool m_bIsAtTheBottom;
 
-	CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
-	CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "White" );
+	CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "Red" );
+	CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "SteamLightGreen" );
 };
 
 DECLARE_HUDELEMENT( CHudTeamCounterDigital );
