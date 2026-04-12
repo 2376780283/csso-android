@@ -148,7 +148,7 @@ void NvgBarPanel::PaintBackground()
 {
     int wide, tall;
     GetSize(wide, tall);
-    vgui::surface()->DrawSetColor(Color(90, 90, 90, 169));
+    vgui::surface()->DrawSetColor(Color(90, 90, 90, 200));
     vgui::surface()->DrawFilledRect(0, 0, wide, tall);
 }
 

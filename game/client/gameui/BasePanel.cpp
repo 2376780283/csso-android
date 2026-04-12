@@ -37,7 +37,7 @@ using namespace vgui;
 #include "ModInfo.h"
 
 #include "IGameUIFuncs.h"
-#include "LoadingDialog.h"
+#include "GameDialogs/LoadingDialog.h"
 #include "BackgroundMenuButton.h"
 #include "vgui_controls/AnimationController.h"
 #include "vgui_controls/ImagePanel.h"
@@ -51,19 +51,19 @@ using namespace vgui;
 #include "vgui_controls/KeyRepeat.h"
 #include "tier0/icommandline.h"
 #include "tier1/convar.h"
-#include "NewGameDialog.h"
+#include "GameDialogs/NewGameDialog.h"
 #include "BonusMapsDialog.h"
-#include "LoadGameDialog.h"
-#include "SaveGameDialog.h"
-#include "OptionsDialog.h"
-#include "ExtraManagerPanel.h" // unh?
-#include "ModOptionsDialog.h"
-#include "CreateMultiplayerGameDialog.h"
+#include "GameDialogs/LoadGameDialog.h"
+#include "GameDialogs/SaveGameDialog.h"
+#include "OptionsDialog/OptionsDialog.h"
+#include "GameDialogs/ExtraManagerPanel.h" // unh?
+#include "ModSettingsDialog/ModOptionsDialog.h"
+#include "GameDialogs/CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
 #include "BackgroundMenuButton.h"
-#include "PlayerListDialog.h"
+#include "GameDialogs/PlayerListDialog.h"
 #include "BenchmarkDialog.h"
-#include "LoadCommentaryDialog.h"
+#include "GameDialogs/LoadCommentaryDialog.h"
 #include "BonusMapsDatabase.h"
 #include "engine/IEngineSound.h"
 #include "bitbuf.h"
@@ -77,7 +77,7 @@ using namespace vgui;
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #include "game/client/IGameClientExports.h"
 
-#include "OptionsSubAudio.h"
+#include "OptionsDialog/OptionsSubAudio.h"
 #include "hl2orange.spa.h"
 #include "CustomTabExplanationDialog.h"
 
@@ -1473,11 +1473,6 @@ void CBaseModPanel::PaintBackground()
 		// not in the game or loading dialog active or exiting, draw the ui background
 		DrawBackgroundImage();
 	}
-	else if ( IsX360() )
-	{
-		// only valid during loading from level to level
-		m_bUseRenderTargetImage = false;
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1502,7 +1497,7 @@ void CBaseModPanel::UpdateBackgroundState()
 	{
 		// 360 guarantees a progress bar
 		// level loading is truly completed when the progress bar is gone, then transition to main menu
-		if ( IsPC() || ( IsX360() && !g_hLoadingDialog.Get() ) )
+		if ( IsPC() || ( !g_hLoadingDialog.Get() ) )
 		{
 			SetBackgroundRenderState( BACKGROUND_MAINMENU );
 		}
@@ -1978,7 +1973,7 @@ void CBaseModPanel::UpdateAgentModel()
 
 void CBaseModPanel::DrawBackgroundImage()
 {
-	if ( IsX360() && m_bCopyFrameBuffer )
+	if ( m_bCopyFrameBuffer )
 	{
 		// force the engine to do an image capture ONCE into this image's render target
 		char filename[MAX_PATH];

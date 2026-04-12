@@ -6,7 +6,7 @@
 //=============================================================================//
 
 #include "BasePanel.h"
-#include "OptionsDialog.h"
+#include "OptionsDialog/OptionsDialog.h"
 
 #include "vgui_controls/Button.h"
 #include "vgui_controls/CheckButton.h"
@@ -20,16 +20,16 @@
 #include "vgui/IVGui.h"
 
 #include "KeyValues.h"
-#include "OptionsSubKeyboard.h"
-#include "OptionsSubMouse.h"
-#include "OptionsSubTouch.h"
-#include "OptionsSubAudio.h"
-#include "OptionsSubVideo.h"
-#include "OptionsSubVoice.h"
-#include "OptionsSubMultiplayer.h"
+#include "OptionsDialog/OptionsSubKeyboard.h"
+#include "OptionsDialog/OptionsSubMouse.h"
+#include "OptionsDialog/OptionsSubTouch.h"
+#include "OptionsDialog/OptionsSubAudio.h"
+#include "OptionsDialog/OptionsSubVideo.h"
+#include "OptionsDialog/OptionsSubVoice.h"
+#include "OptionsDialog/OptionsSubMultiplayer.h"
 #ifdef WIN32
 // NVNT haptic configuration dialog
-#include "OptionsSubHaptics.h"
+#include "OptionsDialog/OptionsSubHaptics.h"
 #endif
 #include "ModInfo.h"
 

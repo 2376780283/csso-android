@@ -20,7 +20,7 @@
 #include "fmtstr.h"
 #include "icommandline.h"
 #ifdef CLIENT_DLL
-#include "LoadingDialog.h"
+#include "GameDialogs/LoadingDialog.h"
 #endif
 
 // NOTE: This has to be the last file included!

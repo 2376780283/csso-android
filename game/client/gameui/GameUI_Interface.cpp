@@ -41,7 +41,7 @@
 #include "bitmap/tgaloader.h"
 
 #include "GameConsole.h"
-#include "LoadingDialog.h"
+#include "GameDialogs/LoadingDialog.h"
 #include "CDKeyEntryDialog.h"
 #include "ModInfo.h"
 #include "game/client/IGameClientExports.h"
