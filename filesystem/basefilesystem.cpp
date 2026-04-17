@@ -3445,6 +3445,10 @@ EFileCRCStatus CBaseFileSystem::CheckCachedFileHash( const char *pPathID, const 
 
 void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllVPKHashes, bool bRecalculateAndCheckHashes )
 {
+	// no caching
+	m_WhitelistFileTrackingEnabled = false;
+
+	/*
 	if ( IsX360() )
 	{
 		m_WhitelistFileTrackingEnabled = false;
@@ -3461,6 +3465,7 @@ void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllV
 	{
 		CacheAllVPKFileHashes( bCacheAllVPKHashes, bRecalculateAndCheckHashes );
 	}
+	*/
 }
 
 
