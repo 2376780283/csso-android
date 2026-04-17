@@ -34,6 +34,7 @@ public:
 
 private:
     vgui::ImagePanel *m_pImagePanelPlaceholder;
+    vgui::Panel      *m_pContainer; // 底部容器：包含标题和背景
     vgui::Label      *m_pTitle;
 
     Color m_clrBgNormal;

@@ -70,7 +70,13 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     m_pImagePanelPlaceholder->SetMouseInputEnabled(false);
     m_pImagePanelPlaceholder->SetVisible(false);
 
-    m_pTitle = new vgui::Label(this, "MapTitle", title);
+    // 创建底部容器：包含标题文本和黑色背景
+    m_pContainer = new vgui::Panel(m_pImagePanelPlaceholder, "MapContainer");
+    m_pContainer->SetPaintBackgroundEnabled(true);
+    m_pContainer->SetPaintBorderEnabled(false);
+    m_pContainer->SetBgColor(Color(0, 0, 0, 150));
+
+    m_pTitle = new vgui::Label(m_pContainer, "MapTitle", title);
     m_pTitle->SetPaintBackgroundEnabled(false);
     m_pTitle->SetFgColor(Color(255, 255, 255, 255));
     m_pTitle->SetContentAlignment(vgui::Label::a_center);
@@ -110,11 +116,7 @@ void MapCardPanel::Paint() {
         vgui::surface()->DrawSetColor(30, 30, 30, 255);
         vgui::surface()->DrawFilledRect(drawX, drawY, drawX + imgSize, drawY + imgSize);
     }
-
-    int labelY = drawY + imgSize;
-    int labelH = PROPVAL(26);
-    vgui::surface()->DrawSetColor(0, 0, 0, 150);
-    vgui::surface()->DrawFilledRect(drawX, labelY, drawX + contentW, labelY + labelH);
+    // 背景现在由 m_pContainer 自己绘制
 }
 
 // --- 异步加载：加入加载队列 ---
@@ -159,9 +161,14 @@ void MapCardPanel::PerformLayout() {
     int drawY = iMargin / 4;
     int imgSize = contentW;
     m_pImagePanelPlaceholder->SetBounds(drawX, drawY, imgSize, imgSize);
+
+    // 布局底部容器
     int labelH = PROPVAL(26);
-    int labelY = drawY + imgSize;
-    m_pTitle->SetBounds(drawX, labelY, contentW, labelH);
+    int labelY = imgSize - labelH ;
+    m_pContainer->SetBounds(drawX, labelY, contentW, labelH);
+
+    // 布局标题标签（相对于容器）
+    m_pTitle->SetBounds(0, 0, contentW, labelH);
 }
 
 void MapCardPanel::OnCursorEntered() {
