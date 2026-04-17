@@ -761,6 +761,15 @@ bool CSourceAppSystemGroup::Create()
 
 	pMaterialSystem->SetShaderAPI( pDLLName );
 
+	// Enable shader cache on supported platforms to accelerate startup
+	// Avoids redundant GLSL compilation on subsequent runs
+#ifdef ANDROID
+	if ( CommandLine()->FindParm( "-enableshadercache" ) || !CommandLine()->FindParm( "-disableshadercache" ) )
+	{
+		pMaterialSystem->AllowThreading( true, 0 );
+	}
+#endif
+
 	double elapsed = Plat_FloatTime() - st;
 	COM_TimestampedLog( "LoadAppSystems:  Took %.4f secs to load libraries and get factories.", (float)elapsed );
 
