@@ -51,6 +51,14 @@ void CollisionBSPData_LoadEntityString( CCollisionBSPData *pBSPData );
 void CollisionBSPData_LoadPhysics( CCollisionBSPData *pBSPData );
 void CollisionBSPData_LoadDispInfo( CCollisionBSPData *pBSPData );
 
+// Cache for material surface properties (for optimization)
+struct MaterialSurfaceCache
+{
+	int surfaceProp0;
+	int surfaceProp1;
+};
+static CUtlVector<MaterialSurfaceCache> g_MaterialSurfaceCache;
+
 
 //=============================================================================
 //
@@ -89,6 +97,9 @@ void CollisionBSPData_Destroy( CCollisionBSPData *pBSPData )
 	g_pDispCollTrees = NULL;
 	g_pDispBounds = NULL;
 	g_DispCollTreeCount = 0;
+	
+	// Clear material surface cache
+	g_MaterialSurfaceCache.RemoveAll();
 
 	if ( pBSPData->map_planes.Base() )
 	{
@@ -269,7 +280,7 @@ bool CollisionBSPData_Load( const char *pName, CCollisionBSPData *pBSPData )
 	COM_TimestampedLog( "  CollisionBSPData_LoadSubmodels" );
 	CollisionBSPData_LoadSubmodels( pBSPData );
 
-	COM_TimestampedLog( "  CollisionBSPData_LoadPlanes" );
+	COM_TimestampedLog( "  CollisionBSPData_LoadNodes" );
 	CollisionBSPData_LoadNodes( pBSPData );
 
 	COM_TimestampedLog( "  CollisionBSPData_LoadAreas" );
@@ -334,6 +345,10 @@ void CollisionBSPData_LoadTextures( CCollisionBSPData *pBSPData )
 
 	pBSPData->map_texturenames = (char *)Hunk_Alloc( lhStringData.LumpSize() * sizeof(char), false );
 	memcpy( pBSPData->map_texturenames, pStringData, lhStringData.LumpSize() );
+	
+	// Pre-allocate and cache material surface properties for later use in LoadDispInfo
+	g_MaterialSurfaceCache.RemoveAll();
+	g_MaterialSurfaceCache.EnsureCapacity( count );
  
 	for ( i=0 ; i<count ; i++, in++ )
 	{
@@ -348,6 +363,8 @@ void CollisionBSPData_LoadTextures( CCollisionBSPData *pBSPData )
 		out->surfaceProps = 0;
 		out->flags = 0;
 
+		// Query material properties once and cache them
+		MaterialSurfaceCache cache = { 0, 0 };
 		material = materials->FindMaterial( pBSPData->map_surfaces[i].name, TEXTURE_GROUP_WORLD, true );
 		if ( !IsErrorMaterial( material ) )
 		{
@@ -358,8 +375,17 @@ void CollisionBSPData_LoadTextures( CCollisionBSPData *pBSPData )
 			{
 				const char *pProps = var->GetStringValue();
 				pBSPData->map_surfaces[i].surfaceProps = physprop->GetSurfaceIndex( pProps );
+				cache.surfaceProp0 = pBSPData->map_surfaces[i].surfaceProps;
+			}
+			
+			var = material->FindVar( "$surfaceprop2", &varFound, false );
+			if ( varFound )
+			{
+				const char *pProps = var->GetStringValue();
+				cache.surfaceProp1 = physprop->GetSurfaceIndex( pProps );
 			}
 		}
+		g_MaterialSurfaceCache.AddToTail( cache );
 	}
 }
 
@@ -1253,29 +1279,19 @@ void CollisionBSPData_LoadDispInfo( CCollisionBSPData *pBSPData )
 		nCacheSize += pDispTree->GetCacheMemorySize();
 		nPowerCount[pDispTree->GetPower()-2]++;
 
-		// Surface props.
+		// Surface props - use cached material properties instead of re-querying
 		texinfo_t *pTex = &pTexinfoList[pFaces->texinfo];
-		if ( pTex->texdata >= 0 )
+		if ( pTex->texdata >= 0 && pTex->texdata < g_MaterialSurfaceCache.Count() )
 		{
-			IMaterial *pMaterial = materials->FindMaterial( pBSPData->map_surfaces[pTex->texdata].name, TEXTURE_GROUP_WORLD, true );
-			if ( !IsErrorMaterial( pMaterial ) )
+			const MaterialSurfaceCache &cache = g_MaterialSurfaceCache[pTex->texdata];
+			if ( cache.surfaceProp0 != 0 )
 			{
-				IMaterialVar *pVar;
-				bool bVarFound;
-				pVar = pMaterial->FindVar( "$surfaceprop", &bVarFound, false );
-				if ( bVarFound )
-				{
-					const char *pProps = pVar->GetStringValue();
-					pDispTree->SetSurfaceProps( 0, physprop->GetSurfaceIndex( pProps ) );
-					pDispTree->SetSurfaceProps( 1, physprop->GetSurfaceIndex( pProps ) );
-				}
-
-				pVar = pMaterial->FindVar( "$surfaceprop2", &bVarFound, false );
-				if ( bVarFound )
-				{
-					const char *pProps = pVar->GetStringValue();
-					pDispTree->SetSurfaceProps( 1, physprop->GetSurfaceIndex( pProps ) );
-				}
+				pDispTree->SetSurfaceProps( 0, cache.surfaceProp0 );
+				pDispTree->SetSurfaceProps( 1, cache.surfaceProp0 );
+			}
+			if ( cache.surfaceProp1 != 0 )
+			{
+				pDispTree->SetSurfaceProps( 1, cache.surfaceProp1 );
 			}
 		}
 	}
