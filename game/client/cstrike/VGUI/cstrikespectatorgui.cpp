@@ -1415,7 +1415,7 @@ void CCSMapOverview::DrawMapTexture()
 					// Apply blinking effect based on m_flNextGlow, similar to bomb icon in teamcounter
 					int outlineAlpha = 255;
 					if ( gpGlobals->curtime + 0.1f >= pC4->m_flNextGlow )
-						outlineAlpha = 105;  // Dim when not glowing
+						outlineAlpha = 90;  // Dim when not glowing
 					
 					surface()->DrawSetTexture( m_nCircleOutlineTextureID );
 					surface()->DrawSetColor( 255, 0, 0, outlineAlpha );
