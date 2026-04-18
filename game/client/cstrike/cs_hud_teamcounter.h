@@ -21,7 +21,7 @@
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include "utlvector.h"
-#include "vgui_avatarimage_nonsteam.h"
+#include "vgui_avatarimage.h"
 
 enum VIEW_MODE
 {

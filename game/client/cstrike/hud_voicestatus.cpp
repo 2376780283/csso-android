@@ -14,7 +14,7 @@
 #include "clientmode_shared.h"
 #include "c_playerresource.h"
 #include "voice_common.h"
-#include "vgui_avatarimage_nonsteam.h"
+#include "vgui_avatarimage.h"
 #include <vgui_controls/VectorImagePanel.h>
 
 ConVar *sv_alltalk = NULL;

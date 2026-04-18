@@ -19,7 +19,7 @@
 #include "view_shared.h"
 #include "view.h"
 #include "model_types.h"
-#include "vgui_avatarimage_nonsteam.h"
+#include "vgui_avatarimage.h"
 #include "cs_hud_weaponselection.h"
 #include "viewpostprocess.h"
 

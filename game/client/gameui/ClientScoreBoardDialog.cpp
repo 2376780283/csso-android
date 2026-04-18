@@ -31,7 +31,7 @@
 #include <game/client/iviewport.h>
 #include <igameresources.h>
 
-#include "vgui_avatarimage_nonsteam.h"
+#include "vgui_avatarimage.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
