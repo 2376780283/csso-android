@@ -168,4 +168,6 @@ private:
     CCSWeaponInfo* m_pWeaponInfo;
 };
 
+extern CWeaponInspectDialog* g_pWeaponInspect;
+
 #endif // VGUI_WEAPON_INSPECT_DIALOG_H

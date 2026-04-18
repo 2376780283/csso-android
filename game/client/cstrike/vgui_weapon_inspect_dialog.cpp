@@ -7,9 +7,12 @@
 
 using namespace vgui;
 
+CWeaponInspectDialog* g_pWeaponInspect = nullptr;
+
 CWeaponInspectDialog::CWeaponInspectDialog(Panel *parent) 
     : BaseClass(parent, "WeaponInspectDialog")
 {
+    g_pWeaponInspect = this;
     SetTitle("", true);
     SetSizeable(false);
     SetDeleteSelfOnClose(false);
@@ -230,5 +233,27 @@ const char* CWeaponInspectDialog::GetModelPatchFormWeaponID(CSWeaponID weaponID)
         case WEAPON_SCAR20:     return "models/weapons/w_snip_scar20.mdl";
         case WEAPON_G3SG1:      return "models/weapons/w_snip_g3sg1.mdl";
         default:                return nullptr;
+    }
+}
+
+CON_COMMAND(open_weaponInspect, "Open skin inventory")
+{
+    if (!g_pWeaponInspect)
+    {
+        g_pWeaponInspect = new CWeaponInspectDialog(nullptr);
+    }
+    
+    g_pWeaponInspect->Activate();
+    g_pWeaponInspect->SetVisible(true);
+    
+    // Панель инвентаря сама загрузит скины через OnThink когда получит размеры
+    DevMsg("[SkinEditor] Inventory window opened\n");
+}
+
+CON_COMMAND(close_weaponInspect, "Close skin inventory")
+{
+    if (g_pWeaponInspect)
+    {
+        g_pWeaponInspect->OnClose();
     }
 }
