@@ -20,6 +20,7 @@ def build(bld):
 	source = [
 		'BackgroundMenuButton.cpp',
 		'BasePanel.cpp',
+		'CustomMenu.cpp',
 		'GameConsole.cpp',
 		'GameUI_Interface.cpp',
 		'ModInfo.cpp',
@@ -102,6 +103,8 @@ def build(bld):
 		'ModOptionsSubAgents.cpp',
 		'ModOptionsSubGloves.cpp',
 		'ModOptionsSubHUD.cpp',
+		'ExtraManagerPanel.cpp',
+		'CardPanel.cpp',
 	]
 
 	if bld.env.DEST_OS == 'win32':

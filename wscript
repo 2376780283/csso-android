@@ -90,6 +90,7 @@ projects={
 		'vguimatsurface',
 		'video',
 		'video/video_bink',
+		'video/video_webm',
 		'vphysics',
 		'vpklib',
 		'vstdlib',

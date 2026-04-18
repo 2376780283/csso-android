@@ -122,7 +122,15 @@ CBaseFileSystem *BaseFileSystem()
 	return g_pBaseFileSystem;
 }
 
-ConVar filesystem_buffer_size( "filesystem_buffer_size", "0", 0, "Size of per file buffers. 0 for none" );
+ConVar filesystem_buffer_size( "filesystem_buffer_size", 
+#if defined(ANDROID)
+	"1048576",  // 1MB for modern Android devices (UFS 4.0 support)
+#elif defined(LINUX)
+	"524288",   // 512KB for Linux
+#else
+	"0",        // Default (32KB on Windows)
+#endif
+	0, "Size of per file buffers. 0 for default" );
 
 #if defined( TRACK_BLOCKING_IO )
 
@@ -3437,6 +3445,10 @@ EFileCRCStatus CBaseFileSystem::CheckCachedFileHash( const char *pPathID, const 
 
 void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllVPKHashes, bool bRecalculateAndCheckHashes )
 {
+	// no caching
+	m_WhitelistFileTrackingEnabled = false;
+
+	/*
 	if ( IsX360() )
 	{
 		m_WhitelistFileTrackingEnabled = false;
@@ -3453,6 +3465,7 @@ void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllV
 	{
 		CacheAllVPKFileHashes( bCacheAllVPKHashes, bRecalculateAndCheckHashes );
 	}
+	*/
 }
 
 
@@ -3893,12 +3906,13 @@ bool CBaseFileSystem::IsDirectory( const char *pFileName, const char *pathID )
 			pSearchPath->GetPackedStore()->GetFileAndDirLists( outDir, outFile, false );
 			FOR_EACH_VEC( outDir, i )
 			{
+				// if ( !Q_stricmp( outDir[i], pFileName ) )
+				
 				// PiMoN: hack for folders with only subfolders inside (no files)
 				// those files are ignored by vpklib because in order for it
 				// to build an array of folders, it looks for files only
 				// so if there isn't a file in a folder, it will ignore it
-				// even if there is a subfolder
-				//if ( !Q_stricmp( outDir[i], pFileName ) )
+				// even if there is a subfolder				
 				if ( !Q_strncmp( outDir[i], pFileName, V_strlen( pFileName ) ) )
 					return true;
 			}
