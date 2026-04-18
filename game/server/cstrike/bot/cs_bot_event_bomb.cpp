@@ -51,7 +51,8 @@ void CCSBot::OnBombPlanted( IGameEvent *event )
 		return;
 
 	// don't react to our own events
-	if ( GetUserID() == event->GetInt("userid") )
+	CBasePlayer *player = UTIL_PlayerByUserId( event->GetInt( "userid" ) );
+	if ( player == this )
 		return;
 
 	// if we're a TEAM_CT, forget what we're doing and go after the bomb
@@ -76,7 +77,8 @@ void CCSBot::OnBombBeep( IGameEvent *event )
 		return;
 
 	// don't react to our own events
-	if ( GetUserID() == event->GetInt( "userid" ) )
+	CBasePlayer *player = UTIL_PlayerByUserId( event->GetInt( "userid" ) );
+	if ( player == this )
 		return;
 
 	CBaseEntity *entity = UTIL_EntityByIndex( event->GetInt( "entindex" ) );
@@ -119,7 +121,8 @@ void CCSBot::OnBombDefused( IGameEvent *event )
 		return;
 
 	// don't react to our own events
-	if ( GetUserID() == event->GetInt( "userid" ) )
+	CBasePlayer *player = UTIL_PlayerByUserId( event->GetInt( "userid" ) );
+	if ( player == this )
 		return;
 
 	if (GetTeamNumber() == TEAM_CT)
@@ -137,7 +140,8 @@ void CCSBot::OnBombDefuseAbort( IGameEvent *event )
 		return;
 
 	// don't react to our own events
-	if ( GetUserID() == event->GetInt( "userid" ) )
+	CBasePlayer *player = UTIL_PlayerByUserId( event->GetInt( "userid" ) );
+	if ( player == this )
 		return;
 
 	PrintIfWatched( "BOMB DEFUSE ABORTED\n" );

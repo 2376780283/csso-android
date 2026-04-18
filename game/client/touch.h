@@ -79,17 +79,13 @@ struct event_s
 
 struct CTouchTexture
 {
-    IVTFTexture *vtf;
+	IVTFTexture *vtf;
 
-    float X0, Y0, X1, Y1;
-    int height, width;
-    int textureID;
-    bool isInAtlas;
-    char szName[1024];
-
-    unsigned char *rawData = nullptr;
-    int channels = 0;
-    bool isStbImage = false;
+	float X0, Y0, X1, Y1; // position in atlas texture
+	int height, width;
+	int textureID;
+	bool isInAtlas;
+	char szName[1024];
 };
 
 class CTouchButton
@@ -208,13 +204,12 @@ public:
 	float yaw, pitch;
 	rgba_t gridcolor;
 
+private:
+	bool initialized = false;
 	ETouchState state;
 	CUtlLinkedList<CTouchButton*> btns;
-	
-private:
-	bool initialized = false;	
-	
 	CUtlVector<CTouchTexture*> textureList;
+
 	int look_finger, move_finger, wheel_finger;
 	CTouchButton *move_button;
 

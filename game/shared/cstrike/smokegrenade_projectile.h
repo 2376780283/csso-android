@@ -70,16 +70,9 @@ public:
 
 	void SetTimer( float timer );
 
-	// FIX: Function to check if smoke is still active
-	bool IsSmokeStillActive() const 
-	{ 
-		return ( m_flSmokeExpireTime >= 0 && gpGlobals->curtime < m_flSmokeExpireTime ); 
-	}
-
 	EHANDLE m_hSmokeEffect;
 	CNetworkVar( bool, m_bDidSmokeEffect );
 	float m_flLastBounce;
-	float m_flSmokeExpireTime; // FIX: Track when smoke will completely dissipate
 };
 #endif // GAME_DLL
 

@@ -735,9 +735,6 @@ void CAchievementMgr::UploadUserData()
 		}
 #endif
 	}
-	
-	// CS:SO Android: Save achievement state to file
-	SaveGlobalState();
 }
 
 //-----------------------------------------------------------------------------

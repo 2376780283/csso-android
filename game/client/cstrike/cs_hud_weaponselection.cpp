@@ -134,12 +134,29 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 	C_BasePlayer *pPlayer = GetHudPlayer();
 	if ( !pCSWeapon || !pPlayer || !pCSWeapon->GetPlayerOwner() || pCSWeapon->GetPlayerOwner() != pPlayer )
 		return;
+        
+    int iPaintKit = pCSWeapon->GetPaintKit();
+    const SkinDefinition_t* pSkinDef = NULL;
+    
+    if ( iPaintKit > 0 )
+	{
+		pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+		if ( pSkinDef )
+		{
+			DevMsg( "[WeaponSelection] Found skin: paintkit=%d name='%s' rarity=%d\n", 
+				iPaintKit, pSkinDef->szName, pSkinDef->rarity );
+		}
+		else
+		{
+			DevMsg( "[WeaponSelection] Skin not found in database for paintkit=%d\n", iPaintKit );
+		}
+	}
 
 	//Put the new weapon in the list
 	if ( !m_weaponPanels[nWepSlot][nWepPos].bInitialized )
 	{
 		m_weaponPanels[nWepSlot][nWepPos] = CreateNewPanel( nWepSlot, nWepPos, pWeapon, bSelected );
-		m_weaponPanels[nWepSlot][nWepPos].JustPickedUp = true;
+        m_weaponPanels[nWepSlot][nWepPos].JustPickedUp = true;
 	}
 	else
 	{
@@ -147,34 +164,53 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 		m_weaponPanels[nWepSlot][nWepPos].bInitialized = true;
 		m_weaponPanels[nWepSlot][nWepPos].bSelected = bSelected;
 	}
-	
-	bool bApplyGlow = cl_weapon_icon_blur.GetBool() && bSelected;    
-    int glowRadius = 4;    
-    Color glowColor = Color( 255, 0, 0, 155 );
     
-//    if ( pSkinDef )
-//	{
-//		glowColor = GetRarityColor( NULL );			
-/*	}
-	else
-	{
-		
-	}*/
+    bool bApplyGlow = cl_weapon_icon_blur.GetBool() && bSelected;
+    
+    int glowRadius = 4;
+    
+    Color glowColor = Color( 0, 0, 0, 0 );
+    
+        if ( pSkinDef )
+		{
+			glowColor = GetRarityColor( pSkinDef->rarity );
+			
+			DevMsg( "[WeaponSelection] SELECTED weapon: %s | PaintKit: %d | Skin: %s | Rarity: %d | GlowColor: RGB(%d,%d,%d)\n",
+				pCSWeapon->GetClassname(), 
+				iPaintKit, 
+				pSkinDef->szName, 
+				pSkinDef->rarity,
+				glowColor.r(), glowColor.g(), glowColor.b() );
+		}
+		else
+		{
+			DevMsg( "[WeaponSelection] SELECTED weapon: %s | No skin found, using white glow\n", 
+				pCSWeapon->GetClassname() );
+		}
+    
 	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetRenderSize( weapon_icon_wide, weapon_icon_tall );
-	// m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7 ) );
 	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7), bApplyGlow, glowRadius, glowColor );
     
+    wchar_t wszFinal[256];
 
-	if ( pCSWeapon->HasStatTrak() )
-	{
-		wchar_t wszLocalized[256];
-		g_pVGuiLocalize->ConstructString( wszLocalized, sizeof( wszLocalized ), g_pVGuiLocalize->Find( "#Cstrike_WPNHUD_StatTrak" ), 1, g_pVGuiLocalize->Find( pCSWeapon->GetPrintName() ) );
-		m_weaponPanels[nWepSlot][nWepPos].pNameLabel->SetText( wszLocalized );
-	}
-	else
-	{
-		m_weaponPanels[nWepSlot][nWepPos].pNameLabel->SetText( pCSWeapon->GetPrintName() );
-	}
+	BuildWeaponSkinName(
+    pCSWeapon,
+    pSkinDef,
+    wszFinal,
+    sizeof(wszFinal));
+
+    if ( pCSWeapon->HasStatTrak() )
+    {
+        wchar_t wszStatTrak[256];
+
+        g_pVGuiLocalize->ConstructString( wszStatTrak, sizeof(wszStatTrak), g_pVGuiLocalize->Find( "#Cstrike_WPNHUD_StatTrak" ), 1, wszFinal );
+
+        m_weaponPanels[nWepSlot][nWepPos].pNameLabel->SetText( wszStatTrak );
+    }
+    else
+    {
+        m_weaponPanels[nWepSlot][nWepPos].pNameLabel->SetText( wszFinal );
+    }
 
 	m_weaponPanels[nWepSlot][nWepPos].pNameLabel->SizeToContents();
 	UpdateCountLabels();
@@ -182,6 +218,60 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 
 	// force a weapon switch to catch where we got a user message but not the network update, yet
 	m_flUpdateInventoryAt = gpGlobals->curtime + 0.1;
+}
+
+void CCSHudWeaponSelection::BuildWeaponSkinName( CWeaponCSBase *pWeapon, const SkinDefinition_t *pSkinDef, wchar_t *out, int outSizeBytes )
+{
+    wchar_t wszWeapon[128] = L"";
+    wchar_t wszSkin[128] = L"";
+
+    // Weapon name
+    const wchar_t *pWeaponName = g_pVGuiLocalize->Find( pWeapon->GetPrintName() );
+    if ( pWeaponName )
+    {
+        g_pVGuiLocalize->ConstructString(
+            wszWeapon, sizeof(wszWeapon),
+            pWeaponName,
+            0
+        );
+    }
+
+    // item name
+    if ( pSkinDef )
+    {
+        const wchar_t *pSkinName = g_pVGuiLocalize->Find( pSkinDef->szName );
+        if ( pSkinName )
+        {
+            g_pVGuiLocalize->ConstructString(
+                wszSkin, sizeof(wszSkin),
+                pSkinName,
+                0
+            );
+        }
+        else
+        {
+            g_pVGuiLocalize->ConvertANSIToUnicode(
+                pSkinDef->szName,
+                wszSkin,
+                sizeof(wszSkin)
+            );
+        }
+
+        V_snwprintf(
+            out,
+            outSizeBytes / sizeof(wchar_t),
+            L"%ls | %ls",
+            wszWeapon,
+            wszSkin
+        );
+        return;
+    }
+
+    V_wcsncpy(
+        out,
+        wszWeapon,
+        outSizeBytes / sizeof(wchar_t)
+    );
 }
 
 void CCSHudWeaponSelection::RemoveWeapon( int nSlot, int nPos )

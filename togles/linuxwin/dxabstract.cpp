@@ -1206,7 +1206,7 @@ static void FillD3DCaps9( const GLMRendererInfoFields &glmRendererInfo, D3DCAPS9
 	pCaps->FakeSRGBWrite			=	true;//!glmRendererInfo.m_hasGammaWrites;
 	pCaps->CanDoSRGBReadFromRTs		=	true;//!glmRendererInfo.m_cantAttachSRGB;
 	pCaps->MixedSizeTargets			=	glmRendererInfo.m_hasMixedAttachmentSizes;
-	pCaps->SupportInt16Format = gGL->m_bHave_GL_EXT_texture_norm16;
+	pCaps->SupportInt16Format = gGL->m_bHave_GL_EXT_texture_norm16 || gGL->m_bHave_GL_EXT_color_buffer_half_float;
 #endif
 }
 
@@ -1350,6 +1350,8 @@ HRESULT IDirect3D9::CheckDeviceFormat(UINT Adapter,D3DDEVTYPE DeviceType,D3DFORM
 						case D3DFMT_DXT1:
 						case D3DFMT_DXT3:
 						case D3DFMT_DXT5:
+						case D3DFMT_ETC2_RGB8:
+						case D3DFMT_ETC2_RGBA8:
 													legalUsage	=	D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP | D3DUSAGE_QUERY_FILTER;
 													legalUsage	|=	D3DUSAGE_QUERY_SRGBREAD;
 													

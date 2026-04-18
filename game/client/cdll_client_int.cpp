@@ -126,6 +126,8 @@
 #include "mumble.h"
 
 #include "gametypes.h"
+#include "SkinProcessor.h"
+#include "cs_skin_database.h"
 
 // NVNT includes
 #include "hud_macros.h"
@@ -224,8 +226,6 @@ IHaptics* haptics = NULL;// NVNT haptics system interface singleton
 // [dwenger] Necessary for stats display
 
 AchievementsAndStatsInterface* g_pAchievementsAndStatsInterface = NULL;
-
-IScriptManager *scriptmanager = NULL;
 
 IGameSystem *SoundEmitterSystem();
 IGameSystem *ToolFrameworkClientSystem();
@@ -931,12 +931,6 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 #endif
 
-if ( !CommandLine()->CheckParm( "-noscripting" ) )
-	{
-		if ( (scriptmanager = (IScriptManager*) appSystemFactory( VSCRIPT_INTERFACE_VERSION, NULL )) == NULL )
-			return false;
-	}
-
 #if defined( REPLAY_ENABLED )
 	if ( IsPC() && (g_pEngineReplay = (IEngineReplay *)appSystemFactory( ENGINE_REPLAY_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
@@ -1087,6 +1081,9 @@ if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	ClientWorldFactoryInit();
 
 	C_BaseAnimating::InitBoneSetupThreadPool();
+    
+    g_SkinDatabase.Initialize();
+    g_SkinProcessor.Initialize();
 
 #if defined( CSTRIKE_DLL )
 	// Load the game types.

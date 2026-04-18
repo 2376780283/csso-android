@@ -369,7 +369,7 @@ void CEngine::Frame( void )
 			usleep( nSleepMicrosecs );
 #else
 			ThreadSleep( (nSleepMicrosecs + 999) / 1000 );
-#endif //POSIX
+#endif
 		}
 	}
 

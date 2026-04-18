@@ -412,7 +412,7 @@ ConVar mp_do_warmup_period(
 
 ConVar mp_do_warmup_offline( 
     "mp_do_warmup_offline", 
-    "1",
+    "0",
     FCVAR_REPLICATED,
     "Whether or not to do a warmup period at the start of a match in an offline (bot) match.",
     true, 0,
@@ -876,6 +876,11 @@ ConVar mp_use_official_map_factions(
 	"0",
 	FCVAR_REPLICATED | FCVAR_NOTIFY,
 	"Determines wheter to use official factions for the current map or make faction selections free for everyone.\n 0 - Disable\n 1 - Enable for everyone\n 2 - Enable for bots only" );
+    
+ConVar mp_endmatch_votenextleveltime(
+	"mp_endmatch_votenextleveltime",
+	"20", FCVAR_REPLICATED | FCVAR_NOTIFY,
+	"If mp_endmatch_votenextmap is set, players have this much time to vote on the next map at match end." );
 
 // [jason] Can the dead speak to the living?
 ConVar sv_deadtalk( "sv_deadtalk", "0",	FCVAR_REPLICATED | FCVAR_NOTIFY, "Dead players can speak (voice, text) to the living" );
@@ -1933,19 +1938,6 @@ ConVar cl_autohelp(
 			return false;
 
 		return pRules->IsWarmupPeriod();
-	}
-
-	void CCSGameRules::RegisterScriptFunctions( void )
-	{
-		ScriptRegisterFunction( g_pScriptVM, ScriptPrintMessageCenterAll, "Prints an alert message in the center print method to all players." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptPrintMessageChatAll, "Prints a message in chat to all players." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptPrintMessageCenterTeam, "Prints an alert message in the center print method to the specified team." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptPrintMessageChatTeam, "Prints a message in chat to the specified team." );
-
-		ScriptRegisterFunction( g_pScriptVM, ScriptGetGameMode, "Gets the current game mode." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptGetGameType, "Gets the current game type." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptGetRoundsPlayed, "Get the number of rounds played so far." );
-		ScriptRegisterFunction( g_pScriptVM, ScriptIsWarmupPeriod, "Is it warmup or not." );
 	}
 
 	//-----------------------------------------------------------------------------
@@ -4685,7 +4677,7 @@ ConVar cl_autohelp(
 			else if ( mp_timelimit.GetFloat() > 0.0f )
 			{
 				// if maxrounds is 0 then the server is relying on mp_timelimit rather than mp_maxrounds.
-				if ( (GetMapRemainingTime() <= ((mp_timelimit.GetInt() * 60) / 2)) && m_iRoundWinStatus != WINNER_NONE )
+				if ( (GetMapRemainingTime() <= ((mp_timelimit.GetInt() * 60) / 2)) && IsRoundOver() )
 				{
 					bhalftime = true;
 				}
@@ -4721,7 +4713,7 @@ ConVar cl_autohelp(
 					bEndMatch = true;
 				}
 			}
-			else if ( GetMapRemainingTime() == 0 && m_iRoundWinStatus != WINNER_NONE )
+			else if ( GetMapRemainingTime() == 0 && IsRoundOver() )
 			{
 				bEndMatch = true;
 			}
@@ -4793,7 +4785,7 @@ ConVar cl_autohelp(
 					GoToIntermission();
 				}
 			}
-			else if ( GetMapRemainingTime() == 0 && m_iRoundWinStatus != WINNER_NONE )
+			else if ( GetMapRemainingTime() == 0 && IsRoundOver() )
 			{
 				m_phaseChangeAnnouncementTime = gpGlobals->curtime + mp_win_panel_display_time.GetInt();
 				GoToIntermission();
@@ -4838,7 +4830,7 @@ ConVar cl_autohelp(
 			
 			extern ConVar mp_do_warmup_period;
 
-            if ( (UTIL_HumansInGame( true, true ) > 0 || IsPlayingOffline()) && ( GetWarmupPeriodEndTime() - 5 < gpGlobals->curtime) )
+            if ( UTIL_HumansInGame( true, true ) > 0 && ( GetWarmupPeriodEndTime() - 5 < gpGlobals->curtime) )
             {
 				mp_warmup_pausetimer.SetValue( 0 ); // Timer is unpausable within 5 seconds of its end.
 
@@ -4902,7 +4894,7 @@ ConVar cl_autohelp(
 		
 		if ( m_flRestartRoundTime > 0.0f && m_flRestartRoundTime <= gpGlobals->curtime )
 		{
-			if ( IsWarmupPeriod() && m_match.GetPhase() != GAMEPHASE_MATCH_ENDED && GetWarmupPeriodEndTime() <= gpGlobals->curtime && (UTIL_HumansInGame( false, true ) || IsPlayingOffline()) && m_flGameStartTime != 0 )
+			if ( IsWarmupPeriod() && m_match.GetPhase() != GAMEPHASE_MATCH_ENDED && GetWarmupPeriodEndTime() <= gpGlobals->curtime && UTIL_HumansInGame( false, true ) && m_flGameStartTime != 0 )
             {
                 m_bCompleteReset = true;
                 m_flRestartRoundTime = gpGlobals->curtime + 1;
@@ -4950,7 +4942,7 @@ ConVar cl_autohelp(
 					{
 						if (IsWarmupPeriod() &&
 							(GetWarmupPeriodEndTime() <= gpGlobals->curtime) &&
-							(UTIL_HumansInGame(false, true) || IsPlayingOffline()))
+							UTIL_HumansInGame(false, true))
 						{
 							m_bCompleteReset = true;
 							m_flRestartRoundTime = gpGlobals->curtime + 1;
@@ -5014,14 +5006,11 @@ ConVar cl_autohelp(
 			// [Forrest] Calling ChangeLevel multiple times was causing IncrementMapCycleIndex
 			// to skip over maps in the list.  Avoid this using a technique from CTeamplayRoundBasedRules::Think.
 			// check to see if we should change levels now
-			if ( m_flIntermissionStartTime && ( m_flIntermissionStartTime + GetIntermissionDuration() < gpGlobals->curtime ) )
-			{
-				ChangeLevel(); // intermission is over
-
-                // Don't run this code again
+			if ( m_flIntermissionStartTime > 0.0f && gpGlobals->curtime >= m_flIntermissionStartTime + GetIntermissionDuration() + mp_endmatch_votenextleveltime.GetInt() )
+            {
+                ChangeLevel();
                 m_flIntermissionStartTime = 0.f;
-			}
-
+            }
 			return true;
 		}
 
@@ -7637,8 +7626,7 @@ bool CCSGameRules::IsFreezePeriod()
 bool CCSGameRules::IsWarmupPeriod() const
 {
 	if ( IsPlayingOffline() && !mp_do_warmup_offline.GetBool() )
-	// always true for game
-    return true;
+		return false;
 
 	return m_bWarmupPeriod;
 }
@@ -8132,6 +8120,11 @@ CAmmoDef* GetAmmoDef()
 	return &ammoDef;
 }
 
+bool CCSGameRules::IsRoundOver() const
+{
+    return m_iRoundWinStatus != WINNER_NONE;
+}
+
 bool CCSGameRules::IsPlayingGunGameProgressive( void ) const
 {
     return ( IsPlayingGunGame() &&
@@ -8382,7 +8375,10 @@ void CCSGameRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 		}
 
 		pCSPlayer->m_iLoadoutSlotKnifeWeaponCT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_knife_weapon_ct" ) );
+        pCSPlayer->m_iLoadoutSlotKnifeWeaponSkinCT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_knife_weapon_skin_ct" ) );
 		pCSPlayer->m_iLoadoutSlotKnifeWeaponT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_knife_weapon_t" ) );
+        pCSPlayer->m_iLoadoutSlotKnifeWeaponSkinT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_knife_weapon_skin_t" ) );
+        pCSPlayer->m_iGlovePaintKitID = CSLoadout()->GetGlovesSkinForPlayer( pCSPlayer, pCSPlayer->GetTeamNumber() );
 
 		int m_iNewAgentCT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_agent_ct" ) );
 		int m_iNewAgentT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_agent_t" ) );
@@ -8394,8 +8390,10 @@ void CCSGameRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 
 		int m_iNewGlovesCT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_gloves_ct" ) );
 		int m_iNewGlovesT = atoi( engine->GetClientConVarValue( engine->IndexOfEdict( pCSPlayer->edict() ), "loadout_slot_gloves_t" ) );
+        int m_iNewGlovesSkinCT = CSLoadout()->GetGlovesSkinForPlayer( pCSPlayer, TEAM_CT );
+        int m_iNewGlovesSkinT = CSLoadout()->GetGlovesSkinForPlayer( pCSPlayer, TEAM_TERRORIST );
 		// change the gloves in the next round if needed
-		if ( ( m_iNewGlovesCT != pCSPlayer->m_iLoadoutSlotGlovesCT ) || ( m_iNewGlovesT != pCSPlayer->m_iLoadoutSlotGlovesT ) )
+		if ( ( m_iNewGlovesCT != pCSPlayer->m_iLoadoutSlotGlovesCT ) || ( m_iNewGlovesT != pCSPlayer->m_iLoadoutSlotGlovesT ) || m_iNewGlovesSkinCT != pCSPlayer->m_iGlovePaintKitID || m_iNewGlovesSkinT != pCSPlayer->m_iGlovePaintKitID )
 		{
 			pCSPlayer->m_bNeedToChangeGloves = true;
 		}

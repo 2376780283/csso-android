@@ -15,6 +15,7 @@
 #include <vgui_controls/Label.h>
 #include "hudelement.h"
 #include "cs_weapon_selection.h"
+#include "cs_skin_database.h"
 #include "weapon_csbase.h"
 
 using namespace vgui;
@@ -77,6 +78,7 @@ public:
 	virtual bool ShouldDraw();
 
 	void AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelected );
+    static void BuildWeaponSkinName( CWeaponCSBase *pWeapon, const SkinDefinition_t *pSkinDef, wchar_t *out, int outSizeBytes );
 	void RemoveWeapon( int nSlot, int nPos );
 	void RemoveAllItems( void );
 	WeaponSelectPanel CreateNewPanel( int nSlot, int nPos, C_BaseCombatWeapon *pWeapon = NULL, bool bSelected = false );

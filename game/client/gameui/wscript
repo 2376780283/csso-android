@@ -20,7 +20,6 @@ def build(bld):
 	source = [
 		'BackgroundMenuButton.cpp',
 		'BasePanel.cpp',
-		'CustomMenu.cpp',
 		'GameConsole.cpp',
 		'GameUI_Interface.cpp',
 		'ModInfo.cpp',
@@ -37,7 +36,7 @@ def build(bld):
 		'BonusMapsDatabase.cpp',
 		'../common/language.cpp',
 		'../common/imageutils.cpp',
-		'GameDialogs/SaveGameBrowserDialog.cpp',
+		'SaveGameBrowserDialog.cpp',
 		'gameui_util.cpp',
 		'BitmapImagePanel.cpp',
 		'CommandCheckButton.cpp',
@@ -57,18 +56,22 @@ def build(bld):
 		'ContentControlDialog.cpp',
 		'CustomTabExplanationDialog.cpp',
 		'GameConsoleDialog.cpp',
-		'GameDialogs/LoadGameDialog.cpp',
+		'LoadGameDialog_Xbox.cpp',
+		'LoadGameDialog.cpp',
 		'MultiplayerAdvancedDialog.cpp',
-		'GameDialogs/NewGameDialog.cpp',
-		'GameDialogs/PlayerListDialog.cpp',
-		'GameDialogs/SaveGameDialog.cpp',
-		'GameDialogs/LoadCommentaryDialog.cpp',
-		'GameDialogs/LoadingDialog.cpp',
+		'NewGameDialog.cpp',
+		'PlayerListDialog.cpp',
+		'SaveGameDialog_Xbox.cpp',
+		'SaveGameDialog.cpp',
+		'LoadCommentaryDialog.cpp',
+		'LoadingDialog.cpp',
 		'BaseSaveGameDialog.cpp',
-		'GameDialogs/CreateMultiplayerGameBotPage.cpp',
-		'GameDialogs/CreateMultiplayerGameDialog.cpp',
-		'GameDialogs/CreateMultiplayerGameGameplayPage.cpp',
-		'GameDialogs/CreateMultiplayerGameServerPage.cpp',
+		'CreateMultiplayerGameBotPage.cpp',
+		'CreateMultiplayerGameDialog.cpp',
+		'CreateMultiplayerGameGameplayPage.cpp',
+		'CreateMultiplayerGameServerPage.cpp',
+		'OptionsDialog_Xbox.cpp',
+		'ControllerDialog.cpp',
 		'matchmaking/achievementsdialog.cpp',
 		'matchmaking/basedialog.cpp',
 		'matchmaking/dialogmenu.cpp',
@@ -79,33 +82,33 @@ def build(bld):
 		'matchmaking/sessionoptionsdialog.cpp',
 		'matchmaking/sessionbrowserdialog.cpp',
 		'matchmaking/welcomedialog.cpp',
-		'OptionsDialog/OptionsDialog.cpp',
-		'OptionsDialog/OptionsSubAudio.cpp',
-		'OptionsDialog/OptionsSubGame.cpp',
-		'OptionsDialog/OptionsSubKeyboard.cpp',
-		'OptionsDialog/OptionsSubMouse.cpp',
-		'OptionsDialog/OptionsSubTouch.cpp',
-		'OptionsDialog/OptionsSubMultiplayer.cpp',
-		'OptionsDialog/OptionsSubVideo.cpp',
-		'OptionsDialog/OptionsSubVoice.cpp',
-		'GameDialogs/ExtraManagerPanel.cpp',
+		'OptionsDialog.cpp',
+		'OptionsSubAudio.cpp',
+		'OptionsSubDifficulty.cpp',
+		'OptionsSubGame.cpp',
+		'OptionsSubKeyboard.cpp',
+		'OptionsSubMouse.cpp',
+		'OptionsSubTouch.cpp',
+		'OptionsSubMultiplayer.cpp',
+		'OptionsSubPortal.cpp',
+		'OptionsSubVideo.cpp',
+		'OptionsSubVoice.cpp',
 		'../public/tier0/memoverride.cpp',
-		'ModSettingsDialog/ModOptionsDialog.cpp',
-		'ModSettingsDialog/ModOptionsSubCrosshair.cpp',
-		'ModSettingsDialog/ModOptionsSubLoadout.cpp',
-		'ModSettingsDialog/ModOptionsSubGameplay.cpp',
-		'ModSettingsDialog/ModOptionsSubKnives.cpp',
-		'ModSettingsDialog/ModOptionsSubAgents.cpp',
-		'ModSettingsDialog/ModOptionsSubGloves.cpp',
-		'ModSettingsDialog/ModOptionsSubHUD.cpp',
-		'GameDialogs/CardPanel.cpp',
+		'ModOptionsDialog.cpp',
+		'ModOptionsSubCrosshair.cpp',
+		'ModOptionsSubLoadout.cpp',
+		'ModOptionsSubGameplay.cpp',
+		'ModOptionsSubKnives.cpp',
+		'ModOptionsSubAgents.cpp',
+		'ModOptionsSubGloves.cpp',
+		'ModOptionsSubHUD.cpp',
 	]
 
 	if bld.env.DEST_OS == 'win32':
 		source += [
 			'LogoFile.cpp',
 			'ChangeGameDialog.cpp',
-			'OptionsDialog/OptionsSubHaptics.cpp'
+			'OptionsSubHaptics.cpp'
 		]
 
 	includes = [
@@ -123,7 +126,7 @@ def build(bld):
 
 	defines = []
 
-	libs = ['tier0','vgui_controls','tier1','tier2','tier3','vstdlib','vtf','bitmap','mathlib','SDL2','steam_api','matsys_controls','JPEG','PNG','ZLIB', 'lunasvg']
+	libs = ['tier0','vgui_controls','tier1','tier2','tier3','vstdlib','vtf','bitmap','mathlib','SDL2','steam_api','matsys_controls','JPEG','PNG','ZLIB', 'lunasvg', 'CURL']
 
 	if bld.env.DEST_OS == 'win32':
 		libs += ['USER32', 'GDI32']

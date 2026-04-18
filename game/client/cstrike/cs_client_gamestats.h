@@ -15,10 +15,6 @@
 #include "GameEventListener.h"
 #include "../game/shared/cstrike/cs_gamestats_shared.h"
 
-// CS:SO Android: Local stats file (no Steam)
-#define STATS_FILE_NAME			"csso_stats.dat"
-#define STATS_FILE_VERSION		1
-
 struct SRoundData : public BaseStatData 
 {
 	SRoundData( const StatsCollection_t *pRoundData ) 
@@ -117,10 +113,6 @@ public:
 
 	void		MsgFunc_MatchStatsUpdate( bf_read &msg );
 	void		MsgFunc_PlayerStatsUpdate( bf_read &msg );
-
-	// CS:S Android: Load/Save stats from/to local file (no Steam)
-	void		SaveStatsToFile();
-	void		LoadStatsFromFile();
 
 	// Steamworks Gamestats 
 	virtual void SubmitGameStats( KeyValues *pKV )

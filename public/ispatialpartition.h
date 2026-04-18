@@ -64,7 +64,7 @@ enum IterationRetval_t
 	ITERATION_STOP,
 };
 
-// Why write broken memory for negative
+
 typedef unsigned short SpatialPartitionHandle_t;
 
 // A combination of the PARTITION_ flags above.

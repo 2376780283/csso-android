@@ -56,7 +56,6 @@
 #include "reslistgenerator.h"
 #include "tier1/fmtstr.h"
 #include "sourcevr/isourcevirtualreality.h"
-#include "vscript/ivscript.h"
 
 #define VERSION_SAFE_STEAM_API_INTERFACES
 #include "steam/steam_api.h"
@@ -81,7 +80,7 @@ int MessageBox( HWND hWnd, const char *message, const char *header, unsigned uTy
 #endif // USE_SDL
 
 #if defined( POSIX )
-#define RELAUNCH_FILE "/tmp/csso_relaunch"
+#define RELAUNCH_FILE "/tmp/hl2_relaunch"
 #endif
 
 #if defined ( ANDROID )
@@ -92,7 +91,7 @@ int MessageBox( HWND hWnd, const char *message, const char *header, unsigned uTy
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#define DEFAULT_HL2_GAMEDIR	"csso"
+#define DEFAULT_HL2_GAMEDIR	"hl2"
 
 #if defined( USE_SDL )
 extern void* CreateSDLMgr();
@@ -420,7 +419,7 @@ void CLogAllFiles::Init()
 
 	// game directory has not been established yet, must derive ourselves
 	char path[MAX_PATH];
-	Q_snprintf( path, sizeof(path), "%s/%s", GetBaseDirectory(), CommandLine()->ParmValue( "-game", "csso" ) );
+	Q_snprintf( path, sizeof(path), "%s/%s", GetBaseDirectory(), CommandLine()->ParmValue( "-game", "hl2" ) );
 	Q_FixSlashes( path );
 #ifdef WIN32
 	Q_strlower( path );
@@ -675,7 +674,6 @@ bool CSourceAppSystemGroup::Create()
 		{ "datacache" DLL_EXT_STRING,		MDLCACHE_INTERFACE_VERSION },
 		{ "datacache" DLL_EXT_STRING,		STUDIO_DATA_CACHE_INTERFACE_VERSION },
 		{ "studiorender" DLL_EXT_STRING,	STUDIO_RENDER_INTERFACE_VERSION },
-		{ "vscript" DLL_EXT_STRING,			VSCRIPT_INTERFACE_VERSION },
 		{ "vphysics" DLL_EXT_STRING,		VPHYSICS_INTERFACE_VERSION },
 		{ "video_services" DLL_EXT_STRING,  VIDEO_SERVICES_INTERFACE_VERSION },
   
@@ -761,15 +759,6 @@ bool CSourceAppSystemGroup::Create()
 
 	pMaterialSystem->SetShaderAPI( pDLLName );
 
-	// Enable shader cache on supported platforms to accelerate startup
-	// Avoids redundant GLSL compilation on subsequent runs
-#ifdef ANDROID
-	if ( CommandLine()->FindParm( "-enableshadercache" ) || !CommandLine()->FindParm( "-disableshadercache" ) )
-	{
-		pMaterialSystem->AllowThreading( true, 0 );
-	}
-#endif
-
 	double elapsed = Plat_FloatTime() - st;
 	COM_TimestampedLog( "LoadAppSystems:  Took %.4f secs to load libraries and get factories.", (float)elapsed );
 
@@ -829,7 +818,7 @@ bool CSourceAppSystemGroup::PreInit()
 	if ( IsPC() )
 	{
 		// This will get called multiple times due to being here, but only the first one will do anything
-		reslistgenerator->Init( GetBaseDirectory(), CommandLine()->ParmValue( "-game", "csso" ) );
+		reslistgenerator->Init( GetBaseDirectory(), CommandLine()->ParmValue( "-game", "hl2" ) );
 
 		// This will also get called each time, but will actually fix up the command line as needed
 		reslistgenerator->SetupCommandLine();
@@ -941,7 +930,7 @@ bool GrabSourceMutex()
 	if ( IsPC() )
 	{
 		// don't allow more than one instance to run
-		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT("csso_singleton_mutex"));
+		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT("hl2_singleton_mutex"));
 
 		unsigned int waitResult = ::WaitForSingleObject(g_hMutex, 0);
 

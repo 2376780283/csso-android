@@ -1197,8 +1197,6 @@ PVG_FT_END_STMNT
 #undef SCALED
 #define SCALED( x )  (x)
 
-    PWorker worker = (PWorker)user;
-
     PVG_FT_Vector   v_last;
     PVG_FT_Vector   v_control;
     PVG_FT_Vector   v_start;
@@ -1269,7 +1267,7 @@ PVG_FT_END_STMNT
         tags--;
       }
 
-      error = gray_move_to( &v_start, worker );
+      error = gray_move_to( &v_start, user );
       if ( error )
         goto Exit;
 
@@ -1289,7 +1287,7 @@ PVG_FT_END_STMNT
             vec.x = SCALED( point->x );
             vec.y = SCALED( point->y );
 
-            gray_render_line(worker, UPSCALE(vec.x), UPSCALE(vec.y));
+            gray_render_line(user, UPSCALE(vec.x), UPSCALE(vec.y));
             continue;
           }
 
@@ -1314,7 +1312,7 @@ PVG_FT_END_STMNT
 
               if ( tag == PVG_FT_CURVE_TAG_ON )
               {
-                gray_render_conic(worker, &v_control, &vec);
+                gray_render_conic(user, &v_control, &vec);
                 continue;
               }
 
@@ -1324,13 +1322,13 @@ PVG_FT_END_STMNT
               v_middle.x = ( v_control.x + vec.x ) / 2;
               v_middle.y = ( v_control.y + vec.y ) / 2;
 
-              gray_render_conic(worker, &v_control, &v_middle);
+              gray_render_conic(user, &v_control, &v_middle);
 
               v_control = vec;
               goto Do_Conic;
             }
 
-            gray_render_conic(worker, &v_control, &v_start);
+            gray_render_conic(user, &v_control, &v_start);
             goto Close;
           }
 
@@ -1360,18 +1358,18 @@ PVG_FT_END_STMNT
               vec.x = SCALED( point->x );
               vec.y = SCALED( point->y );
 
-              gray_render_cubic(worker, &vec1, &vec2, &vec);
+              gray_render_cubic(user, &vec1, &vec2, &vec);
               continue;
             }
 
-            gray_render_cubic(worker, &vec1, &vec2, &v_start);
+            gray_render_cubic(user, &vec1, &vec2, &v_start);
             goto Close;
           }
         }
       }
 
       /* close the contour with a line segment */
-      gray_render_line(worker, UPSCALE(v_start.x), UPSCALE(v_start.y));
+      gray_render_line(user, UPSCALE(v_start.x), UPSCALE(v_start.y));
 
    Close:
       first = last + 1;

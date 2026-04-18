@@ -14,7 +14,7 @@
 #include "spectatorgui.h"
 #include "mapoverview.h"
 #include "cs_shareddefs.h"
-#include "vgui_avatarimage.h"
+#include "vgui_avatarimage_nonsteam.h"
 
 extern ConVar mp_playerid; // in cs_gamerules.h
 extern ConVar mp_forcecamera; // in gamevars_shared.h
@@ -296,7 +296,6 @@ private:
 	int m_nRadarMapTextureID;	// texture id for radar version of current overview image
 	int m_nCircleBackgroundTextureID;
 	int m_nCircleOverlayTextureID;
-	int m_nCircleOutlineTextureID;
 	int m_nSquareOverlayTextureID;
 
 	int m_nCurrentRadarVerticalSection;

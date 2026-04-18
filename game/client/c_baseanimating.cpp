@@ -53,6 +53,7 @@
 #include "prediction.h"
 #include "replay/replay_ragdoll.h"
 #include "studio_stats.h"
+#include "datacache/imdlcache.h"
 #include "tier1/callqueue.h"
 
 #ifdef TF_CLIENT_DLL
@@ -65,6 +66,8 @@
 
 static ConVar cl_SetupAllBones( "cl_SetupAllBones", "0" );
 ConVar r_sequence_debug( "r_sequence_debug", "" );
+
+extern IMDLCache *g_pMDLCache;
 
 bool C_BaseAnimating::s_bEnableInvalidateBoneCache = true;
 bool C_BaseAnimating::s_bEnableNewBoneSetupRequest = true;
@@ -287,12 +290,6 @@ BEGIN_DATADESC( C_ClientRagdoll )
 	DEFINE_EMBEDDEDBYREF( m_pRagdoll ),
 
 END_DATADESC()
-
-
-BEGIN_ENT_SCRIPTDESC( C_BaseAnimating, C_BaseEntity, "Animating models client-side" )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptSetPoseParameter, "SetPoseParameter", "Set the specified pose parameter to the specified value"  )
-	DEFINE_SCRIPTFUNC( IsSequenceFinished, "Ask whether the main sequence is done playing" )
-END_SCRIPTDESC();
 
 C_ClientRagdoll::C_ClientRagdoll( bool bRestoring )
 {
@@ -822,6 +819,8 @@ C_BaseAnimating::~C_BaseAnimating()
 		m_pAttachedTo->RemoveBoneAttachment( this );
 		m_pAttachedTo = NULL;
 	}
+    
+    ClearMaterialOverride();
 }
 
 bool C_BaseAnimating::UsesPowerOfTwoFrameBufferTexture( void )
@@ -3548,11 +3547,51 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 		}
 	}
 
-	DoInternalDrawModel( pInfo, ( bMarkAsDrawn && ( pInfo->flags & STUDIO_RENDER ) ) ? &state : NULL, pBoneToWorld );
+	bool bOverride = false;
 
+    if ( flags & STUDIO_RENDER )
+{
+    CCustomMaterialOwner *pOwner = GetCustomMaterialOwner();
+    if ( pOwner && pOwner->GetCustomMaterialCount() > 0 )
+    {
+        for ( int i = 0; i < pOwner->GetCustomMaterialCount(); ++i )
+        {
+            IMaterial *pMat = pOwner->GetCustomMaterial( i );
+            if ( !pMat )
+                continue;
+
+            DevMsg("[MATERIAL OVERRIDE] Applying material '%s' to submaterial index %d\n", 
+                   pMat->GetName(), i);
+
+            modelrender->ForcedMaterialOverride( pMat, OVERRIDE_SELECTIVE, i );
+            bOverride = true;
+        }
+    }
+}
+
+	DoInternalDrawModel(pInfo, (bMarkAsDrawn && (pInfo->flags & STUDIO_RENDER)) ? &state : NULL, pBoneToWorld);
+
+	if (bOverride)
+	{
+		modelrender->ForcedMaterialOverride( nullptr );
+	}
+    
 	OnPostInternalDrawModel( pInfo );
 
 	return bMarkAsDrawn;
+}
+
+void C_BaseAnimating::SetMaterialOverride(IMaterial *pMaterial, int nMaterialIndex)
+{
+    if (!pMaterial || nMaterialIndex < 0)
+        return;
+
+    GetCustomMaterialOwner()->SetCustomMaterial(pMaterial, nMaterialIndex);
+}
+
+void C_BaseAnimating::ClearMaterialOverride()
+{
+    GetCustomMaterialOwner()->ClearCustomMaterials();
 }
 
 extern ConVar muzzleflash_light;

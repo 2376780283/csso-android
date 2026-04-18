@@ -10,7 +10,7 @@
 #include "vgui/IInput.h"
 #include "vgui/ISurface.h"
 #include "vgui/KeyCode.h"
-#include "GameDialogs/LoadingDialog.h"
+#include "LoadingDialog.h"
 #include "IGameUIFuncs.h"
 #include "tier0/icommandline.h"
 

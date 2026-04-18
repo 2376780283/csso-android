@@ -796,8 +796,8 @@ void CQueuedLoader::SubmitPendingJobs()
 	// used by spew to indicate submission blocks
 	m_nSubmitCount++;
 
-	// sort entries - use optimized initial capacity to reduce reallocations
-	CUtlSortVector< FileJob_t*, CFileJobsLessFunc > sortedFiles( 0, 512 );
+	// sort entries
+	CUtlSortVector< FileJob_t*, CFileJobsLessFunc > sortedFiles( 0, 128 );
 	while ( pNode )
 	{
 		FileJob_t *pFileJob = pNode->elem;
@@ -814,8 +814,6 @@ void CQueuedLoader::SubmitPendingJobs()
 	asyncRequest.pfnCallback = IOAsyncCallback;
 
 	char szFilename[MAX_PATH];
-	bool bIsDynamic = IsDynamic();
-	
 	for ( int i = 0; i<sortedFiles.Count(); i++ )
 	{
 		FileJob_t *pFileJob = sortedFiles[i];
@@ -826,19 +824,22 @@ void CQueuedLoader::SubmitPendingJobs()
 		m_SubmittedJobs.AddToTail( pFileJob );
 
 		// build an async request
-		// Optimize: Reduce conditional branching by defaulting to NORMAL priority
 		if ( pFileJob->m_Priority == LOADERPRIORITY_DURINGPRELOAD )
 		{
 			// must finish during preload
 			asyncRequest.priority = PRIORITY_HIGH;
-			++g_nHighPriorityJobs;
+			g_nHighPriorityJobs++;
 		}
-		else
+		else if ( pFileJob->m_Priority == LOADERPRIORITY_BEFOREPLAY )
 		{
-			// LOADERPRIORITY_BEFOREPLAY or LOADERPRIORITY_ANYTIME default to NORMAL
+			// must finish before gameplay
 			asyncRequest.priority = PRIORITY_NORMAL;
-			if ( pFileJob->m_Priority == LOADERPRIORITY_BEFOREPLAY )
-				++g_nJobsToFinishBeforePlay;
+			g_nJobsToFinishBeforePlay++;
+		}
+		else 
+		{
+			// can finish during gameplay, normal priority
+			asyncRequest.priority = PRIORITY_NORMAL;
 		}
 		
 		// async will allocate unless caller provided a target
@@ -853,14 +854,14 @@ void CQueuedLoader::SubmitPendingJobs()
 		if ( pFileJob->m_bFileExists )
 		{
 			// start the valid async request
-			++g_nActiveJobs;
+			g_nActiveJobs++;
 			g_pFullFileSystem->AsyncRead( asyncRequest, &pFileJob->m_hAsyncControl );
 		}
 		else
 		{
 			// prevent dragging the i/o system down for known failures
 			// still need to do callback so subsystems can do the right thing based on file absence
-			if ( bIsDynamic )
+			if ( IsDynamic() )
 				QueueDynamicLoadFunctor( CreateFunctor( IOComputationJob, pFileJob, pFileJob->m_pTargetData, 0, LOADERERROR_FILEOPEN ) );
 			else
 				g_pThreadPool->QueueCall( IOComputationJob, pFileJob, pFileJob->m_pTargetData, 0, LOADERERROR_FILEOPEN )->Release();

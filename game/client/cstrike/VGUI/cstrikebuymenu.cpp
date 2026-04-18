@@ -19,7 +19,7 @@
 #include "view_shared.h"
 #include "view.h"
 #include "model_types.h"
-#include "vgui_avatarimage.h"
+#include "vgui_avatarimage_nonsteam.h"
 #include "cs_hud_weaponselection.h"
 #include "viewpostprocess.h"
 
@@ -27,7 +27,7 @@
 #include "cs_loadout.h"
 #include "c_breakableprop.h"
 #include "ammodef.h"
-// #include "cs_skin_database.h"
+#include "cs_skin_database.h"
 
 #include "lunasvg/lunasvg.h"
 using namespace lunasvg;
@@ -276,7 +276,18 @@ void CCSBuyMenuItemButton::OnCursorEntered()
 	CCSBuyMenu* pParent = dynamic_cast<CCSBuyMenu*>(GetParent());
 	if ( pParent )
 	{
-		pParent->SetItemNameAndDescription( pszItemName, pszItemDescription );
+        
+        int iPaintKit = CSLoadout()->GetWeaponSkinForPlayerWeaponid( pPlayer, m_nItemID );
+            
+        if ( iPaintKit > 0 )
+        {
+            const SkinDefinition_t* pDef = g_SkinDatabase.FindSkinByPaintKit(iPaintKit);
+            pParent->SetItemNameAndDescription( pDef->szName, pszItemDescription );
+        }
+        else
+        {
+            pParent->SetItemNameAndDescription( pszItemName, pszItemDescription );
+        }
 		pParent->SetPlayerImageWeapon( pszItemModel, pszItemSequence, m_nItemID );
 
 		AcquireMethod::Type nAcquireMethod = AcquireMethod::Buy;
@@ -631,6 +642,8 @@ void CCSBuyMenuPlayerImage::SetWeaponModel( const char* pszModel )
 	{
 		if ( m_hWeaponModel.Get() )
 		{
+			// Очищаем материал перед удалением
+			m_hWeaponModel->SetMaterialOverride( NULL, 1 );
 			m_hWeaponModel->Remove();
 			m_hWeaponModel = NULL;
 		}
@@ -640,6 +653,8 @@ void CCSBuyMenuPlayerImage::SetWeaponModel( const char* pszModel )
 
 	if ( m_hWeaponModel.Get() )
 	{
+		// ВАЖНО: Очищаем старый материал перед сменой модели
+		m_hWeaponModel->SetMaterialOverride( NULL, 1 );
 		m_hWeaponModel->SetModel( pszModel );
 	}
 	else
@@ -665,10 +680,35 @@ void CCSBuyMenuPlayerImage::SetWeaponSkin( C_CSPlayer *pPlayer, CSWeaponID weapo
 		return;
 
 	m_nCurrentWeaponID = weaponID;
+
+	if ( weaponID == WEAPON_NONE )
+		return;
+        
+        m_hWeaponModel->ClearMaterialOverride();
+
+	int iPaintKit = CSLoadout()->GetWeaponSkinForPlayerWeaponid( pPlayer, weaponID );
+
+			const SkinDefinition_t* pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+			if ( pSkinDef )
+			{
+				FOR_EACH_VEC(pSkinDef->materials, i)
+				{
+					const SkinDefinition_t::MaterialData_t& matData = pSkinDef->materials[i];
+					IMaterial* pMat = g_SkinDatabase.GetSkinMaterial( iPaintKit, matData.iMaterialIndex );
+						
+					if ( pMat )
+					{
+						m_hWeaponModel->SetMaterialOverride( pMat, matData.iMaterialIndex );
+                    }
+				}
+			}
 }
 
 void CCSBuyMenuPlayerImage::SetGlovesModel( const char* pszModel )
 {
+    C_CSPlayer* pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+    int iPaintKit = CSLoadout()->GetGlovesSkinForPlayer(pLocalPlayer, pLocalPlayer->GetTeamNumber());
+    
 	if ( !pszModel || !m_hPlayerModel.Get() )
 	{
 		if ( m_hGlovesModel.Get() )
@@ -707,6 +747,21 @@ void CCSBuyMenuPlayerImage::SetGlovesModel( const char* pszModel )
 		m_hGlovesModel->FollowEntity( m_hPlayerModel.Get() );
 
 		m_hPlayerModel->SetBodygroup( m_hPlayerModel->FindBodygroupByName( "gloves" ), 1 );
+	}
+    
+	const SkinDefinition_t* pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+	if ( pSkinDef )
+	{
+		FOR_EACH_VEC(pSkinDef->materials, i)
+		{
+			const SkinDefinition_t::MaterialData_t& matData = pSkinDef->materials[i];
+			IMaterial* pMat = g_SkinDatabase.GetSkinMaterial( iPaintKit, matData.iMaterialIndex );
+						
+			if ( pMat )
+			{
+			    m_hGlovesModel->SetMaterialOverride( pMat, matData.iMaterialIndex );
+            }
+		}
 	}
 }
 

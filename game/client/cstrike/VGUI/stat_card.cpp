@@ -88,22 +88,19 @@ void StatCard::UpdateInfo()
 		g_pVGuiLocalize->Find( "#GameUI_Stats_LastMatch_MVPS" ), 1, numBuf );		
 	m_pStars->SetText( buf );
 
-	// Get player name from engine (works for Steam and non-Steam)
-	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
-	if ( pLocalPlayer )
+	if (steamapicontext)
 	{
-		player_info_t pi;
-		if ( engine->GetPlayerInfo( pLocalPlayer->entindex(), &pi ) )
+		ISteamFriends* friends = steamapicontext->SteamFriends();
+		if (friends)
 		{
-			g_pVGuiLocalize->ConvertANSIToUnicode( pi.name, buf, sizeof(buf) );
-			m_pName->SetText( buf );
+			m_pName->SetText(friends->GetPersonaName());
 		}
 	}
 
-	// Display the player avatar (uses custom avatar system if available)
-	if (m_pAvatar && pLocalPlayer)
+	// Display the player avatar
+	if (m_pAvatar && steamapicontext && steamapicontext->SteamUser())
 	{
-		m_pAvatar->SetPlayer( pLocalPlayer, k_EAvatarSize64x64 );
+		m_pAvatar->SetPlayer( steamapicontext->SteamUser()->GetSteamID(), k_EAvatarSize64x64 );	
 		m_pAvatar->SetVisible( true );
 	}
 }

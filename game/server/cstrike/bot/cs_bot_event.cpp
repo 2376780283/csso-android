@@ -231,8 +231,7 @@ void CCSBot::OnGrenadeBounce( IGameEvent *event )
 //--------------------------------------------------------------------------------------------------------------
 void CCSBot::OnBulletImpact( IGameEvent *event )
 {
-	/// @todo Ignoring bullet impact events for now - we dont want bots to look directly at them!
-	/*if ( !IsAlive() )
+	if ( !IsAlive() )
 		return;
 
 	// don't react to our own events
@@ -246,7 +245,8 @@ void CCSBot::OnBulletImpact( IGameEvent *event )
 	actualOrigin.y = event->GetFloat( "y", 0.0f );
 	actualOrigin.z = event->GetFloat( "z", 0.0f );
 
-	OnAudibleEvent( event, player, 1100.0f, PRIORITY_MEDIUM, true, false, &actualOrigin );*/ // bullet_impact
+	/// @todo Ignoring bullet impact events for now - we dont want bots to look directly at them!
+	//OnAudibleEvent( event, player, 1100.0f, PRIORITY_MEDIUM, true, false, &actualOrigin ); // bullet_impact
 }
 
 

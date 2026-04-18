@@ -79,13 +79,13 @@ void OpenRadioMenu( int index )
 	switch ( index )
 	{
 	case 1:
-		pMenu->ShowMenu( "#RadioA", 0x21f );
+		pMenu->ShowMenu( "#RadioA", 0x23f );
 		break;
 	case 2:
-		pMenu->ShowMenu( "#RadioB", 0x21f );
+		pMenu->ShowMenu( "#RadioB", 0x23f );
 		break;
 	case 3:
-		pMenu->ShowMenu( "#RadioC", 0x21f );
+		pMenu->ShowMenu( "#RadioC", 0x23f );
 		break;
 	default:
 		g_whichMenu = 0;

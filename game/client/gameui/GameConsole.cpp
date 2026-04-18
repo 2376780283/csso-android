@@ -10,7 +10,7 @@
 
 #include "GameConsole.h"
 #include "GameConsoleDialog.h"
-#include "GameDialogs/LoadingDialog.h"
+#include "LoadingDialog.h"
 #include "vgui/ISurface.h"
 
 #include "KeyValues.h"
@@ -54,17 +54,20 @@ CGameConsole::~CGameConsole()
 void CGameConsole::Initialize()
 {
 #ifndef _XBOX
-	m_pConsole = vgui::SETUP_PANEL( new CGameConsoleDialog() ); 
+	m_pConsole = vgui::SETUP_PANEL( new CGameConsoleDialog() ); // we add text before displaying this so set it up now!
+
+	// set the console to taking up most of the right-half of the screen
 	int swide, stall;
 	vgui::surface()->GetScreenSize(swide, stall);
 	int offsetx = vgui::scheme()->GetProportionalScaledValue(16);
-	int offsety = vgui::scheme()->GetProportionalScaledValue(16);
+	int offsety = vgui::scheme()->GetProportionalScaledValue(64);
+
 	m_pConsole->SetBounds(
 		swide / 2 - offsetx,
 		offsety,
 		swide / 2,
 		(IsAndroid() ? 0.5f : 1.f )*(stall - (offsety * 2)));
-		
+
 	m_bInitialized = true;
 #endif
 }

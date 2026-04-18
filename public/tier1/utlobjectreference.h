@@ -52,7 +52,7 @@ public:
 
 		if ( other.IsValid() )
 		{
-			AddRef( (T*)( other.operator->() ) );
+			AddRef( (T*)( other.GetObject() ) );
 		}
 	}
 
