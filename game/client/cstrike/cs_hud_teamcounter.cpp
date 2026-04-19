@@ -55,8 +55,8 @@ static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 #define TC_BASE_CENTER_GAP      6       // gap between team block and center block
 
 // Team outline colors (RGBA)
-static const Color TC_CT_OUTLINE_COLOR  ( 74,  155, 214, 230 );  // CT blue
-static const Color TC_T_OUTLINE_COLOR   ( 190,  189, 144,  230 );  // T green
+static const Color TC_CT_OUTLINE_COLOR  ( 150, 200, 255, 128 );  // CT blue
+static const Color TC_T_OUTLINE_COLOR   ( 255, 180, 100, 128 );  // T green
 static const Color TC_DEAD_BG_COLOR     ( 15,  15,  15, 200 );   // dark bg for dead slots
 
 
