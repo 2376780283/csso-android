@@ -48,7 +48,7 @@ static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 // Base pixel sizes designed at 1080p; all multiplied by flScale at runtime.
 #define TC_BASE_AVATAR_SIZE     55      // avatar square size (px at 1080p) - Singerline mode
 #define TC_BASE_AVATAR_GAP      3       // gap between avatar tiles
-#define TC_BASE_OUTLINE         2       // colored border thickness around each tile
+#define TC_BASE_OUTLINE         4       // colored border thickness around each tile
 #define TC_BASE_CENTER_W        84      // width of center timer/score block
 #define TC_BASE_CENTER_GAP      6       // gap between team block and center block
 
