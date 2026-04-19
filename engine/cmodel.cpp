@@ -13,6 +13,8 @@
 #include "quakedef.h"
 #include <string.h>
 #include <stdlib.h>
+#include <thread>
+#include <mutex>
 #include "mathlib/mathlib.h"
 #include "common.h"
 #include "sysexternal.h"
@@ -127,6 +129,7 @@ void EndTrace( TraceInfo_t *&pTraceInfo )
 }
 
 static ConVar map_noareas( "map_noareas", "0", 0, "Disable area to area connection testing." );
+static ConVar cm_parallel_disp_load( "cm_parallel_disp_load", "1", 0, "并行加载位移面数据以提高速度" );
 
 void	FloodAreaConnections (CCollisionBSPData *pBSPData);
 
@@ -348,11 +351,30 @@ cmodel_t *CM_LoadMap( const char *name, bool allowReusePrevious, unsigned *check
 	CollisionBSPData_Load( name, pBSPData );
 	CMapLoadHelper::Shutdown( );
 
-    // Push the displacement bounding boxes down the tree and set leaf data.
-    CM_DispTreeLeafnum( pBSPData );
+    // 并行加载位移面和区域连接（如果启用）
+    if ( cm_parallel_disp_load.GetBool() )
+    {
+        std::thread* dispThread = new std::thread([pBSPData]() {
+            // Push the displacement bounding boxes down the tree and set leaf data.
+            CM_DispTreeLeafnum( pBSPData );
+        });
 
-	CM_InitPortalOpenState( pBSPData );
-	FloodAreaConnections(pBSPData);
+        // 主线程继续处理门户
+        CM_InitPortalOpenState( pBSPData );
+        
+        // 等待位移面加载完成
+        dispThread->join();
+        delete dispThread;
+    }
+    else
+    {
+        // 原始串行加载
+        CM_DispTreeLeafnum( pBSPData );
+        CM_InitPortalOpenState( pBSPData );
+    }
+    
+    // 最后处理区域连接
+    FloodAreaConnections(pBSPData);
 
 #ifdef COUNT_COLLISIONS
 	// initialize counters
