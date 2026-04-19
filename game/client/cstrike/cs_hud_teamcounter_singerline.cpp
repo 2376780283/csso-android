@@ -54,9 +54,10 @@ static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 
 // Team outline colors (RGBA)
 static const Color TC_CT_OUTLINE_COLOR  ( 150, 200, 255, 128 );  // CT blue
-static const Color TC_T_OUTLINE_COLOR   ( 255, 180, 100, 128 );  // T green
+static const Color TC_T_OUTLINE_COLOR   ( 226, 212, 157, 128 );  // T yellow
 static const Color TC_DEAD_BG_COLOR     ( 15,  15,  15, 200 );   // dark bg for dead slots
 
+static const Color TC_OWN_OUTLINE_COLOR  ( 255, 255, 255, 128 );
 
 //=============================================================================
 //
@@ -424,6 +425,9 @@ void CHudTeamCounterSingerline::PaintBackground()
         if ( !pSurface )
                 return;
 
+        C_CSPlayer *pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+        int iLocalIndex = pLocalPlayer ? pLocalPlayer->entindex() : -1;
+
         // --- CT slot outlines (blue) - ONLY for ALIVE players ---
         for ( int i = 0; i < m_iNumActiveCTSlots; i++ )
         {
@@ -433,8 +437,12 @@ void CHudTeamCounterSingerline::PaintBackground()
 
                 const SlotRect_t &r = m_CTSlotRects[i];
 
-                // Outer border (team color)
-                pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+                // Outer border (own color or team color)
+                if ( m_CTSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 // Inner fill (dark background)
@@ -455,7 +463,12 @@ void CHudTeamCounterSingerline::PaintBackground()
 
                 const SlotRect_t &r = m_TSlotRects[i];
 
-                pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+                // Outer border (own color or team color)
+                if ( m_TSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 pSurface->DrawSetColor( TC_DEAD_BG_COLOR );
