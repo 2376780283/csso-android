@@ -3569,7 +3569,7 @@ bool C_CSPlayer::ShouldDraw( void )
 	if( IsLocalPlayer() )
 	{
 		if ( IsRagdoll() )
-			return true;
+			return false;
 	}
 
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
@@ -3577,7 +3577,7 @@ bool C_CSPlayer::ShouldDraw( void )
 	// keep drawing players we're observing with the interpolating spectator camera
 	if ( pLocalPlayer && pLocalPlayer->GetObserverInterpState() == OBSERVER_INTERP_TRAVELING )
 	{
-		return true;
+		return false;
 	}
 
 	// don't draw players we're observing in first-person
@@ -3585,6 +3585,10 @@ bool C_CSPlayer::ShouldDraw( void )
 	{
 		return false;
 	}
+	if ( IsLocalPlayer() && IsAlive() && !::input->CAM_IsThirdPerson() )
+    {
+        return false; 
+    }
 
 	return BaseClass::ShouldDraw();
 }
@@ -4114,7 +4118,6 @@ void C_CSPlayer::BuildTransformations( CStudioHdr *pHdr, Vector *pos, Quaternion
 {
 	// First, setup our model's transformations like normal.
 	BaseClass::BuildTransformations( pHdr, pos, q, cameraTransform, boneMask, boneComputed );
-
 	if ( !m_bUseNewAnimstate || !m_PlayerAnimStateCSGO )
 		return;
 
