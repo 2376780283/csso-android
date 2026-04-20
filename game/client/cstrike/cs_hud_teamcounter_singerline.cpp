@@ -365,8 +365,8 @@ void CHudTeamCounterSingerline::Layout()
         m_pRoundTimerLabel->SetPos( roundTimerX, 0 );
 
         // BombIcon: centered in center block
-        int bombWide = ScalePx( 42 );
-        int bombTall = m_iRoundTimerLabelTall;  // Match timer label height
+        int bombWide = ScalePx( 30 );
+        int bombTall = ScalePx( 30 );  // Match timer label height
         int bombX = centerBlockX + ( centerW - bombWide ) / 2;
         m_pBombIcon->SetBounds( bombX, ScalePx( -2 ), bombWide, bombTall );
 
