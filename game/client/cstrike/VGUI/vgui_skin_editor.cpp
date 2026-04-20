@@ -10,6 +10,10 @@
 #include "filesystem.h"
 #include "cs_skin_database.h"
 
+#include "tier0/icommandline.h"
+#include "vgui/ISurface.h"
+
+
 using namespace vgui;
 
 CSkinEditorPanel* g_pSkinEditor = nullptr;
@@ -18,25 +22,21 @@ CSkinEditorPanel* g_pSkinEditor = nullptr;
 // CSkinEditorPanel - Конструктор
 //=============================================================================
 CSkinEditorPanel::CSkinEditorPanel(Panel* parent) : BaseClass(parent, "SkinEditorPanel")
-{
-    g_pSkinEditor = this;
-    SetTitle("Skin Inventory", true);
+{    
+    g_pSkinEditor = this;    
+    
+    if( NeedProportional() )
+		SetProportional( true );
+    SetTitle("", true);
     
     int screenWidth, screenHeight;
     vgui::surface()->GetScreenSize(screenWidth, screenHeight);
+  
+    SetSize(screenWidth, screenHeight);
 
-    int w = static_cast<int>(screenWidth * 0.9f); 
-    int h = static_cast<int>(screenHeight * 1.0f); 
-
-    w = MAX(w, 800); 
-    h = MAX(h, 600); 
-
-    w = MIN(w, 2674); 
-    h = MIN(h, 1220); 
-
-    SetSize(w, h);
-
-    SetSizeable(true);
+    SetSizeable(false);    
+    SetMoveable(false);  
+     
     SetDeleteSelfOnClose(false);
     SetMinimumSize(800, 600);
     
@@ -45,12 +45,23 @@ CSkinEditorPanel::CSkinEditorPanel(Panel* parent) : BaseClass(parent, "SkinEdito
     m_pShowAllButton = nullptr;
     m_pWeaponFilter = nullptr;
     m_pRarityFilter = nullptr;
+    m_pCloseButton = nullptr;
     m_bControlsCreated = false;
     
     CreateControls();
     
     InvalidateLayout(true, true);
     MoveToCenterOfScreen();
+    
+    m_pCloseButton = new vgui::Button(this, "CloseButton", "Close", this, "Close");
+    if (m_pCloseButton)
+    {
+        float scale = screenHeight / 1080.0f;
+        int btnWidth = 100 * scale;
+        int btnHeight = 30 * scale;
+        int margin = 15 * scale;
+        m_pCloseButton->SetBounds(screenWidth - btnWidth - margin, screenHeight - btnHeight - margin, btnWidth, btnHeight);
+    }
 }
 
 CSkinEditorPanel::~CSkinEditorPanel()
@@ -174,8 +185,15 @@ void CSkinEditorPanel::PerformLayout()
     if (m_pInventoryPanel)
     {
         m_pInventoryPanel->SetBounds(0, filterPanelHeight + padding, 
-                                    wide, 
+                                    wide - padding - buttonWidth, 
                                     tall - filterPanelHeight - padding * 2);
+    }
+    if (m_pCloseButton)
+    {
+        int btnWidth = 100 * scale;
+        int btnHeight = 30 * scale;
+        int margin = 15 * scale;
+        m_pCloseButton->SetBounds(wide - buttonWidth - margin, tall - comboHeight - margin, buttonWidth, comboHeight);
     }
 }
 
@@ -200,8 +218,10 @@ void CSkinEditorPanel::OnCommand(const char *command)
         if (m_pRarityFilter)
             m_pRarityFilter->ActivateItemByRow(0);
     }
-    else
+    else if (Q_stricmp(command, "Close") == 0)
     {
+        OnClose();
+    } else {
         BaseClass::OnCommand(command);
     }
 }

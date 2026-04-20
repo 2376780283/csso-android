@@ -37,6 +37,7 @@ public:
     vgui::Button *m_pShowAllButton;
     vgui::ComboBox *m_pWeaponFilter;
     vgui::ComboBox *m_pRarityFilter;
+    vgui::Button* m_pCloseButton;
 
 private:
     void CreateControls();

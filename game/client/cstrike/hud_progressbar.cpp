@@ -255,7 +255,7 @@ void CircularProgressBar::SetActionIcon( ActionIcon icon )
     switch ( icon )
     {
         case ICON_DEFUSE:
-            pszIconPath = "materials/vgui/weapons/svg/c4.svg";
+            pszIconPath = "materials/vgui/weapons/svg/defuser.svg";
             break;
         case ICON_HOSTAGE:
             pszIconPath = "materials/vgui/hud/svg/hostage_transit.svg";
