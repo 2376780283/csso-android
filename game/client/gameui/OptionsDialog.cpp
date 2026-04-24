@@ -47,14 +47,20 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 {
 	SetDeleteSelfOnClose(true);
 
-	int w = 512;
-	int h = 406;
-	if (IsProportional())
+	// int w = 512;
+	// int h = 406;
+	int w, h;
+	vgui::surface()->GetScreenSize(w, h);
+	/*if (IsProportional())
 	{
 		w = scheme()->GetProportionalScaledValueEx(GetScheme(), w);
 		h = scheme()->GetProportionalScaledValueEx(GetScheme(), h);
-	}
-
+	}*/
+	SetCenterSheetEnabled(true);
+	SetCloseButtonVisible(false);
+	SetMoveable(false);
+	
+	SetFixedSheetWidth(512);
 	SetBounds(0, 0, w, h);
 
 	SetSizeable( false );
@@ -62,7 +68,7 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	SetTitle("#GameUI_Options", true);
 
 	// debug timing code, this function takes too long
-//	double s4 = system()->GetCurrentTime();
+    // double s4 = system()->GetCurrentTime();
 
 #if defined( WIN32 ) && !defined( _X360 )
 	// NVNT START see if the user has a haptic device via convar. if so create haptics dialog.

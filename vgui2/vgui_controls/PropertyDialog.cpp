@@ -45,6 +45,9 @@ PropertyDialog::PropertyDialog(Panel *parent, const char *panelName) : Frame(par
 	_applyButton->SetVisible(false);		// default to not visible
     _applyButton->SetEnabled(false);        // default to not enabled
 	_applyButton->SetCommand("Apply");
+	
+	m_iFixedSheetWidth = 512;
+	m_bCenterSheet = false;
 
 	SetSizeable(false);
 }
@@ -82,6 +85,22 @@ void PropertyDialog::AddPage(Panel *page, const char *title)
 	_propertySheet->AddPage(page, title);
 }
 
+// --------------------------------------------------------------------------------
+// Purpose：实现动态设置page的宽度，用于适配局中的page位置
+// --------------------------------------------------------------------------------
+void PropertyDialog::SetCenterSheetEnabled(bool bEnable)
+{
+    m_bCenterSheet = bEnable;
+    InvalidateLayout();   // 触发布局重算，立即生效
+}
+
+void PropertyDialog::SetFixedSheetWidth(int width)
+{
+    m_iFixedSheetWidth = width;
+    if (m_bCenterSheet)
+        InvalidateLayout();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: reloads the data in all the property page
 //-----------------------------------------------------------------------------
@@ -103,51 +122,65 @@ void PropertyDialog::ApplyChanges()
 //-----------------------------------------------------------------------------
 void PropertyDialog::PerformLayout()
 {
-	BaseClass::PerformLayout();
+    BaseClass::PerformLayout();
 
-	int iBottom = m_iSheetInsetBottom;
-	if ( IsProportional() )
-	{
-		iBottom = scheme()->GetProportionalScaledValueEx( GetScheme(), iBottom );
-	}
+    int iBottom = m_iSheetInsetBottom;
+    if (IsProportional())
+    {
+        iBottom = scheme()->GetProportionalScaledValueEx(GetScheme(), iBottom);
+    }
 
-	int x, y, wide, tall;
-	GetClientArea(x, y, wide, tall);
-	_propertySheet->SetBounds(x, y, wide, tall - iBottom);
+    int x, y, wide, tall;
+    GetClientArea(x, y, wide, tall);
 
-	// calc button size and indent for proportionality 
-	int iBtnWide = 72;
-	int iBtnTall = 24;
-	int iWideIndent = 8;
-	int iTallIndent = 4;
-	if (IsProportional())
-	{
-		iBtnWide = scheme()->GetProportionalScaledValueEx(GetScheme(), iBtnWide);
-		iBtnTall = scheme()->GetProportionalScaledValueEx(GetScheme(), iBtnTall);
-		iWideIndent = scheme()->GetProportionalScaledValueEx(GetScheme(), iWideIndent);
-		iTallIndent = scheme()->GetProportionalScaledValueEx(GetScheme(), iTallIndent);
-	}
+    // ========== property sheet 布局 ==========
+    if (m_bCenterSheet)
+    {
+        // 居中模式：固定宽度，水平居中
+        int sheetWidth = m_iFixedSheetWidth;
+        if (IsProportional())
+        {
+            sheetWidth = scheme()->GetProportionalScaledValueEx(GetScheme(), m_iFixedSheetWidth);
+        }
+        // 防止超出左边界
+        int sheetX = x + (wide - sheetWidth) / 2;
+        if (sheetX < x) sheetX = x;
+        int sheetHeight = tall - iBottom;
+        _propertySheet->SetBounds(sheetX, y, sheetWidth, sheetHeight);
+    }
+    else
+    {
+        // 非居中模式：填满客户区宽度（原有行为）
+        _propertySheet->SetBounds(x, y, wide, tall - iBottom);
+    }
 
-	// move the buttons to the bottom-right corner
-	int xpos = x + wide - iBtnWide - iWideIndent;
-	int ypos = tall + y - iBtnTall - iTallIndent;
+    // ========== 按钮布局（保持不变，右下角） ==========
+    int iBtnWide = 72, iBtnTall = 24, iWideIndent = 8, iTallIndent = 4;
+    if (IsProportional())
+    {
+        iBtnWide = scheme()->GetProportionalScaledValueEx(GetScheme(), iBtnWide);
+        iBtnTall = scheme()->GetProportionalScaledValueEx(GetScheme(), iBtnTall);
+        iWideIndent = scheme()->GetProportionalScaledValueEx(GetScheme(), iWideIndent);
+        iTallIndent = scheme()->GetProportionalScaledValueEx(GetScheme(), iTallIndent);
+    }
 
-	if (_applyButton->IsVisible())
-	{
-		_applyButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
-		xpos -= iBtnWide + iWideIndent;
-	}
+    int xpos = x + wide - iBtnWide - iWideIndent;
+    int ypos = tall + y - iBtnTall - iTallIndent;
 
-	if (_cancelButton->IsVisible())
-	{
-		_cancelButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
-		xpos -= iBtnWide + iWideIndent;
-	}
+    if (_applyButton->IsVisible())
+    {
+        _applyButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
+        xpos -= iBtnWide + iWideIndent;
+    }
+    if (_cancelButton->IsVisible())
+    {
+        _cancelButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
+        xpos -= iBtnWide + iWideIndent;
+    }
+    _okButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
 
-	_okButton->SetBounds(xpos, ypos, iBtnWide, iBtnTall);
-
-	_propertySheet->InvalidateLayout(); // tell the propertysheet to redraw!
-	Repaint();
+    _propertySheet->InvalidateLayout();
+    Repaint();
 }
 
 //-----------------------------------------------------------------------------

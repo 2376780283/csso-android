@@ -47,6 +47,9 @@ public:
 	void SetOKButtonVisible(bool state);
 	void SetCancelButtonVisible(bool state);
 	void SetApplyButtonVisible(bool state);
+	
+	void SetFixedSheetWidth(int width);
+	void SetCenterSheetEnabled(bool bEnable);
 
 	/* MESSAGES SENT
 		"ResetData"			- sent when page is loaded.  Data should be reloaded from document into controls.
@@ -75,6 +78,9 @@ private:
 	Button *_okButton;
 	Button *_cancelButton;
 	Button *_applyButton;
+	
+	int m_iFixedSheetWidth;
+	bool m_bCenterSheet;
 
 	CPanelAnimationVar( int, m_iSheetInsetBottom, "sheetinset_bottom", "32" );
 };
