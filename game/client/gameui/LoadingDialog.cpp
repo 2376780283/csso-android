@@ -106,6 +106,7 @@ void CGradientProgressBar::Paint()
 CLoadingDialog::CLoadingDialog( vgui::Panel *parent ) : Frame(parent, "LoadingDialog")
 {
 	SetDeleteSelfOnClose(true);
+	SetProportional( true );
 
 	// Use console style
 	m_bConsoleStyle = GameUI().IsConsoleUI();
