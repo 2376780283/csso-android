@@ -22,6 +22,7 @@
 #include <vgui_controls/Button.h>
 #include <vgui_controls/HTML.h>
 #include <vgui_controls/RichText.h>
+#include <vgui_controls/AnimationController.h>
 #include "tier0/icommandline.h"
 
 #include "GameUI_Interface.h"
@@ -366,6 +367,8 @@ void CLoadingDialog::LoadMapOverviewData( const char *mapName )
     PositionMapIcons();
     
     m_pMapOverviewPanel->SetVisible( true );
+    m_pMapOverviewPanel->SetAlpha(0);
+    vgui::GetAnimationController()->RunAnimationCommand(m_pMapOverviewPanel, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 }
 
 void CLoadingDialog::SetIconPosition( const char *iconName, float x, float y )
@@ -464,6 +467,9 @@ void CLoadingDialog::SetExtendedServerInfo( KeyValues* pExtendedServerInfo )
 		{
 			Q_snprintf( tempfile, sizeof( tempfile ), "../%s", kvMapData->GetString( "material" ) ); // use map overview material
 			m_pMapImage->SetImage( tempfile );
+
+			m_pMapImage->SetAlpha(0);
+			vgui::GetAnimationController()->RunAnimationCommand(m_pMapImage, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 		}
 
 		kvMapData->deleteThis();
@@ -480,6 +486,9 @@ void CLoadingDialog::SetExtendedServerInfo( KeyValues* pExtendedServerInfo )
 		{
 			Q_snprintf( tempfile2, sizeof( tempfile2 ), "../%s", kvMapbackgroundData->GetString( "material" ) ); // use map overview material
 			m_pMapImageBackground->SetImage( tempfile2 );
+
+			m_pMapImageBackground->SetAlpha(0);
+			vgui::GetAnimationController()->RunAnimationCommand(m_pMapImageBackground, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 		}
 
 		kvMapbackgroundData->deleteThis();
@@ -491,6 +500,9 @@ void CLoadingDialog::SetExtendedServerInfo( KeyValues* pExtendedServerInfo )
 		{
 			Q_snprintf( tempfile3, sizeof( tempfile3 ), "../%s", kvMapIconData->GetString( "material" ) ); // use map overview material
 			m_pMapIconImage->SetImage( tempfile3 );
+
+			m_pMapIconImage->SetAlpha(0);
+			vgui::GetAnimationController()->RunAnimationCommand(m_pMapIconImage, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 		}
 
 		int iGameType = g_pGameTypes->GetCurrentGameType();
@@ -505,6 +517,9 @@ void CLoadingDialog::SetExtendedServerInfo( KeyValues* pExtendedServerInfo )
 				m_pGameModeIcon->SetTexture( "materials/vgui/hud/svg/casual.svg" );
 			else
 				m_pGameModeIcon->SetTexture( szIconPath );
+			
+			m_pGameModeIcon->SetAlpha(0);
+			vgui::GetAnimationController()->RunAnimationCommand(m_pGameModeIcon, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 		}
 		else
 		{
@@ -514,6 +529,15 @@ void CLoadingDialog::SetExtendedServerInfo( KeyValues* pExtendedServerInfo )
         LoadMapOverviewData( szMapName );
 
 		kvMapIconData->deleteThis();
+
+		m_pMapNameLabel->SetAlpha(0);
+		vgui::GetAnimationController()->RunAnimationCommand(m_pMapNameLabel, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
+
+		m_pGameModeNameLabel->SetAlpha(0);
+		vgui::GetAnimationController()->RunAnimationCommand(m_pGameModeNameLabel, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
+
+		m_pGameModeDescriptionLabel->SetAlpha(0);
+		vgui::GetAnimationController()->RunAnimationCommand(m_pGameModeDescriptionLabel, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 	}
 }
 
@@ -608,6 +632,9 @@ void CLoadingDialog::Open()
 
 	HideOtherDialogs( true );
 	BaseClass::Activate();
+
+	SetAlpha(0);
+	vgui::GetAnimationController()->RunAnimationCommand(this, "Alpha", 255.0f, 0.0f, 0.4f, vgui::AnimationController::INTERPOLATOR_LINEAR);
 
 	if ( !m_bConsoleStyle )
 	{
@@ -862,13 +889,10 @@ void CLoadingDialog::OnThink()
 	}
 	
 	if (!m_bConsoleStyle && m_pTipPanel)
-    {
-        m_pTipPanel->NextTip();
-    }
-
-	SetAlpha( 255 );
+	{
+	    m_pTipPanel->NextTip();
+	}
 }
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
