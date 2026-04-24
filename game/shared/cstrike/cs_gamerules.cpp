@@ -2542,6 +2542,7 @@ ConVar cl_autohelp(
 		bool bHeadshot = false;
 		bool bNoScope = false;
 		bool bBlindKill = false;
+		bool bInAir = false;
 
 		if ( pScorer )	// Is the killer a client?
 		{
@@ -2573,6 +2574,10 @@ ConVar cl_autohelp(
 							// we are flashed - draw a blind kill icon
 							bBlindKill = true;
 						}
+						if ( !(pCSScorer->GetFlags() & FL_ONGROUND) )
+						{
+							bInAir = true;
+						}
 					}
 				}
 				else
@@ -2591,9 +2596,9 @@ ConVar cl_autohelp(
 		{
 			killer_weapon_name += 7;
 		}
-		else if ( strncmp( killer_weapon_name, "NPC_", 8 ) == 0 )
+		else if ( strncmp( killer_weapon_name, "NPC_", 4 ) == 0 )
 		{
-			killer_weapon_name += 8;
+			killer_weapon_name += 4;
 		}
 		else if ( strncmp( killer_weapon_name, "func_", 5 ) == 0 )
 		{
@@ -2631,6 +2636,10 @@ ConVar cl_autohelp(
 			event->SetInt("userid", pCSVictim->GetUserID() );
             event->SetInt("assister", pAssiter ? pAssiter->GetUserID() : 0 );
 			event->SetInt("attacker", killer_ID );
+			if (!pAssiter && pCSVictim->IsBlind())
+				pAssiter = pCSVictim->GetLastFlashbangAttacker();
+            event->SetInt("assister", pAssiter ? pAssiter->GetUserID() : 0 );
+			event->SetBool("assistedflash", (pAssiter && pCSVictim->GetLastFlashbangAttacker() == pAssiter && pCSVictim->IsBlind()) );
 			event->SetString("weapon", killer_weapon_name );
 
 			// If the weapon has a silencer but it isn't currently attached, add "_off" suffix to the weapon name so hud can find an alternate icon
@@ -2649,19 +2658,14 @@ ConVar cl_autohelp(
 				}
 			}
 
-			event->SetInt( "headshot", bHeadshot ? 1 : 0 );
-			event->SetInt( "noscope", bNoScope ? 1 : 0 );
-			event->SetInt( "blind", bBlindKill ? 1 : 0 );
+			event->SetBool( "headshot", bHeadshot );
+			event->SetBool( "noscope", bNoScope );
+			event->SetBool( "blind", bBlindKill );
 			event->SetInt( "penetrated", info.GetObjectsPenetrated() );
 			event->SetInt( "priority", bHeadshot ? 8 : 7 );	// HLTV event priority, not transmitted
-			if ( pCSVictim->GetDeathFlags() & CS_DEATH_DOMINATION )
-			{
-				event->SetInt( "dominated", 1 );
-			}
-			else if ( pCSVictim->GetDeathFlags() & CS_DEATH_REVENGE )
-			{
-				event->SetInt( "revenge", 1 );
-			}
+			event->SetBool( "dominated", (pCSVictim->GetDeathFlags() & CS_DEATH_DOMINATION) );
+			event->SetBool( "revenge", (pCSVictim->GetDeathFlags() & CS_DEATH_REVENGE) );
+			event->SetBool( "inair", bInAir );
 			
 			gameeventmanager->FireEvent( event );
 		}
