@@ -400,6 +400,11 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 	C_BasePlayer *pPlayer = GetHudPlayer();
 	if ( !pPlayer )
 		return;
+		
+	CWeaponCSBase *pCSWeapon = (CWeaponCSBase*) pWeapon;
+	if ( pCSWeapon && pCSWeapon->GetCSWpnData().m_WeaponType == WEAPONTYPE_GRENADE &&
+		 nType == WEPSELECT_DROP && pPlayer->GetAmmoCount( pCSWeapon->GetPrimaryAmmoType() ) > 0 )
+		return;	
 
 	CHudWeaponSelection *pHudSelection = (CHudWeaponSelection *)GET_HUDELEMENT( CHudWeaponSelection );
 	if ( !pHudSelection )
@@ -439,7 +444,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 						// but we can't add grenades back after they've been thrown because they are set as thrown before they've left our inventory.....
 						// if it's not a grenade, OR if its a grenade and hasn't been thrown, add it back
 						// we are awarded bonus grenades late during gun gun arsenal mode, so we have to catch them here
-						if ( !pGrenade || (pGrenade && !pGrenade->IsPinPulled() && !pGrenade->IsBeingThrown() && !pGrenade->GetIsThrown()) )
+	            		if ( !pGrenade || (pGrenade && !pGrenade->IsPinPulled() && !pGrenade->IsBeingThrown() && (!pGrenade->GetIsThrown() || pPlayer->GetAmmoCount( pGrenade->GetPrimaryAmmoType() ) > 0)) )
 						{
 							AddWeapon( pNextWeapon, (GetSelectedWeapon() == pNextWeapon) );
                             m_weaponPanels[i][j].JustPickedUp = false;
@@ -783,7 +788,7 @@ void CCSHudWeaponSelection::UpdateSlotLabels()
 
 			if ( bFirstTime )
 			{
-				iXPos = GetWide() - icons_base_xpos + slot_label_xpos;
+				iXPos = GetWide() - m_pSlotLabels[i]->GetWide() - slot_label_xpos;
 				iYPos = icons_base_ypos + slot_label_ypos;
 				if ( pPlayer->HasDefuser() )
 					iYPos -= weapon_icon_defuser_margin;
