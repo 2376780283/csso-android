@@ -23,10 +23,7 @@ CSkinEditorPanel* g_pSkinEditor = nullptr;
 //=============================================================================
 CSkinEditorPanel::CSkinEditorPanel(Panel* parent) : BaseClass(parent, "SkinEditorPanel")
 {    
-    g_pSkinEditor = this;    
-    
-    if( NeedProportional() )
-		SetProportional( true );
+    g_pSkinEditor = this;        
     SetTitle("", true);
     
     int screenWidth, screenHeight;
