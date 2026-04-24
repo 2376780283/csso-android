@@ -331,8 +331,8 @@ CInventoryItemPanel::CInventoryItemPanel(Panel *parent, const char *panelName, c
     else
         m_szCustomName[0] = '\0';
         
-    m_pIconBG = new vgui::ImagePanel(this, "IconBG");
-    m_pIconBG->SetMouseInputEnabled(false);
+    // m_pIconBG = new vgui::ImagePanel(this, "IconBG");
+    // m_pIconBG->SetMouseInputEnabled(false);
     
     m_pExternalNameLabel = nullptr;
     m_pExternalModelLabel = nullptr;
@@ -359,7 +359,7 @@ void CInventoryItemPanel::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetBorder(pScheme->GetBorder("ButtonBorder"));
     SetBgColor(Color(0, 0, 0, 0));
     m_pRarityBar->SetBgColor(GetRarityColor());
-    m_pIconBG->SetImage("gfx/icons/item_bg");
+    // m_pIconBG->SetImage("gfx/icons/item_bg");
     m_pWeaponLabel->SetFont(pScheme->GetFont("Default", true));
     m_pWeaponLabel->SetFgColor(Color(200, 200, 200, 255));
 }
@@ -371,9 +371,9 @@ void CInventoryItemPanel::PerformLayout()
     int wide, tall;
     GetSize(wide, tall);
     m_pRarityBar->SetBounds(0, 0, 8, tall);
-    m_pIconBG->SetShouldScaleImage(true);
+    // m_pIconBG->SetShouldScaleImage(true);
     
-    IImage *pBGImg = m_pIconBG->GetImage();
+    /*IImage *pBGImg = m_pIconBG->GetImage();
     if (pBGImg)
     {
         int texW, texH;
@@ -391,7 +391,7 @@ void CInventoryItemPanel::PerformLayout()
             int y = 10 + (iconAreaHeight - drawH) / 2;
             m_pIconBG->SetBounds(x, y, drawW, drawH);
         }
-    }
+    }*/
     
     IImage *pImg = m_pIconImage->GetImage();
     if (pImg)

@@ -447,6 +447,7 @@ void CGameResultPanel::Reset()
 
 CON_COMMAND(show_endgame_win, "Test endgame panel - WIN")
 {
+    CGameResultPanel *pPanel = GetEndgamePanel();
     if (g_pGameResultPanel)
     {
         g_pGameResultPanel->ShowResult(true);
@@ -459,6 +460,7 @@ CON_COMMAND(show_endgame_win, "Test endgame panel - WIN")
 
 CON_COMMAND(show_endgame_lose, "Test endgame panel - LOSE")
 {
+    CGameResultPanel *pPanel = GetEndgamePanel();
     if (g_pGameResultPanel)
     {
         g_pGameResultPanel->ShowResult(false);
@@ -471,6 +473,7 @@ CON_COMMAND(show_endgame_lose, "Test endgame panel - LOSE")
 
 CON_COMMAND(hide_endgame, "Hide endgame panel")
 {
+    CGameResultPanel *pPanel = GetEndgamePanel();
     if (g_pGameResultPanel)
     {
         g_pGameResultPanel->SetVisible(false);
