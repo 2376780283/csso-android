@@ -2732,7 +2732,7 @@ void C_CSPlayer::ClientThink()
 	CheckMusicDuration();
 
 	// velocity music handling
-	if( GetCurrentMusic() == CSMUSIC_START && GetMusicStartRoundElapsed() > 0.5 )
+	if( (GetCurrentMusic() == CSMUSIC_START || GetCurrentMusic() == CSMUSIC_NONE) && gpGlobals->curtime >= CSGameRules()->GetRoundStartTime() && GetMusicStartRoundElapsed() > 0.5 )
 	{
 		Vector vAbsVelocity = GetAbsVelocity();
 		float flAbsVelocity = vAbsVelocity.Length2D();
