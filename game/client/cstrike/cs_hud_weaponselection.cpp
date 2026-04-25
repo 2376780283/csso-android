@@ -91,6 +91,8 @@ void CCSHudWeaponSelection::OnThink()
 		m_pDefuserIcon->SetVisible( m_bHasDefuser );
 		ShowAndUpdateSelection( WEPSELECT_SWITCH ); // update panel positions
 	}
+
+	UpdateWeaponBlinkAnimation();
 }
 
 void CCSHudWeaponSelection::ProcessInput( void )
@@ -122,7 +124,7 @@ void CCSHudWeaponSelection::LevelShutdown( void )
 	V_memset( m_weaponPanels, 0, sizeof( m_weaponPanels ) );
 }
 
-void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelected )
+void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelected, bool bShouldBlink )
 {
 	if ( !pWeapon || !C_CSPlayer::GetLocalCSPlayer() )
 		return;
@@ -157,13 +159,19 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 	{
 		m_weaponPanels[nWepSlot][nWepPos] = CreateNewPanel( nWepSlot, nWepPos, pWeapon, bSelected );
         m_weaponPanels[nWepSlot][nWepPos].JustPickedUp = true;
-	}
+    	m_weaponPanels[nWepSlot][nWepPos].bBlinking = bShouldBlink; 
+        m_weaponPanels[nWepSlot][nWepPos].flBlinkStartTime = bShouldBlink ? gpGlobals->curtime : 0.0f;
+        m_weaponPanels[nWepSlot][nWepPos].nBlinkCount = 0;
+    }
 	else
 	{
 		m_weaponPanels[nWepSlot][nWepPos].hWeapon = pWeapon;
 		m_weaponPanels[nWepSlot][nWepPos].bInitialized = true;
 		m_weaponPanels[nWepSlot][nWepPos].bSelected = bSelected;
-	}
+		m_weaponPanels[nWepSlot][nWepPos].bBlinking = bShouldBlink; 
+        m_weaponPanels[nWepSlot][nWepPos].flBlinkStartTime = bShouldBlink ? gpGlobals->curtime : 0.0f;
+        m_weaponPanels[nWepSlot][nWepPos].nBlinkCount = 0;
+    }
     
     bool bApplyGlow = cl_weapon_icon_blur.GetBool() && bSelected;
     
@@ -445,8 +453,8 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 						// if it's not a grenade, OR if its a grenade and hasn't been thrown, add it back
 						// we are awarded bonus grenades late during gun gun arsenal mode, so we have to catch them here
 	            		if ( !pGrenade || (pGrenade && !pGrenade->IsPinPulled() && !pGrenade->IsBeingThrown() && (!pGrenade->GetIsThrown() || pPlayer->GetAmmoCount( pGrenade->GetPrimaryAmmoType() ) > 0)) )
-						{
-							AddWeapon( pNextWeapon, (GetSelectedWeapon() == pNextWeapon) );
+						{					
+                            AddWeapon( pNextWeapon, (GetSelectedWeapon() == pNextWeapon), false ); 
                             m_weaponPanels[i][j].JustPickedUp = false;
 						}
 					}
@@ -504,7 +512,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 			bool bSelected = (pWeapon == GetSelectedWeapon());
 			if ( pWeapon )
 			{
-				AddWeapon( pWeapon, bSelected );
+				AddWeapon( pWeapon, bSelected, true );
 			}
 			break;
 		}
@@ -849,6 +857,43 @@ void CCSHudWeaponSelection::FireGameEvent( IGameEvent *event )
  			m_bUpdateInventoryReset = true;
  		}
  	}
+}
+
+void CCSHudWeaponSelection::UpdateWeaponBlinkAnimation()
+{
+	const float BLINK_DURATION = 0.15f;
+	const int BLINK_CYCLES = 3;
+
+	for ( int nSlot = 0; nSlot < MAX_WEP_SELECT_PANELS; nSlot++ )
+	{
+		for ( int nPos = 0; nPos < MAX_WEP_SELECT_POSITIONS; nPos++ )
+		{
+			if ( !m_weaponPanels[nSlot][nPos].bBlinking || !m_weaponPanels[nSlot][nPos].pSVGPanel )
+				continue;
+
+			float flElapsedTime = gpGlobals->curtime - m_weaponPanels[nSlot][nPos].flBlinkStartTime;
+			float flTotalBlinkTime = BLINK_DURATION * 2 * BLINK_CYCLES;
+
+			if ( flElapsedTime >= flTotalBlinkTime )
+			{
+				m_weaponPanels[nSlot][nPos].bBlinking = false;
+				m_weaponPanels[nSlot][nPos].pSVGPanel->SetAlpha( 255 );
+				continue;
+			}
+
+			float flCycleTime = fmod( flElapsedTime, BLINK_DURATION * 2 );
+			if ( flCycleTime < BLINK_DURATION )
+			{
+				int nAlpha = 255 - (int)(255.0f * (flCycleTime / BLINK_DURATION));
+				m_weaponPanels[nSlot][nPos].pSVGPanel->SetAlpha( nAlpha );
+			}
+			else
+			{
+				int nAlpha = (int)(255.0f * ((flCycleTime - BLINK_DURATION) / BLINK_DURATION));
+				m_weaponPanels[nSlot][nPos].pSVGPanel->SetAlpha( nAlpha );
+			}
+		}
+	}
 }
 
 bool CCSHudWeaponSelection::ShouldDraw()

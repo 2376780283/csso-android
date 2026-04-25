@@ -42,6 +42,9 @@ struct WeaponSelectPanel
         nTargetX = 0;
         nTargetY = 0;
         bAnimating = false;
+		bBlinking = false;
+		flBlinkStartTime = 0.0f;
+		nBlinkCount = 0;
 	}
 
 	VectorImagePanel *pSVGPanel;
@@ -57,6 +60,9 @@ struct WeaponSelectPanel
     int nTargetX;
     int nTargetY;
     bool bAnimating;
+	bool bBlinking;
+	float flBlinkStartTime;
+	int nBlinkCount;
 };
 
 inline bool IsValidColor( const Color &c )
@@ -77,7 +83,7 @@ public:
 	virtual void OnScreenSizeChanged( int iOldWide, int iOldTall );
 	virtual bool ShouldDraw();
 
-	void AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelected );
+    void AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelected, bool bShouldBlink = false );
     static void BuildWeaponSkinName( CWeaponCSBase *pWeapon, const SkinDefinition_t *pSkinDef, wchar_t *out, int outSizeBytes );
 	void RemoveWeapon( int nSlot, int nPos );
 	void RemoveAllItems( void );
@@ -87,6 +93,7 @@ public:
 	void UpdateIconColors();
 	void UpdateCountLabels();
 	void UpdateSlotLabels();
+	void UpdateWeaponBlinkAnimation();
 
 protected:
 	virtual C_WeaponCSBase	*GetSelectedWeapon( void )
