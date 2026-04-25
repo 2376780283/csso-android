@@ -66,6 +66,7 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	SetSizeable( false );
 
 	SetTitle("#GameUI_Options", true);
+	SetTabSide(vgui::PropertySheet::TAB_LEFT);
 
 	// debug timing code, this function takes too long
     // double s4 = system()->GetCurrentTime();

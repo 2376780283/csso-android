@@ -101,6 +101,16 @@ void PropertyDialog::SetFixedSheetWidth(int width)
         InvalidateLayout();
 }
 
+void PropertyDialog::SetTabSide(PropertySheet::TabSide side)
+{
+	_propertySheet->SetTabSide(side);
+}
+
+void PropertyDialog::SetTabWidth(int width)
+{
+	_propertySheet->SetTabWidth(width);
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: reloads the data in all the property page
 //-----------------------------------------------------------------------------
@@ -133,16 +143,13 @@ void PropertyDialog::PerformLayout()
     int x, y, wide, tall;
     GetClientArea(x, y, wide, tall);
 
-    // ========== property sheet 布局 ==========
     if (m_bCenterSheet)
     {
-        // 居中模式：固定宽度，水平居中
         int sheetWidth = m_iFixedSheetWidth;
         if (IsProportional())
         {
             sheetWidth = scheme()->GetProportionalScaledValueEx(GetScheme(), m_iFixedSheetWidth);
         }
-        // 防止超出左边界
         int sheetX = x + (wide - sheetWidth) / 2;
         if (sheetX < x) sheetX = x;
         int sheetHeight = tall - iBottom;
@@ -154,7 +161,6 @@ void PropertyDialog::PerformLayout()
         _propertySheet->SetBounds(x, y, wide, tall - iBottom);
     }
 
-    // ========== 按钮布局（保持不变，右下角） ==========
     int iBtnWide = 72, iBtnTall = 24, iWideIndent = 8, iTallIndent = 4;
     if (IsProportional())
     {
@@ -181,6 +187,30 @@ void PropertyDialog::PerformLayout()
 
     _propertySheet->InvalidateLayout();
     Repaint();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void PropertyDialog::ApplySettings(KeyValues *inResourceData)
+{
+	BaseClass::ApplySettings(inResourceData);
+
+	const char *side = inResourceData->GetString("tabside", "");
+	if (!stricmp(side, "left"))
+	{
+		SetTabSide(PropertySheet::TAB_LEFT);
+	}
+	else if (!stricmp(side, "top"))
+	{
+		SetTabSide(PropertySheet::TAB_TOP);
+	}
+
+	int iTabWidth = inResourceData->GetInt("tabwidth", 0);
+	if (iTabWidth != 0)
+	{
+		SetTabWidth(iTabWidth);
+	}
 }
 
 //-----------------------------------------------------------------------------
