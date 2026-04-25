@@ -5,7 +5,7 @@
 #pragma once
 #endif
 
-#include <vgui_controls/Frame.h>
+#include <vgui_controls/PropertyPage.h>
 
 namespace vgui
 {
@@ -14,20 +14,18 @@ namespace vgui
     class CInventoryPanel;
 }
 
-class CSkinEditorPanel : public vgui::Frame
+class CSkinEditorPanel : public vgui::PropertyPage
 {
-    DECLARE_CLASS_SIMPLE(CSkinEditorPanel, vgui::Frame);
+    DECLARE_CLASS_SIMPLE(CSkinEditorPanel, vgui::PropertyPage);
 
 public:
     CSkinEditorPanel(vgui::Panel* parent);
     ~CSkinEditorPanel();
 
     virtual void OnThink();
-    virtual void OnClose();
     virtual void PerformLayout();
     virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
     virtual void OnCommand(const char *command);
-    virtual void Activate();
     
     MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
     MESSAGE_FUNC_PARAMS(OnSkinSelected, "SkinSelected", data);
@@ -37,7 +35,6 @@ public:
     vgui::Button *m_pShowAllButton;
     vgui::ComboBox *m_pWeaponFilter;
     vgui::ComboBox *m_pRarityFilter;
-    vgui::Button* m_pCloseButton;
 
 private:
     void CreateControls();

@@ -24,41 +24,17 @@ CSkinEditorPanel* g_pSkinEditor = nullptr;
 CSkinEditorPanel::CSkinEditorPanel(Panel* parent) : BaseClass(parent, "SkinEditorPanel")
 {    
     g_pSkinEditor = this;        
-    SetTitle("", true);
-    
-    int screenWidth, screenHeight;
-    vgui::surface()->GetScreenSize(screenWidth, screenHeight);
-  
-    SetSize(screenWidth, screenHeight);
-
-    SetSizeable(false);    
-    SetMoveable(false);  
-     
-    SetDeleteSelfOnClose(false);
-    SetMinimumSize(800, 600);
     
     // Инициализируем указатели
     m_pInventoryPanel = nullptr;
     m_pShowAllButton = nullptr;
     m_pWeaponFilter = nullptr;
     m_pRarityFilter = nullptr;
-    m_pCloseButton = nullptr;
     m_bControlsCreated = false;
     
     CreateControls();
     
     InvalidateLayout(true, true);
-    MoveToCenterOfScreen();
-    
-    m_pCloseButton = new vgui::Button(this, "CloseButton", "Close", this, "Close");
-    if (m_pCloseButton)
-    {
-        float scale = screenHeight / 1080.0f;
-        int btnWidth = 100 * scale;
-        int btnHeight = 30 * scale;
-        int margin = 15 * scale;
-        m_pCloseButton->SetBounds(screenWidth - btnWidth - margin, screenHeight - btnHeight - margin, btnWidth, btnHeight);
-    }
 }
 
 CSkinEditorPanel::~CSkinEditorPanel()
@@ -182,22 +158,15 @@ void CSkinEditorPanel::PerformLayout()
     if (m_pInventoryPanel)
     {
         m_pInventoryPanel->SetBounds(0, filterPanelHeight + padding, 
-                                    wide - padding - buttonWidth, 
-                                    tall - filterPanelHeight - padding * 2);
-    }
-    if (m_pCloseButton)
-    {
-        int btnWidth = 100 * scale;
-        int btnHeight = 30 * scale;
-        int margin = 15 * scale;
-        m_pCloseButton->SetBounds(wide - buttonWidth - margin, tall - comboHeight - margin, buttonWidth, comboHeight);
+                                    wide, 
+                                    tall - filterPanelHeight - padding);
     }
 }
 
 void CSkinEditorPanel::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
     BaseClass::ApplySchemeSettings(pScheme);
-    SetBgColor(pScheme->GetColor("Frame.BgColor", Color(50, 50, 50, 255)));
+    // SetBgColor(pScheme->GetColor("Frame.BgColor", Color(50, 50, 50, 255)));
 }
 
 void CSkinEditorPanel::OnCommand(const char *command)
@@ -215,10 +184,7 @@ void CSkinEditorPanel::OnCommand(const char *command)
         if (m_pRarityFilter)
             m_pRarityFilter->ActivateItemByRow(0);
     }
-    else if (Q_stricmp(command, "Close") == 0)
-    {
-        OnClose();
-    } else {
+    else {
         BaseClass::OnCommand(command);
     }
 }
@@ -326,46 +292,19 @@ void CSkinEditorPanel::OnThink()
     BaseClass::OnThink();
 }
 
-void CSkinEditorPanel::OnClose()
-{
-    BaseClass::OnClose();
-    SetVisible(false);
-}
-
-void CSkinEditorPanel::Activate()
-{
-    BaseClass::Activate();
-    
-    // При активации убеждаемся что контролы созданы
-    if (!m_bControlsCreated)
-    {
-        CreateControls();
-    }
-}
-
 //=============================================================================
 // Console Commands
 //=============================================================================
 CON_COMMAND(open_inventory, "Open skin inventory")
 {
-    if (!g_pSkinEditor)
-    {
-        g_pSkinEditor = new CSkinEditorPanel(nullptr);
-    }
-    
-    g_pSkinEditor->Activate();
-    g_pSkinEditor->SetVisible(true);
-    
-    // Панель инвентаря сама загрузит скины через OnThink когда получит размеры
-    DevMsg("[SkinEditor] Inventory window opened\n");
+    // Now part of ModOptionsDialog
+    engine->ClientCmd_Unrestricted("gameui_activate; open_mod_options_dialog");
 }
 
 CON_COMMAND(close_inventory, "Close skin inventory")
 {
-    if (g_pSkinEditor)
-    {
-        g_pSkinEditor->OnClose();
-    }
+    // Now part of ModOptionsDialog
+    engine->ClientCmd_Unrestricted("gameui_hide");
 }
 
 CON_COMMAND(inventory_reload, "Reload skin inventory")

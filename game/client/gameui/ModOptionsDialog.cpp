@@ -28,6 +28,7 @@
 #include "ModOptionsSubAgents.h"
 #include "ModOptionsSubGloves.h"
 #include "ModOptionsSubHUD.h"
+#include "cstrike/VGUI/vgui_skin_editor.h"
 #include "ModInfo.h"
 
 using namespace vgui;
@@ -69,14 +70,17 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	CModOptionsSubAgents* pAgents = new CModOptionsSubAgents(this);
 	CModOptionsSubGloves* pGloves = new CModOptionsSubGloves(this);
 	CModOptionsSubHUD* pHUD = new CModOptionsSubHUD(this);
+	CSkinEditorPanel* pSkins = new CSkinEditorPanel(this);
 
+    AddPage(pLoadout, "#GameUI_Loadout");
+    AddPage(pSkins, "All");
 	AddPage(pGameplay, "#GameUI_Gameplay");
-	AddPage(pCrosshair, "#GameUI_Crosshair");
-	AddPage(pLoadout, "#GameUI_Loadout");
+	AddPage(pCrosshair, "#GameUI_Crosshair");	
 	AddPage(pKnives, "#GameUI_Knives");
 	AddPage(pAgents, "#GameUI_Agents");
 	AddPage(pGloves, "#GameUI_Gloves");
 	AddPage(pHUD, "#GameUI_HUD");
+	
 
 	SetApplyButtonVisible(true);
 	
