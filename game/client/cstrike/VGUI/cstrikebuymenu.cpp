@@ -276,12 +276,11 @@ void CCSBuyMenuItemButton::OnCursorEntered()
 	CCSBuyMenu* pParent = dynamic_cast<CCSBuyMenu*>(GetParent());
 	if ( pParent )
 	{
-        
         int iPaintKit = CSLoadout()->GetWeaponSkinForPlayerWeaponid( pPlayer, m_nItemID );
+        const SkinDefinition_t* pDef = ( iPaintKit > 0 ) ? g_SkinDatabase.FindSkinByPaintKit(iPaintKit) : NULL;
             
-        if ( iPaintKit > 0 )
+        if ( pDef )
         {
-            const SkinDefinition_t* pDef = g_SkinDatabase.FindSkinByPaintKit(iPaintKit);
             pParent->SetItemNameAndDescription( pDef->szName, pszItemDescription );
         }
         else
@@ -707,6 +706,9 @@ void CCSBuyMenuPlayerImage::SetWeaponSkin( C_CSPlayer *pPlayer, CSWeaponID weapo
 void CCSBuyMenuPlayerImage::SetGlovesModel( const char* pszModel )
 {
     C_CSPlayer* pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+    if ( !pLocalPlayer )
+        return;
+
     int iPaintKit = CSLoadout()->GetGlovesSkinForPlayer(pLocalPlayer, pLocalPlayer->GetTeamNumber());
     
 	if ( !pszModel || !m_hPlayerModel.Get() )
