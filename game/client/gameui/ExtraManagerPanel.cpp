@@ -495,9 +495,8 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 		}
 	}
 
-    m_pTabSheet->AddPage(m_pMapListPage, "#GameUI_Map");
-    
     m_pTabSheet->AddPage(m_pServerPage, "#GameUI_Server");
+    m_pTabSheet->AddPage(m_pMapListPage, "#GameUI_Map");
     
     if ( ModInfo().UseBots() )
 	{
@@ -628,7 +627,7 @@ void ExtraManagerPanel::PerformLayout() {
     int sw, sh;
     GetSize(sw, sh);
     int iPadding = PROPVAL(0), iGap = PROPVAL(10);
-    int leftW = (sw * 0.65) - (iPadding + iGap / 2);
+    int leftW = (sw * 0.75) - (iPadding + iGap / 2);
     int rightW = sw - leftW - (iPadding * 2) - iGap;
     int panelH = sh - (iPadding * 2);
 
