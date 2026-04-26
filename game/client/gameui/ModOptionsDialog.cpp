@@ -61,7 +61,7 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	SetBorder(pScheme->GetBorder("FrameBorder"));
 	SetBgColor(pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 200)));
 	SetPaintBackgroundEnabled(true);
-
+    
 	// Create sub-pages
 	CModOptionsSubGameplay* pGameplay = new CModOptionsSubGameplay(this);
 	CModOptionsSubCrosshair* pCrosshair = new CModOptionsSubCrosshair(this);

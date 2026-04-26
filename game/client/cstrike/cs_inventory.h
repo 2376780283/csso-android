@@ -71,7 +71,6 @@ private:
     vgui::Label *m_pExternalSkinLabel;
     vgui::ImagePanel *m_pIconImage;
     vgui::Panel *m_pRarityBar;
-    // vgui::ImagePanel *m_pIconBG;
     
     bool m_bMouseOver;
     int m_iEquipFlags;

@@ -1,7 +1,9 @@
 #include "cbase.h"
 #include "vgui_item_context_menu.h"
 #include <vgui/IInput.h>
+#include <vgui/IScheme.h>
 #include <KeyValues.h>
+#include "tier0/icommandline.h"
 
 using namespace vgui;
 
@@ -23,10 +25,22 @@ CItemContextMenu::~CItemContextMenu()
 void CItemContextMenu::PerformLayout()
 {
     BaseClass::PerformLayout();
+    
+    if (NeedProportional())
+        SetProportional(true);
+    
     int itemCount = GetItemCount();
     int menuWidth = 150;
     int itemHeight = 20;
     int menuHeight = itemCount * itemHeight + 4;
+    
+    if (IsProportional())
+    {
+        menuWidth = scheme()->GetProportionalScaledValueEx(GetScheme(), menuWidth);
+        itemHeight = scheme()->GetProportionalScaledValueEx(GetScheme(), itemHeight);
+        menuHeight = itemCount * itemHeight + scheme()->GetProportionalScaledValueEx(GetScheme(), 4);
+    }
+    
     SetSize(menuWidth, menuHeight);
 }
 

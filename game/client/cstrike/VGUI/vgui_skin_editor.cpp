@@ -120,20 +120,32 @@ void CSkinEditorPanel::PerformLayout()
 {
     BaseClass::PerformLayout();
     
+    if (NeedProportional())
+        SetProportional(true);
+    
     int wide, tall;
     GetSize(wide, tall);
     
     // Получаем масштаб для адаптации под разрешение
     int screenWidth, screenHeight;
     vgui::surface()->GetScreenSize(screenWidth, screenHeight);
-    float scale = screenHeight / 1080.0f;
+    float scale = 0;
     
     // Панель фильтров сверху
-    int filterPanelHeight = 50 * scale;
-    int padding = 15 * scale;
-    int buttonWidth = 140 * scale;
-    int comboWidth = 200 * scale;
-    int comboHeight = 35 * scale;
+    int filterPanelHeight = 40;
+    int padding = 10;
+    int buttonWidth = 120;
+    int comboWidth = 100;
+    int comboHeight = 25;
+    
+    if (IsProportional())
+    {
+        filterPanelHeight = scheme()->GetProportionalScaledValueEx(GetScheme(), filterPanelHeight);
+        padding = scheme()->GetProportionalScaledValueEx(GetScheme(), padding);
+        buttonWidth = scheme()->GetProportionalScaledValueEx(GetScheme(), buttonWidth);
+        comboWidth = scheme()->GetProportionalScaledValueEx(GetScheme(), comboWidth);
+        comboHeight = scheme()->GetProportionalScaledValueEx(GetScheme(), comboHeight);
+    }
     
     int xPos = padding;
     

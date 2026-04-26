@@ -330,10 +330,7 @@ CInventoryItemPanel::CInventoryItemPanel(Panel *parent, const char *panelName, c
         Q_strncpy(m_szCustomName, pszCustomName, sizeof(m_szCustomName));
     else
         m_szCustomName[0] = '\0';
-        
-    // m_pIconBG = new vgui::ImagePanel(this, "IconBG");
-    // m_pIconBG->SetMouseInputEnabled(false);
-    
+            
     m_pExternalNameLabel = nullptr;
     m_pExternalModelLabel = nullptr;
     m_pExternalSkinLabel = nullptr;
@@ -343,6 +340,7 @@ CInventoryItemPanel::CInventoryItemPanel(Panel *parent, const char *panelName, c
     
     m_pIconImage = new vgui::ImagePanel(this, "IconImage");
     m_pIconImage->SetMouseInputEnabled(false);
+    m_pIconImage->SetShouldScaleImage(true);
     
     m_pRarityBar = new vgui::Panel(this, "RarityBar");
     m_pRarityBar->SetMouseInputEnabled(false);
@@ -359,7 +357,6 @@ void CInventoryItemPanel::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetBorder(pScheme->GetBorder("ButtonBorder"));
     SetBgColor(Color(0, 0, 0, 0));
     m_pRarityBar->SetBgColor(GetRarityColor());
-    // m_pIconBG->SetImage("gfx/icons/item_bg");
     m_pWeaponLabel->SetFont(pScheme->GetFont("Default", true));
     m_pWeaponLabel->SetFgColor(Color(200, 200, 200, 255));
 }
@@ -371,28 +368,7 @@ void CInventoryItemPanel::PerformLayout()
     int wide, tall;
     GetSize(wide, tall);
     m_pRarityBar->SetBounds(0, 0, 8, tall);
-    // m_pIconBG->SetShouldScaleImage(true);
-    
-    /*IImage *pBGImg = m_pIconBG->GetImage();
-    if (pBGImg)
-    {
-        int texW, texH;
-        pBGImg->GetSize(texW, texH);
-    
-        if (texW > 0 && texH > 0)
-        {
-            int targetWidth  = wide;
-            float scale      = (float)targetWidth / texW;
-        
-            int drawW = targetWidth;
-            int drawH = (int)(texH * scale + 0.5f);  
-            int x = 10;
-            int iconAreaHeight = tall - 80;
-            int y = 10 + (iconAreaHeight - drawH) / 2;
-            m_pIconBG->SetBounds(x, y, drawW, drawH);
-        }
-    }*/
-    
+           
     IImage *pImg = m_pIconImage->GetImage();
     if (pImg)
     {
@@ -420,7 +396,7 @@ void CInventoryItemPanel::PerformLayout()
             m_pIconImage->SetBounds(x, y, drawW, drawH);
         }
     }
-    
+        
     int textStartY = tall - 30;
     m_pWeaponLabel->SetBounds(12, textStartY, wide - 24, 26);
     m_pWeaponLabel->SetContentAlignment(vgui::Label::a_center);
