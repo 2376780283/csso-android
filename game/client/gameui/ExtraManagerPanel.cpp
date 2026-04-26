@@ -245,11 +245,11 @@ int ExtraListPage::CreateTextureFromPNG(const char *fullPath) {
 }
 
 void ExtraListPage::RefreshList() {
-    // 清空加载队列
+    // 1. 清空所有状态和现有的加载队列
     m_LoadQueue.RemoveAll();
-    
+    m_PendingMaps.RemoveAll();
     m_pMapListPanel->DeleteAllItems();
-
+    
     // 向上寻找 ExtraManagerPanel 以获取 ServerPage 引用
     vgui::Panel *pTarget = GetParent();
     while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { 
@@ -261,7 +261,7 @@ void ExtraListPage::RefreshList() {
     CCreateMultiplayerGameServerPage *pServerPage = pMain->GetServerPage();
     if (!pServerPage) return;
 
-    // --- 1. 获取并预处理过滤条件 ---
+    // 获取过滤条件
     int nFilterGameType = -1;
     int nFilterGameMode = -1;
     bool bShowAllMaps = m_pAllMapsCheck->IsSelected();
@@ -276,15 +276,14 @@ void ExtraListPage::RefreshList() {
         nFilterGameMode = pkvGameModeData->GetInt("game_mode", -1);
     }
     
-    // 安全获取字符串标识，如果索引为 -1 则返回 NULL
     const char *pszFilterGameType = (nFilterGameType >= 0) ? g_pGameTypes->GetGameTypeFromInt(nFilterGameType) : NULL;
     const char *pszFilterGameMode = (nFilterGameType >= 0 && nFilterGameMode >= 0) ? g_pGameTypes->GetGameModeFromInt(nFilterGameType, nFilterGameMode) : NULL;
 
-    // --- 2. 扫描地图文件 ---
+    // 2. 快速扫描地图文件并存入 Pending 队列
     FileFindHandle_t findHandle = NULL;
     KeyValues *hiddenMaps = ModInfo().GetHiddenMaps();
     
-    // 修改：使用 "GAME" 路径以搜索所有挂载的搜索路径，而不仅仅是 mod 文件夹
+    // 使用 "GAME" 路径搜索
     const char *pszFilename = g_pFullFileSystem->FindFirstEx("maps/*.bsp", "GAME", &findHandle);
     
     while (pszFilename)
@@ -292,71 +291,45 @@ void ExtraListPage::RefreshList() {
         char mapname[256];
         char *ext, *str;
 
-        // 提取地图名逻辑
         str = Q_strstr(pszFilename, "maps");
-        if (str)
-        {
+        if (str) {
             Q_strncpy(mapname, str + 5, sizeof(mapname) - 1);
-        }
-        else
-        {
+        } else {
             Q_strncpy(mapname, pszFilename, sizeof(mapname) - 1);
         }
+        
         ext = Q_strstr(mapname, ".bsp");
-        if (ext)
-        {
+        if (ext) {
             *ext = 0;
         }
 
-        // 过滤隐藏地图
+        // 过滤逻辑 (保持原有逻辑不变)
         if (hiddenMaps && hiddenMaps->GetInt(mapname, 0))
-        {
             goto nextFile;
-        }
 
-        // --- 3. 核心过滤判断 ---
         if (!bShowAllMaps) 
         {
-            // 如果 pszFilterGameType 为 NULL (选择了“全部”), 
-            // 则应检查该地图是否【至少支持任何一种】已知的游戏模式，或者根据你的需求决定是否放行。
-            // 这里对齐 ServerPage 的逻辑：如果指定了特定类型，则强制校验。
-            if (pszFilterGameType)
-            {
+            if (pszFilterGameType) {
                 if (!g_pGameTypes->IsValidMapForTypeAndMode(mapname, pszFilterGameType, pszFilterGameMode))
                     goto nextFile;
-            }
-            else
-            {
-                // 当用户选择“全部游戏类型”且未勾选“显示所有地图”时：
-                // 建议：此处可以调用一个通用的校验，确保该地图不是背景地图(background)或无效地图
+            } else {
                 if (Q_stristr(mapname, "background") || Q_stristr(mapname, "vactest"))
                     goto nextFile;
             }
         }
 
+        // 3. 将符合条件的地图加入待处理队列，而不是立即创建 Panel
         {
-            const char *szUIMapName = g_pGameTypes->GetMapNameID(mapname);
-            if (!szUIMapName || !szUIMapName[0])
-            {
-                szUIMapName = mapname;
-            }
-
-            char szIconPath[MAX_PATH];
-            Q_snprintf(szIconPath, sizeof(szIconPath), "materials/vgui/maps/%s.png", mapname);
-
-            // 创建并配置卡片
-            MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, mapname, szUIMapName);
+            int idx = m_PendingMaps.AddToTail();
+            PendingMap_t &item = m_PendingMaps[idx];
             
-            // 检查预览图是否存在 - 仅设置路径，不立即加载
-            if (g_pFullFileSystem->FileExists(szIconPath, "GAME"))
-            {
-                pCard->SetImagePath(szIconPath);
-                // 加入加载队列而不是立即加载
-                pCard->QueueForLoad();
-            }
-
-            pCard->AddActionSignalTarget(pMain);
-            m_pMapListPanel->AddItem(nullptr, pCard);
+            Q_strncpy(item.mapname, mapname, sizeof(item.mapname));
+            
+            const char *szUIMapName = g_pGameTypes->GetMapNameID(mapname);
+            Q_strncpy(item.szUIMapName, (szUIMapName && szUIMapName[0]) ? szUIMapName : mapname, sizeof(item.szUIMapName));
+            
+            // 预生成图标路径，但不在这里检查文件是否存在（检查文件也是 IO 操作）
+            Q_snprintf(item.szIconPath, sizeof(item.szIconPath), "materials/vgui/maps/%s.png", mapname);
         }
 
     nextFile:
@@ -364,11 +337,49 @@ void ExtraListPage::RefreshList() {
     }
     
     g_pFullFileSystem->FindClose(findHandle);
+    
+    // 扫描完成后，OnTick 会接手剩下的 UI 创建工作
 }
 
 // --- OnTick: 每帧处理加载队列 ---
 void ExtraListPage::OnTick() {
     BaseClass::OnTick();
+
+    // ---- 第一部分：分帧创建 MapCardPanel (每帧创建 4 个) ----
+    if (!m_PendingMaps.IsEmpty()) {
+        int cardsCreatedThisFrame = 0;
+        const int MAX_CARDS_PER_FRAME = 4; // 这是一个平衡点，既不卡顿也能快速填充列表
+
+        // 获取主面板指针以传递 ActionSignalTarget
+        vgui::Panel *pTarget = GetParent();
+        while (pTarget && !dynamic_cast<ExtraManagerPanel *>(pTarget)) { 
+            pTarget = pTarget->GetParent(); 
+        }
+
+        while (!m_PendingMaps.IsEmpty() && cardsCreatedThisFrame < MAX_CARDS_PER_FRAME) {
+            PendingMap_t &info = m_PendingMaps[0];
+
+            // 创建卡片
+            MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, info.mapname, info.szUIMapName);
+            
+            // 直接设置路径并加入加载队列
+            // 注意：我们将 FileExists 的检查推迟到 ExecuteLoad 中执行，进一步减少主线程负担
+            pCard->SetImagePath(info.szIconPath);
+            pCard->QueueForLoad();
+
+            if (pTarget) {
+                pCard->AddActionSignalTarget(pTarget);
+            }
+
+            m_pMapListPanel->AddItem(nullptr, pCard);
+
+            // 从待处理队列中移除
+            m_PendingMaps.Remove(0);
+            cardsCreatedThisFrame++;
+        }
+    }
+
+    // ---- 第二部分：处理纹理加载队列 (原有逻辑) ----
     ProcessLoadQueue();
 }
 

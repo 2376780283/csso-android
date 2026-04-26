@@ -49,6 +49,15 @@ public:
     // 异步加载队列管理
     void QueueCardForLoad(MapCardPanel *pCard);
     void ProcessLoadQueue();
+    // 存储待处理的地图数据结构
+struct PendingMap_t {
+    char mapname[256];
+    char szUIMapName[256];
+    char szIconPath[MAX_PATH];
+};
+
+CUtlVector<PendingMap_t> m_PendingMaps; // 待创建 UI 的队列
+bool m_bIsScanning = false;             
 
 private:
     void UpdateGameModeList();
