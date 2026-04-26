@@ -2454,7 +2454,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		if ( bShouldShowModel )
 		{
 			// Use larger dimensions for the player model
-			int modelWidth = scheme()->GetProportionalScaledValue( 460 );  // 增大模型面板宽度
+			int modelWidth = scheme()->GetProportionalScaledValue( 450 );  // 增大模型面板宽度
 			int modelHeight = screenTall;  // 上下无边距，占满屏幕高度
 			int modelX = screenWide - modelWidth - navWidth - scheme()->GetProportionalScaledValue( 2 );  // 靠右放置，在右侧导航栏左侧
 			int modelY = 0;  // 顶部无边界
