@@ -10,7 +10,7 @@
 class ExtraListPage;
 
 // ---------------------------------------------------------
-// 地图卡片控件：支持延迟加载
+// 地图卡片控件：固定 80x80 布局
 // ---------------------------------------------------------
 class MapCardPanel : public vgui::EditablePanel {
     DECLARE_CLASS_SIMPLE(MapCardPanel, vgui::EditablePanel);
@@ -44,6 +44,6 @@ private:
     int m_nTextureID;
     char m_szImagePath[MAX_PATH];
     char m_szUIMapName[MAX_PATH];
-    bool m_bAttemptedLoad; // 是否尝试过加载，防止失败后死循环
+    bool m_bAttemptedLoad; // 是否尝试过加载
     bool m_bQueuedForLoad; // 是否已在加载队列中
 };

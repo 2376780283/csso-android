@@ -15,13 +15,7 @@
 
 using namespace vgui;
 
-#ifndef PROPVAL
-#define PROPVAL(x) (IsProportional() ? scheme()->GetProportionalScaledValueEx(GetScheme(), (x)) : (x))
-#endif
-
-// ========
 // 辅助函数：加载 PNG 并返回 TextureID
-// ========
 static int CreatePNGTextureHelper(const char *szPath) {
     CUtlBuffer buf;
     if (!g_pFullFileSystem->ReadFile(szPath, "MOD", buf)) return -1;
@@ -30,7 +24,7 @@ static int CreatePNGTextureHelper(const char *szPath) {
     unsigned char *data = stbi_load_from_memory((unsigned char *)buf.Base(), buf.TellPut(), &width, &height, &channels, 4);
     if (!data) return -1;
 
-    int targetW = 128; // 统一缩放大小
+    int targetW = 128; 
     int targetH = 128;
     unsigned char *resizedData = (unsigned char *)malloc(targetW * targetH * 4);
     int textureID = -1;
@@ -48,7 +42,7 @@ static int CreatePNGTextureHelper(const char *szPath) {
 }
 
 // =========================================================
-// MapCardPanel 实现 (含延迟加载逻辑)
+// MapCardPanel 实现 (80x80 固定布局)
 // =========================================================
 MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *title) : BaseClass(parent, name) {
     m_nTextureID = -1;
@@ -60,21 +54,24 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     SetPaintBackgroundEnabled(true);
     SetPaintBorderEnabled(false);
     SetMouseInputEnabled(true);
-    m_iMargin = PROPVAL(6);
+    
+    // 直接使用原生像素值，废弃 PROPVAL
+    m_iMargin = 0; 
 
     m_clrBgNormal = Color(0, 0, 0, 0);
-    m_clrBgHover = Color(89, 221, 242, 200);
+    m_clrBgHover = Color(89, 221, 242, 150);
 
     m_pImagePanelPlaceholder = new vgui::ImagePanel(this, "MapImage");
     m_pImagePanelPlaceholder->SetShouldScaleImage(true);
     m_pImagePanelPlaceholder->SetMouseInputEnabled(false);
     m_pImagePanelPlaceholder->SetVisible(false);
 
-    // 创建底部容器：包含标题文本和黑色背景
-    m_pContainer = new vgui::Panel(m_pImagePanelPlaceholder, "MapContainer");
+    // 创建底部容器：在 80x80 内部下方
+    m_pContainer = new vgui::Panel(this, "MapContainer");
     m_pContainer->SetPaintBackgroundEnabled(true);
     m_pContainer->SetPaintBorderEnabled(false);
-    m_pContainer->SetBgColor(Color(0, 0, 0, 150));
+    m_pContainer->SetBgColor(Color(0, 0, 0, 180)); // 略深一点的背景提高文字可读性
+    m_pContainer->SetMouseInputEnabled(false);
 
     m_pTitle = new vgui::Label(m_pContainer, "MapTitle", title);
     m_pTitle->SetPaintBackgroundEnabled(false);
@@ -82,9 +79,8 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     m_pTitle->SetContentAlignment(vgui::Label::a_center);
     m_pTitle->SetMouseInputEnabled(false);
 
-    int iImageSize = PROPVAL(120);
-    int iLabelHeight = PROPVAL(36);
-    SetSize(iImageSize + m_iMargin, iImageSize + iLabelHeight + m_iMargin);
+    // 固定 80x80
+    SetSize(180, 180);
 }
 
 void MapCardPanel::SetImagePath(const char *path) {
@@ -93,38 +89,32 @@ void MapCardPanel::SetImagePath(const char *path) {
 
 void MapCardPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
     BaseClass::ApplySchemeSettings(pScheme);
-    m_pTitle->SetFont(pScheme->GetFont("DefaultVerySmall", IsProportional()));
+    // 使用最小字体以适应 80 宽度
+    m_pTitle->SetFont(pScheme->GetFont("DefaultVerySmall", false));
 }
 
 void MapCardPanel::Paint() {
     BaseClass::Paint();
 
-    int w, h;
-    GetSize(w, h);
-    int iMargin = PROPVAL(6);
-    int contentW = w - iMargin;
-    int drawX = iMargin / 2;
-    int drawY = iMargin / 2;
-    int imgSize = contentW;
+    // 1:1 原生 80x80 绘制
+    int drawX = 0;
+    int drawY = 0;
+    int imgSize = 80;
 
     if (m_nTextureID != -1 && vgui::surface()->IsTextureIDValid(m_nTextureID)) {
         vgui::surface()->DrawSetColor(255, 255, 255, 255);
         vgui::surface()->DrawSetTexture(m_nTextureID);
         vgui::surface()->DrawTexturedRect(drawX, drawY, drawX + imgSize, drawY + imgSize);
     } else {
-        // 加载中或无图：绘制深灰色占位背景
         vgui::surface()->DrawSetColor(30, 30, 30, 255);
         vgui::surface()->DrawFilledRect(drawX, drawY, drawX + imgSize, drawY + imgSize);
     }
-    // 背景现在由 m_pContainer 自己绘制
 }
 
-// --- 异步加载：加入加载队列 ---
 void MapCardPanel::QueueForLoad() {
     if (m_bQueuedForLoad || m_bAttemptedLoad || m_szImagePath[0] == '\0') return;
     m_bQueuedForLoad = true;
 
-    // 向上寻找 ExtraListPage 并加入加载队列
     vgui::Panel *pPage = GetParent();
     while (pPage && !dynamic_cast<ExtraListPage *>(pPage)) { pPage = pPage->GetParent(); }
 
@@ -134,11 +124,9 @@ void MapCardPanel::QueueForLoad() {
     }
 }
 
-// --- 执行实际的纹理加载 ---
 void MapCardPanel::ExecuteLoad() {
     if (m_bAttemptedLoad || m_szImagePath[0] == '\0') return;
 
-    // 向上寻找 ExtraListPage 以调用其缓存加载器
     vgui::Panel *pPage = GetParent();
     while (pPage && !dynamic_cast<ExtraListPage *>(pPage)) { pPage = pPage->GetParent(); }
 
@@ -152,23 +140,18 @@ void MapCardPanel::ExecuteLoad() {
 
 void MapCardPanel::PerformLayout() {
     BaseClass::PerformLayout();
-    int w, h;
-    GetSize(w, h);
+    
+    // 固定布局逻辑
+    int imgSize = 80;
+    m_pImagePanelPlaceholder->SetBounds(0, 0, imgSize, imgSize);
 
-    int iMargin = PROPVAL(6);
-    int contentW = w - iMargin;
-    int drawX = iMargin / 2;
-    int drawY = iMargin / 4;
-    int imgSize = contentW;
-    m_pImagePanelPlaceholder->SetBounds(drawX, drawY, imgSize, imgSize);
+    // 布局底部容器：高度固定为 20，位于底端
+    int labelH = 20;
+    int labelY = imgSize - labelH;
+    m_pContainer->SetBounds(0, labelY, imgSize, labelH);
 
-    // 布局底部容器
-    int labelH = PROPVAL(26);
-    int labelY = imgSize - labelH ;
-    m_pContainer->SetBounds(drawX, labelY, contentW, labelH);
-
-    // 布局标题标签（相对于容器）
-    m_pTitle->SetBounds(0, 0, contentW, labelH);
+    // 布局标题标签（充满容器）
+    m_pTitle->SetBounds(0, 0, imgSize, labelH);
 }
 
 void MapCardPanel::OnCursorEntered() {
