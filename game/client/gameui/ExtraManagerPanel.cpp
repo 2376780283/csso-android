@@ -151,8 +151,20 @@ ExtraListPage::ExtraListPage(vgui::Panel *parent, const char *panelName) : BaseC
     // 地图列表面板
     m_pMapListPanel = new vgui::PanelListPanel(this, "MapListPanel");
     m_pMapListPanel->SetFirstColumnWidth(0);
-    m_pMapListPanel->SetNumColumns(4);
-    m_pMapListPanel->SetVerticalBufferPixels(PROPVAL(12));
+    
+    int screenWidth, screenHeight;
+    vgui::surface()->GetScreenSize(screenWidth, screenHeight);
+    float scaleX = screenWidth / 1920.0f;
+    float scaleY = screenHeight / 1080.0f;
+    float scale = (scaleX + scaleY) / 2.0f;
+
+    m_iItemWidth = 180 * scale;
+    m_iItemHeight = 180 * scale;
+    m_iItemSpacing = 12 * scale;
+    m_iItemsPerRow = 4;
+
+    m_pMapListPanel->SetNumColumns(m_iItemsPerRow);
+    m_pMapListPanel->SetVerticalBufferPixels(m_iItemSpacing);
 
     m_TextureCache.SetLessFunc(DefLessFunc(unsigned int));
 }
@@ -361,6 +373,7 @@ void ExtraListPage::OnTick() {
 
             // 创建卡片
             MapCardPanel *pCard = new MapCardPanel(m_pMapListPanel, info.mapname, info.szUIMapName);
+            pCard->SetSize(m_iItemWidth, m_iItemHeight);
             
             // 直接设置路径并加入加载队列
             // 注意：我们将 FileExists 的检查推迟到 ExecuteLoad 中执行，进一步减少主线程负担
@@ -437,7 +450,25 @@ void ExtraListPage::PerformLayout() {
     
     currentY += iFilterHeight + iSpacing;
     int iListTop = currentY;
-    m_pMapListPanel->SetBounds(margin, iListTop, w - (margin * 2), h - iListTop - margin);
+    
+    // 计算响应式布局
+    int availableWidth = w - (margin * 2);
+    m_iItemsPerRow = availableWidth / (m_iItemWidth + m_iItemSpacing);
+    if (m_iItemsPerRow < 1) m_iItemsPerRow = 1;
+    
+    m_pMapListPanel->SetNumColumns(m_iItemsPerRow);
+    m_pMapListPanel->SetVerticalBufferPixels(m_iItemSpacing);
+    m_pMapListPanel->SetBounds(margin, iListTop, availableWidth, h - iListTop - margin);
+    
+    // 更新已有卡片的大小
+    for (int itemID = m_pMapListPanel->FirstItem(); itemID != m_pMapListPanel->InvalidItemID(); itemID = m_pMapListPanel->NextItem(itemID))
+    {
+        vgui::Panel *pItem = m_pMapListPanel->GetItemPanel(itemID);
+        if (pItem)
+        {
+            pItem->SetSize(m_iItemWidth, m_iItemHeight);
+        }
+    }
 }
 
 // =========================================================

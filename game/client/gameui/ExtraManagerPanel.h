@@ -59,6 +59,12 @@ struct PendingMap_t {
 CUtlVector<PendingMap_t> m_PendingMaps; // 待创建 UI 的队列
 bool m_bIsScanning = false;             
 
+protected:
+    int m_iItemWidth;
+    int m_iItemHeight;
+    int m_iItemSpacing;
+    int m_iItemsPerRow;
+
 private:
     void UpdateGameModeList();
     void ApplyMapFilters();

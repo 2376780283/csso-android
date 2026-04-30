@@ -78,9 +78,6 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     m_pTitle->SetFgColor(Color(255, 255, 255, 255));
     m_pTitle->SetContentAlignment(vgui::Label::a_center);
     m_pTitle->SetMouseInputEnabled(false);
-
-    // 固定 80x80
-    SetSize(180, 180);
 }
 
 void MapCardPanel::SetImagePath(const char *path) {
@@ -89,25 +86,28 @@ void MapCardPanel::SetImagePath(const char *path) {
 
 void MapCardPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
     BaseClass::ApplySchemeSettings(pScheme);
-    // 使用最小字体以适应 80 宽度
+    // 使用最小字体以适应宽度
     m_pTitle->SetFont(pScheme->GetFont("DefaultVerySmall", false));
 }
 
 void MapCardPanel::Paint() {
     BaseClass::Paint();
 
-    // 1:1 原生 80x80 绘制
-    int drawX = 0;
-    int drawY = 0;
-    int imgSize = 80;
+    int wide, tall;
+    GetSize(wide, tall);
+    
+    int drawX = m_iMargin;
+    int drawY = m_iMargin;
+    int imgW = wide - (m_iMargin * 2);
+    int imgH = tall - (m_iMargin * 2);
 
     if (m_nTextureID != -1 && vgui::surface()->IsTextureIDValid(m_nTextureID)) {
         vgui::surface()->DrawSetColor(255, 255, 255, 255);
         vgui::surface()->DrawSetTexture(m_nTextureID);
-        vgui::surface()->DrawTexturedRect(drawX, drawY, drawX + imgSize, drawY + imgSize);
+        vgui::surface()->DrawTexturedRect(drawX, drawY, drawX + imgW, drawY + imgH);
     } else {
         vgui::surface()->DrawSetColor(30, 30, 30, 255);
-        vgui::surface()->DrawFilledRect(drawX, drawY, drawX + imgSize, drawY + imgSize);
+        vgui::surface()->DrawFilledRect(drawX, drawY, drawX + imgW, drawY + imgH);
     }
 }
 
@@ -141,17 +141,18 @@ void MapCardPanel::ExecuteLoad() {
 void MapCardPanel::PerformLayout() {
     BaseClass::PerformLayout();
     
-    // 固定布局逻辑
-    int imgSize = 80;
-    m_pImagePanelPlaceholder->SetBounds(0, 0, imgSize, imgSize);
+    int wide, tall;
+    GetSize(wide, tall);
+    
+    m_pImagePanelPlaceholder->SetBounds(0, 0, wide, tall);
 
     // 布局底部容器：高度固定为 20，位于底端
     int labelH = 20;
-    int labelY = imgSize - labelH;
-    m_pContainer->SetBounds(0, labelY, imgSize, labelH);
+    int labelY = tall - labelH;
+    m_pContainer->SetBounds(0, labelY, wide, labelH);
 
     // 布局标题标签（充满容器）
-    m_pTitle->SetBounds(0, 0, imgSize, labelH);
+    m_pTitle->SetBounds(0, 0, wide, labelH);
 }
 
 void MapCardPanel::OnCursorEntered() {
