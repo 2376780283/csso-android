@@ -26,6 +26,9 @@ public:
     virtual void OnCursorExited() override;
     virtual void OnMousePressed(vgui::MouseCode code) override;
 
+    void SetSelected(bool bSelected) { m_bSelected = bSelected; }
+    bool IsSelected() const { return m_bSelected; }
+
     // 异步加载接口
     void QueueForLoad();
     void ExecuteLoad();
@@ -46,4 +49,5 @@ private:
     char m_szUIMapName[MAX_PATH];
     bool m_bAttemptedLoad; // 是否尝试过加载
     bool m_bQueuedForLoad; // 是否已在加载队列中
+    bool m_bSelected;      // 是否被选中
 };

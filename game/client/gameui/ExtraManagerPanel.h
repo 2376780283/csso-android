@@ -49,6 +49,9 @@ public:
     // 异步加载队列管理
     void QueueCardForLoad(MapCardPanel *pCard);
     void ProcessLoadQueue();
+
+    void UpdateSelection(const char *pPanelName);
+
     // 存储待处理的地图数据结构
 struct PendingMap_t {
     char mapname[256];

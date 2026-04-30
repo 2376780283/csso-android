@@ -471,6 +471,20 @@ void ExtraListPage::PerformLayout() {
     }
 }
 
+void ExtraListPage::UpdateSelection(const char *pPanelName)
+{
+    if (!m_pMapListPanel) return;
+
+    for (int itemID = m_pMapListPanel->FirstItem(); itemID != m_pMapListPanel->InvalidItemID(); itemID = m_pMapListPanel->NextItem(itemID))
+    {
+        MapCardPanel *pCard = dynamic_cast<MapCardPanel *>(m_pMapListPanel->GetItemPanel(itemID));
+        if (pCard)
+        {
+            pCard->SetSelected(!Q_stricmp(pCard->GetName(), pPanelName));
+        }
+    }
+}
+
 // =========================================================
 // ExtraManagerPanel 实现
 // =========================================================
@@ -572,6 +586,10 @@ void ExtraManagerPanel::OnMapCardSelected(KeyValues *data) {
     if (m_pServerPage) {
         m_pServerPage->SetMap(pPanelName);
     }
+
+    if (m_pMapListPage) {
+        m_pMapListPage->UpdateSelection(pPanelName);
+    }
 }
 
 void ExtraManagerPanel::StartGame() {
@@ -630,7 +648,7 @@ void ExtraManagerPanel::StartGame() {
     // 增加一些必要的等待和初始化命令，确保 ConVars 已经应用
     // 显式在命令中设置 bot_quota 以确保生效
     Q_snprintf(szMapCommand, sizeof(szMapCommand),
-               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nbot_quota %i\nprogress_enable\ngame_type %d\ngame_mode %d\ngame_online 0\nmap %s\n",
+               "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nbot_quota %i\ngame_type %d\ngame_mode %d\ngame_online 0\nprogress_enable\nexec listenserver.cfg\nmap %s\n",
                iMaxPlayers, szPassword, szHostName, iBotQuota, iGameTypeID, iGameModeID, szMapName);
 
     // exec

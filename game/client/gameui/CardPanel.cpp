@@ -56,7 +56,8 @@ MapCardPanel::MapCardPanel(vgui::Panel *parent, const char *name, const char *ti
     SetMouseInputEnabled(true);
     
     // 直接使用原生像素值，废弃 PROPVAL
-    m_iMargin = 0; 
+    m_iMargin = 5; 
+    m_bSelected = false;
 
     m_clrBgNormal = Color(0, 0, 0, 0);
     m_clrBgHover = Color(89, 221, 242, 150);
@@ -108,6 +109,13 @@ void MapCardPanel::Paint() {
     } else {
         vgui::surface()->DrawSetColor(30, 30, 30, 255);
         vgui::surface()->DrawFilledRect(drawX, drawY, drawX + imgW, drawY + imgH);
+    }
+
+    if (m_bSelected) {
+        vgui::surface()->DrawSetColor(89, 221, 242, 255);
+        for (int i = 0; i < 2; i++) {
+            vgui::surface()->DrawOutlinedRect(drawX + i, drawY + i, drawX + imgW - i, drawY + imgH - i);
+        }
     }
 }
 
