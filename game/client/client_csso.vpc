@@ -60,6 +60,8 @@ $Project "Client (CStrike)"
 		$File    "hud_locator_target.h"
 		$File    "$SRCDIR\game\client\cstrike\VGUI\vgui_endgame_panel.cpp"
 		$File    "$SRCDIR\game\client\cstrike\VGUI\vgui_endgame_panel.h"
+		$File    "$SRCDIR\game\client\cstrike\VGUI\vgui_depth_ui.cpp"
+		$File    "$SRCDIR\game\client\cstrike\VGUI\vgui_depth_ui.h"
 		
 		$Folder	"CounterStrike DLL"
 		{
