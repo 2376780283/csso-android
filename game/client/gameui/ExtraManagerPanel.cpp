@@ -517,7 +517,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
 		bAllMaps = m_pSavedData->GetBool( "all_maps" );
 	}
 
-    m_pLeftPanel = new vgui::EditablePanel(this, "LeftFloatingPanel");
+    m_pLeftPanel = new BlurredEditablePanel(this, "LeftFloatingPanel");
     m_pTabSheet = new PropertySheet(m_pLeftPanel, "ExtraTabs");
     m_pMapListPage = new ExtraListPage(m_pTabSheet, "MapListPage");
     
@@ -563,7 +563,7 @@ ExtraManagerPanel::ExtraManagerPanel(vgui::Panel *parent) : BaseClass(parent, "E
     
     m_pTabSheet->AddPage(m_pGameplayPage, "#GameUI_Game");
 
-    m_pRightPanel = new vgui::EditablePanel(this, "RightFloatingPanel");
+    m_pRightPanel = new BlurredEditablePanel(this, "RightFloatingPanel");
     m_pDetailsLabel = new vgui::Label(m_pRightPanel, "DetailsLabel", "Information");
     
     m_pRefreshButton = new vgui::Button(m_pRightPanel, "RefreshBtn", "#GameUI_Refresh", this, "RefreshList");
@@ -668,14 +668,16 @@ void ExtraManagerPanel::ApplySchemeSettings(vgui::IScheme *pScheme) {
         m_pLeftPanel->SetPaintBackgroundEnabled(true);
         m_pLeftPanel->SetPaintBorderEnabled(true);
         m_pLeftPanel->SetBorder(pScheme->GetBorder("FrameBorder"));
-        m_pLeftPanel->SetBgColor(pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 200)));
+        Color bgColor = pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 200));
+        m_pLeftPanel->SetDarkness((float)bgColor.a());
     }
 
     if (m_pRightPanel) {
         m_pRightPanel->SetPaintBackgroundEnabled(true);
         m_pRightPanel->SetPaintBorderEnabled(true);
         m_pRightPanel->SetBorder(pScheme->GetBorder("FrameBorder"));
-        m_pRightPanel->SetBgColor(pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 150)));
+        Color bgColor = pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 150));
+        m_pRightPanel->SetDarkness((float)bgColor.a());
     }
 
     if (m_pDetailsLabel) m_pDetailsLabel->SetFont(pScheme->GetFont("DefaultLarge", IsProportional()));

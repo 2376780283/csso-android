@@ -16,6 +16,7 @@
 #include "vgui_controls/Label.h"
 #include "utlvector.h"
 #include "materialsystem/imaterial.h"
+#include "materialsystem/MaterialSystemUtil.h"
 
 #include <materialsystem/itexture.h>
 #include <materialsystem/imaterialvar.h>
