@@ -31,7 +31,7 @@ def build(bld):
 		'linuxwin/cglmbuffer.cpp',	
 		'linuxwin/cglmquery.cpp',
 		'linuxwin/asanstubs.cpp',
-		'linuxwin/asanstubs.cpp'
+		'linuxwin/decompress.c'
 	]
 
 	if bld.env.DEST_OS == "darwin":
@@ -52,7 +52,7 @@ def build(bld):
 		libs += ["OPENGL", "CARBON"]
 
 	install_path = bld.env.LIBDIR
-	lto_flags = ['-flto']
+
 	bld.shlib(
 		source   = source,
 		target   = PROJECT_NAME,
@@ -61,9 +61,6 @@ def build(bld):
 		includes = includes,
 		defines  = defines,
 		use      = libs,
-		cflags       = bld.env.CFLAGS + lto_flags,
-		cxxflags     = bld.env.CXXFLAGS + lto_flags,
-		linkflags    = bld.env.LINKFLAGS + lto_flags,
 		install_path = install_path,
 		subsystem = bld.env.MSVC_SUBSYSTEM,
 		idx      = bld.get_taskgen_count()

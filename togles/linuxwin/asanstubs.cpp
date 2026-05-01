@@ -3,7 +3,6 @@ typedef unsigned int   uint;
 #include "../public/togles/linuxwin/glmdisplay.h"
 #include "../public/togles/linuxwin/glmdisplaydb.h"
 
-/*
 void GLMDisplayDB::PopulateRenderers( void ) { }
 void GLMDisplayDB::PopulateFakeAdapters( uint realRendererIndex ) { }		// fake adapters = one real adapter times however many displays are on 
 void GLMDisplayDB::Populate( void ) { }
@@ -16,4 +15,3 @@ bool  GLMDisplayDB::GetDisplayInfo( int rendererIndex, int displayIndex, GLMDisp
 int	 GLMDisplayDB::GetModeCount( int rendererIndex, int displayIndex ) { } 
 bool  GLMDisplayDB::GetModeInfo( int rendererIndex, int displayIndex, int modeIndex, GLMDisplayModeInfoFields *infoOut ) { return false; }
 void  GLMDisplayDB::Dump( void ) { }
-*/

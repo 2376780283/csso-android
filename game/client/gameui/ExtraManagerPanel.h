@@ -21,6 +21,8 @@
 #include "CreateMultiplayerGameGameplayPage.h"
 #include "CreateMultiplayerGameBotPage.h"
 
+#include "BlurUnified.h"
+
 #ifdef ANDROID
 #include <SDL_misc.h>
 #endif
@@ -42,13 +44,15 @@ public:
 	}
 
 	virtual void PaintBackground() override {
-		m_BlurHelper.DrawBlur(this, m_fDarkness);
+		int x, y, w, h;
+		GetBounds(x, y, w, h);
+		m_BlurHelper.ApplyBlur(x, y, w, h, m_fDarkness / 255.0f, true);
 	}
 
 	void SetDarkness(float fDarkness) { m_fDarkness = fDarkness; }
 
 private:
-	CGUIBlurHelper m_BlurHelper;
+	CUnifiedBlurHelper m_BlurHelper;
 	float m_fDarkness;
 };
 

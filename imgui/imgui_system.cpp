@@ -162,8 +162,8 @@ public:
 			{
 				m_bIsDragging = true;
 				vgui::input()->GetCursorPos( m_lastX, m_lastY );
+				io.AddMouseButtonEvent( ImGuiMouseButton_Left, true );
 			}
-			io.AddMouseButtonEvent( code - MOUSE_FIRST, true );
 		}
 	}
 	
@@ -177,7 +177,7 @@ public:
 
 		if ( io.WantCaptureMouse )
 		{
-			io.AddMouseButtonEvent( code - MOUSE_FIRST, false );
+			io.AddMouseButtonEvent( ImGuiMouseButton_Left, false );
 		}
 	}
 	
