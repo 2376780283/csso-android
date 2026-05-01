@@ -21,6 +21,8 @@
 #include "CreateMultiplayerGameGameplayPage.h"
 #include "CreateMultiplayerGameBotPage.h"
 
+#include "BlurUnified.h"
+
 #ifdef ANDROID
 #include <SDL_misc.h>
 #endif
@@ -29,6 +31,30 @@
 #include "utlmap.h"
 
 #include "CardPanel.h"
+#include "CustomMenu.h"
+
+// ---------------------------------------------------------
+// BlurredEditablePanel - 带模糊背景的编辑面板
+// ---------------------------------------------------------
+class BlurredEditablePanel : public vgui::EditablePanel {
+	DECLARE_CLASS_SIMPLE(BlurredEditablePanel, vgui::EditablePanel);
+public:
+	BlurredEditablePanel(vgui::Panel *parent, const char *name) : BaseClass(parent, name) {
+		m_fDarkness = 160.0f;
+	}
+
+	virtual void PaintBackground() override {
+		int x, y, w, h;
+		GetBounds(x, y, w, h);
+		m_BlurHelper.ApplyBlur(x, y, w, h, m_fDarkness / 255.0f, true);
+	}
+
+	void SetDarkness(float fDarkness) { m_fDarkness = fDarkness; }
+
+private:
+	CUnifiedBlurHelper m_BlurHelper;
+	float m_fDarkness;
+};
 
 // ---------------------------------------------------------
 // 列表页面：管理纹理生命周期
@@ -114,11 +140,11 @@ public:
 
     CCreateMultiplayerGameServerPage *GetServerPage() { return m_pServerPage; }
 
-    vgui::EditablePanel *m_pLeftPanel;   
+    BlurredEditablePanel *m_pLeftPanel;   
     vgui::PropertySheet *m_pTabSheet;
     ExtraListPage       *m_pMapListPage;
 
-    vgui::EditablePanel *m_pRightPanel;  
+    BlurredEditablePanel *m_pRightPanel;  
     vgui::Label         *m_pDetailsLabel;
     
     vgui::Button        *m_pRefreshButton;

@@ -140,3 +140,8 @@ void CModOptionsDialog::OnGameUIHidden()
 		}
 	}
 }
+
+void CModOptionsDialog::PaintBackground()
+{
+	m_BlurHelper.DrawBlur(this, 160.0f);
+}

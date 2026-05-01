@@ -69,6 +69,8 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	SetTabSide(vgui::PropertySheet::TAB_LEFT);
 	SetTabWidth(124);
 
+	SetPaintBackgroundEnabled(true);
+
 	// debug timing code, this function takes too long
     // double s4 = system()->GetCurrentTime();
 
@@ -173,4 +175,9 @@ void COptionsDialog::OnGameUIHidden()
 			PostMessage( pChild, new KeyValues( "GameUIHidden" ) );
 		}
 	}
+}
+
+void COptionsDialog::PaintBackground()
+{
+	m_BlurHelper.DrawBlur(this, 160.0f);
 }

@@ -284,6 +284,8 @@ $Project
 		$File	"cdll_bounded_cvars.cpp"
 		$File	"cdll_bounded_cvars.h"
 		$File	"cdll_util.cpp"
+		$File	"BlurUnified.cpp"
+		$File	"BlurUnified.h"
 		$File	"cl_mat_stub.cpp"
 		$File	"classmap.cpp"
 		$File	"client_factorylist.cpp"

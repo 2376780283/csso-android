@@ -28,9 +28,12 @@
 
 #include "togles/rendermechanism.h"
 
+extern "C" {
+#include "decompress.h"
+}
+
 #include "tier0/icommandline.h"
 #include "glmtexinlines.h"
-#include "mathlib/compressed_vector.h"
 
 // memdbgon -must- be the last include file in a .cpp file.
 #include "tier0/memdbgon.h"
@@ -164,9 +167,6 @@ const GLMTexFormatDesc g_formatDescTable[] =
 		D3DFMT_ATI_2N		= 0x32495441,	// MAKEFOURCC('A', 'T', 'I', '2')
 		D3DFMT_ATI_1N		= 0x31495441,	// MAKEFOURCC('A', 'T', 'I', '1')
 	*/
-	// fakey formats for ToGL(ES) abstraction layer
-	{ "_ETC2_RGB8",		D3DFMT_ETC2_RGB8,		0x9274/*GL_COMPRESSED_RGB8_ETC2*/,			0x9275/*GL_COMPRESSED_SRGB8_ETC2*/,			GL_RGB,					GL_UNSIGNED_BYTE,				4, 8 },	// N - no alpha
-	{ "_ETC2_RGBA8",	D3DFMT_ETC2_RGBA8,			0x9278/*GL_COMPRESSED_RGBA8_ETC2_EAC*/,		0x9279/*GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC*/,	GL_RGBA,				GL_UNSIGNED_BYTE,				4, 16 },	// A - alpha present
 };
 
 int	g_formatDescTableCount = sizeof(g_formatDescTable) / sizeof( g_formatDescTable[0] );
@@ -488,13 +488,6 @@ GLMTexLayout *CGLMTexLayoutTable::NewLayoutRef( GLMTexLayoutKey *pDesiredKey )
 	//bool					compression = (formatDesc->m_chunkSize > 1) != 0;
 	if (!formatDesc)
 	{
-		fprintf(stderr,
-    			"!!! GLMStop: format=%d, flags=0x%X, target=%d, size=%dx%dx%d\n",
-    			key->m_texFormat,
-    			key->m_texFlags,
-    			key->m_texGLTarget,
-    			key->m_xSize, key->m_ySize, key->m_zSize);
-
 		GLMStop();	// bad news
 	}
 
@@ -3266,6 +3259,74 @@ const char *get_enum_str(uint val)
 	return "UNKNOWN";
 }
 
+typedef union {
+    uint16_t bin;
+    struct {
+        uint16_t sign:1;
+        uint16_t exp:5;
+        uint16_t mant:10;
+    } x;
+} halffloat_t;
+
+typedef union {
+    float f;
+    uint32_t bin;
+    struct {
+        uint32_t sign:1;
+        uint32_t exp:8;
+        uint32_t mant:23;
+    } x;
+} fullfloat_t;
+
+static inline float float_h2f(halffloat_t t)
+{
+    fullfloat_t tmp;
+    tmp.x.sign = t.x.sign;  // copy sign
+    if(t.x.exp==0 /*&& t.mant==0*/) {
+    // 0 and denormal?
+        tmp.x.exp=0;
+        tmp.x.mant=0;
+    } else if (t.x.exp==31) {
+    // Inf / NaN
+        tmp.x.exp=255;
+        tmp.x.mant=(t.x.mant<<13);
+    } else {
+        tmp.x.mant=(t.x.mant<<13);
+        tmp.x.exp = t.x.exp+0x38;
+    }
+
+    return tmp.f;
+}
+
+static inline halffloat_t float_f2h(float f)
+{
+    fullfloat_t tmp;
+    halffloat_t ret;
+    tmp.f = f;
+    ret.x.sign = tmp.x.sign;
+    if (tmp.x.exp == 0) {
+        // O and denormal
+        ret.bin = 0;
+    } else if (tmp.x.exp==255) {
+        // Inf / NaN
+        ret.x.exp = 31;
+        ret.x.mant = tmp.x.mant>>13;
+    } else if(tmp.x.exp>0x71) {
+        // flush to 0
+        ret.x.exp = 0;
+        ret.x.mant = 0;
+    } else if(tmp.x.exp<0x8e) {
+        // clamp to max
+        ret.x.exp = 30;
+        ret.x.mant = 1023;
+    } else {
+        ret.x.exp = tmp.x.exp - 38;
+        ret.x.mant = tmp.x.mant>>13;
+    }
+
+    return ret;
+}
+
 void convert_texture( GLenum &internalformat, GLsizei width, GLsizei height, GLenum &format, GLenum &type, void *data )
 {
 	if( format == GL_BGRA ) format = GL_RGBA;
@@ -3274,32 +3335,171 @@ void convert_texture( GLenum &internalformat, GLsizei width, GLsizei height, GLe
 	if( internalformat == GL_SRGB8 && format == GL_RGBA )
 		internalformat = GL_SRGB8_ALPHA8;
 
-	if ( format == GL_LUMINANCE )
-    	internalformat = GL_LUMINANCE8;
-	else if ( format == GL_LUMINANCE_ALPHA )
-    	internalformat = GL_LUMINANCE8_ALPHA8;
+	if( format == GL_LUMINANCE || format == GL_LUMINANCE_ALPHA )
+		internalformat = format;
 
-	if( data && internalformat == GL_RGBA16 && !gGL->m_bHave_GL_EXT_texture_norm16 && gGL->m_bHave_GL_EXT_color_buffer_half_float )
+	if( data )
 	{
-		uint16_t *src = (uint16_t*)data;
-        uint16_t *dst = (uint16_t*)data;
+		if( internalformat == GL_RGBA16 && !gGL->m_bHave_GL_EXT_texture_norm16 )
+		{
+			uint16_t *_data = (uint16_t*)data;
+			uint8_t *new_data = (uint8_t*)data;
 
-        const int count = width * height * 4;
-        for ( int i = 0; i < count; i++ )
-        {
-            float f = src[i] / 65535.0f;
-            float16 h;
-			h.SetFloat( f ) ;
-			dst[i] = h.GetBits();
-        }
-		internalformat = GL_RGBA16F;
-            format         = GL_RGBA;
-            type           = GL_HALF_FLOAT;
+			for( int i = 0; i < width*height*4; i+=4 )
+			{
+				new_data[i] = _data[i] >> 8;
+				new_data[i+1] = _data[i+1] >> 8;
+				new_data[i+2] = _data[i+2] >> 8;
+				new_data[i+3] = _data[i+3] >> 8;
+			}
+		}
+	}
+
+	if( internalformat == GL_RGBA16 && !gGL->m_bHave_GL_EXT_texture_norm16 )
+	{
+		internalformat = GL_RGBA;
+		format = GL_RGBA;
+		type = GL_UNSIGNED_BYTE;
 	}
 
 	if( type == GL_UNSIGNED_INT_8_8_8_8_REV )
 		type = GL_UNSIGNED_BYTE;
 }
+
+GLboolean isDXTc(GLenum format) {
+    switch (format) {
+        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+            return 1;
+    }
+    return 0;
+}
+
+GLboolean isDXTcSRGB(GLenum format) {
+    switch (format) {
+        case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+            return 1;
+    }
+    return 0;
+}
+
+static GLboolean isDXTcAlpha(GLenum format) {
+    switch (format) {
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+            return 1;
+    }
+    return 0;
+}
+
+GLvoid *uncompressDXTc(GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, int transparent0, int* simpleAlpha, int* complexAlpha, const GLvoid *data) {
+    // uncompress a DXTc image
+    // get pixel size of uncompressed image => fixed RGBA
+    int pixelsize = 4;
+    if (format == GL_COMPRESSED_RGB_S3TC_DXT1_EXT || format == GL_COMPRESSED_SRGB_S3TC_DXT1_EXT)
+        pixelsize = 3;
+    // check with the size of the input data stream if the stream is in fact uncompressed
+    if (imageSize == width*height*pixelsize || data==NULL) {
+        // uncompressed stream
+        return (GLvoid*)data;
+    }
+    // alloc memory
+    GLvoid *pixels = malloc(((width+3)&~3)*((height+3)&~3)*pixelsize);
+    // uncompress loop
+    int blocksize;
+    switch (format) {
+        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+            blocksize = 8;
+            break;
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+            blocksize = 16;
+            break;
+    }
+    uintptr_t src = (uintptr_t) data;
+    for (int y=0; y<height; y+=4) {
+        for (int x=0; x<width; x+=4) {
+            switch(format) {
+                case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+                case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+                case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+                case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+                    DecompressBlockDXT1(x, y, width, (uint8_t*)src, transparent0, simpleAlpha, complexAlpha, (uint32_t*)pixels);
+                    break;
+                case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+                case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+                    DecompressBlockDXT3(x, y, width, (uint8_t*)src, transparent0, simpleAlpha, complexAlpha, (uint32_t*)pixels);
+                    break;
+                case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+                case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+                    DecompressBlockDXT5(x, y, width, (uint8_t*)src, transparent0, simpleAlpha, complexAlpha, (uint32_t*)pixels);
+                    break;
+            }
+            src+=blocksize;
+        }
+    }
+    return pixels;
+}
+
+void CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat,
+                            GLsizei width, GLsizei height, GLint border,
+                            GLsizei imageSize, const GLvoid *data) 
+{
+    if (internalformat==GL_RGBA8)
+        internalformat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+
+	if ((width<=0) || (height<=0)) {
+        return;
+    }
+
+	bool hasAlpha = (internalformat != GL_COMPRESSED_RGB_S3TC_DXT1_EXT) && (internalformat != GL_COMPRESSED_SRGB_S3TC_DXT1_EXT);
+
+   	GLenum format = hasAlpha ? GL_RGBA : GL_RGB;
+	GLenum intformat = hasAlpha ? GL_RGBA8 : GL_RGB8;
+	GLenum type = GL_UNSIGNED_BYTE;
+	GLvoid *pixels = NULL;
+
+    if (isDXTc(internalformat))
+    {
+        int srgb = isDXTcSRGB(internalformat);
+        int simpleAlpha = 0;
+        int complexAlpha = 0;
+        int transparent0 = (internalformat==GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || internalformat==GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT)?1:0;
+        if (data) {
+            pixels = uncompressDXTc(width, height, internalformat, imageSize, transparent0, &simpleAlpha, &complexAlpha, data);
+        } else {
+            if(isDXTcAlpha(internalformat)) {
+                simpleAlpha = complexAlpha = 1;
+            }
+        }
+
+		if( srgb )
+			intformat = hasAlpha ? GL_SRGB8_ALPHA8 : GL_SRGB8;
+	}
+
+	gGL->glTexImage2D(target, level, intformat, width, height, border, format, type, pixels);
+	if( data != pixels )
+		free(pixels);
+}
+
 // TexSubImage should work properly on every driver stack and GPU--enabling by default.
 ConVar	gl_enabletexsubimage( "gl_enabletexsubimage", "1" );
 
@@ -3461,8 +3661,11 @@ void CGLMTex::WriteTexels( GLMTexLockDesc *desc, bool writeWholeSlice, bool noDa
 			{
 				Assert( writeWholeSlice );	//subimage not implemented in this path yet
 				// compressed path
-				// http://www.opengl.org/sdk/docs/man/xhtml/glCompressedTexImage2D
+				// http://www.opengl.org/sdk/docs/man/xhtml/glCompressedTexImage2D.xml
+				if( gGL->m_bHave_GL_EXT_texture_compression_dxt1 )
 					gGL->glCompressedTexImage2D( target, desc->m_req.m_mip, intformat, slice->m_xSize, slice->m_ySize, 0, slice->m_storageSize, sliceAddress );
+				else
+					CompressedTexImage2D( target, desc->m_req.m_mip, intformat, slice->m_xSize, slice->m_ySize, 0, slice->m_storageSize, sliceAddress );
 			}
 			else
 			{
