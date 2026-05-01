@@ -37,6 +37,7 @@
 #include "cstrikespectatorgui.h"
 #include "cstrikeclientscoreboard.h"
 #include "cstrikeradiomenu.h"
+#include "vgui_depth_ui.h"
 #include "clientmode_csnormal.h"
 #include "IGameUIFuncs.h"
 
@@ -155,6 +156,14 @@ void radiomenu_toggle_f()
 }
 ConCommand radiomenu_toggle( "radiomenu_toggle", radiomenu_toggle_f );
 
+void depthmenu_toggle_f()
+{
+	IViewPortPanel *pPanel = gViewPortInterface->FindPanelByName( PANEL_DEPTH_MENU );
+	if ( pPanel )
+		pPanel->ShowPanel( !pPanel->IsVisible() );
+}
+ConCommand depthmenu_toggle( "depthmenu_toggle", depthmenu_toggle_f );
+
 //-----------------------------------------------------------------------------
 // Purpose: called when the VGUI subsystem starts up
 //			Creates the sub panels and initialises them
@@ -219,6 +228,11 @@ IViewPortPanel* CounterStrikeViewport::CreatePanelByName(const char *szPanelName
 	{
 		newpanel = new CCSRadioMenu( this );
 	}
+	
+	else if ( Q_strcmp(PANEL_DEPTH_MENU, szPanelName) == 0 )
+	{
+		newpanel = new CDepthMenu( this );
+	}
 
 	else
 	{
@@ -236,6 +250,7 @@ void CounterStrikeViewport::CreateDefaultPanels( void )
 	AddNewPanel( CreatePanelByName( PANEL_CLASS_TER ), "PANEL_CLASS_TER" );
 	AddNewPanel( CreatePanelByName( PANEL_BUY ), "PANEL_BUY" );
 	AddNewPanel( CreatePanelByName( PANEL_RADIO_MENU ), "PANEL_RADIO_MENU" );
+	AddNewPanel( CreatePanelByName( PANEL_DEPTH_MENU ), "PANEL_DEPTH_MENU" );
 
 	BaseClass::CreateDefaultPanels();
 
