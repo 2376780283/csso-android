@@ -355,6 +355,7 @@ public:
 	void PositionDialog( vgui::PHandle dlg );
 
 	virtual void OnSizeChanged( int newWide, int newTall );
+	virtual void Paint();
 
 	void ArmFirstMenuItem( void );
 

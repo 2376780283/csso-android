@@ -135,6 +135,9 @@
 #include "haptics/haptic_utils.h"
 #include "haptics/haptic_msgs.h"
 
+// imgui libs
+#include "imgui_system.h"
+
 #if defined( TF_CLIENT_DLL )
 #include "abuse_report.h"
 #endif
@@ -1053,6 +1056,8 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	C_BaseTempEntity::PrecacheTempEnts();
 
 	input->Init_All();
+	
+	g_pImguiSystem->Init();
 
 	VGui_CreateGlobalPanels();
 
@@ -1211,6 +1216,8 @@ void CHLClient::Shutdown( void )
 	gHUD.Shutdown();
 	VGui_Shutdown();
 	gTouch.Shutdown();
+	
+	g_pImguiSystem->Shutdown();
 
 	ParticleMgr()->Term();
 	
