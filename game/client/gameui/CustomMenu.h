@@ -15,6 +15,10 @@
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/Label.h"
 #include "utlvector.h"
+#include "materialsystem/imaterial.h"
+
+#include <materialsystem/itexture.h>
+#include <materialsystem/imaterialvar.h>
 
 class CBaseModPanel;
 
@@ -50,6 +54,25 @@ private:
 };
 
 // ====================================
+// CGUIBlurHelper - 模糊背景辅助类
+// ====================================
+class CGUIBlurHelper
+{
+public:
+    CGUIBlurHelper();
+    void DrawBlur(vgui::Panel *pPanel, float fDarkness = 160.0f);
+
+private:
+    void InitResources();
+
+    CTextureReference   m_CaptureRT;
+    CTextureReference   m_HelperRT;
+    CMaterialReference  m_BlurX;
+    CMaterialReference  m_BlurY;
+    bool                m_bInitialized;
+};
+
+// ====================================
 // NvgBarPanel - 导航栏背景面板
 // ====================================
 class NvgBarPanel : public vgui::Panel
@@ -63,6 +86,9 @@ protected:
 
 public:
     void UpdateLayout();
+    
+private:
+    CGUIBlurHelper m_BlurHelper;
 };
 
 // ====================================
