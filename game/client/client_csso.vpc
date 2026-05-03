@@ -349,7 +349,6 @@ $Project "Client (CStrike)"
 					$File	"gameui\ModOptionsSubGloves.cpp"
 					$File	"gameui\ModOptionsSubCrosshair.cpp"
 					$File	"gameui\ModOptionsSubHUD.cpp"
-					$File	"gameui\ExtraManagerPanel.cpp"
 					{
 						$Configuration
 						{
@@ -377,7 +376,6 @@ $Project "Client (CStrike)"
 					$File	"gameui\ModOptionsSubKnives.h"
 					$File	"gameui\ModOptionsSubGloves.h"
 					$File	"gameui\ModOptionsSubCrosshair.h"
-					$File	"gameui\ExtraManagerPanel.h"
 				}
 			}
 			$Folder "HUD Elements"

@@ -16,7 +16,6 @@
 #include "vgui_controls/PHandle.h"
 #include "vgui_controls/MenuItem.h"
 #include "vgui_controls/MessageDialog.h"
-#include "ExtraManagerPanel.h" 
 #include "KeyValues.h"
 #include "utlvector.h"
 #include "tier1/CommandBuffer.h"
@@ -75,6 +74,7 @@ class CGameMenu;
 class CAsyncCtxOnDeviceAttached;
 class IVideoMaterial;
 class IMaterial;
+class ImageUrlButton;
 
 // X360TBD: Move into a separate module when finished
 class CMessageDialogHandler
@@ -296,9 +296,7 @@ public:
 	void OnOpenNewGameDialog( const char *chapter = NULL );
 	void OnOpenBonusMapsDialog();
 	void OnOpenLoadGameDialog();
-	void OnOpenLoadGameDialog_Xbox();
 	void OnOpenSaveGameDialog();
-	void OnOpenSaveGameDialog_Xbox();
 	void OnOpenServerBrowser();
 	void OnOpenFriendsDialog();
 	void OnOpenDemoDialog();
@@ -309,11 +307,9 @@ public:
 	void OnOpenChangeGameDialog();
 	void OnOpenPlayerListDialog();
 	void OnOpenBenchmarkDialog();
-	void ShowExtraManager();
 	void OnOpenOptionsDialog();
 	void OnOpenModOptionsDialog();
 	void OnResumeGame();
-	void OnOpenOptionsDialog_Xbox();
 	void OnOpenLoadCommentaryDialog();
 	void OpenLoadSingleplayerCommentaryDialog();
 	void OnOpenAchievementsDialog();
@@ -330,8 +326,7 @@ public:
     // HPE_END
     //=============================================================================
 
-    void OnOpenAchievementsDialog_Xbox();
-	void OnOpenControllerDialog();
+    void OnOpenAchievementsDialog_Xbox();	
 
 	// Xbox 360
 	CMatchmakingBasePanel* GetMatchmakingBasePanel();
@@ -372,8 +367,6 @@ public:
 
 	int  GetMenuAlpha( void );
 	
-    ExtraManagerPanel *m_pExtraPanel;
-
 	void SetMainMenuOverride( vgui::VPANEL panel );
 	void RestartBackgroundVideo();
 	
@@ -465,24 +458,19 @@ private:
 	vgui::DHANDLE<vgui::Frame> m_hNewGameDialog;
 	vgui::DHANDLE<vgui::Frame> m_hBonusMapsDialog;
 	vgui::DHANDLE<vgui::Frame> m_hLoadGameDialog;
-	vgui::DHANDLE<vgui::Frame> m_hLoadGameDialog_Xbox;
 	vgui::DHANDLE<vgui::Frame> m_hSaveGameDialog;
-	vgui::DHANDLE<vgui::Frame> m_hSaveGameDialog_Xbox;
 	vgui::DHANDLE<vgui::PropertyDialog> m_hOptionsDialog;
 	vgui::DHANDLE<vgui::PropertyDialog> m_hModOptionsDialog;
-	vgui::DHANDLE<vgui::Frame> m_hOptionsDialog_Xbox;
 	vgui::DHANDLE<vgui::Frame> m_hCreateMultiplayerGameDialog;
 	//vgui::DHANDLE<vgui::Frame> m_hDemoPlayerDialog;
 	vgui::DHANDLE<vgui::Frame> m_hChangeGameDialog;
 	vgui::DHANDLE<vgui::Frame> m_hPlayerListDialog;
 	vgui::DHANDLE<vgui::Frame> m_hBenchmarkDialog;
 	vgui::DHANDLE<vgui::Frame> m_hLoadCommentaryDialog;
-	vgui::DHANDLE<vgui::Frame> m_hAchievementsDialog;
-    vgui::DHANDLE<vgui::Frame> m_hExtraDialog;
+	vgui::DHANDLE<vgui::Frame> m_hAchievementsDialog;   
 
 	// Xbox 360
 	vgui::DHANDLE<vgui::Frame> m_hMatchmakingBasePanel;
-	vgui::DHANDLE<vgui::Frame> m_hControllerDialog;
 
 	EBackgroundState m_eBackgroundState;
 
@@ -532,6 +520,7 @@ private:
 	ImageButton *m_pSettingsBtn;
 	ImageButton *m_pQuitBtn;
 	ImageButton *m_pAchievementsBtn;
+	ImageUrlButton *m_pBilibiliBtn;
 	NewsListPanel *m_pNewsList;
 	
 		// Used for internal state dealing with blades

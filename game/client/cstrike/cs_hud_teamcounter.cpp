@@ -55,10 +55,11 @@ static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 #define TC_BASE_CENTER_GAP      6       // gap between team block and center block
 
 // Team outline colors (RGBA)
-static const Color TC_CT_OUTLINE_COLOR  ( 74,  155, 214, 230 );  // CT blue
-static const Color TC_T_OUTLINE_COLOR   ( 190,  189, 144,  230 );  // T green
+static const Color TC_CT_OUTLINE_COLOR  ( 150, 200, 255, 220 );  // CT blue
+static const Color TC_T_OUTLINE_COLOR   ( 226, 212, 157, 220 );  // T yellow
 static const Color TC_DEAD_BG_COLOR     ( 15,  15,  15, 200 );   // dark bg for dead slots
 
+static const Color TC_OWN_OUTLINE_COLOR  ( 255, 255, 255, 128 );
 
 //=============================================================================
 //
@@ -133,7 +134,7 @@ private:
         // C4 colors (from original script - CPanelAnimationVar style)
         //-------------------------------------------------------------------------
         CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
-        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "White" );
+        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "SteamLightGreen" );
 };
 
 DECLARE_HUDELEMENT( CHudTeamCounter );
@@ -381,6 +382,9 @@ void CHudTeamCounter::PaintBackground()
         if ( !pSurface )
                 return;
 
+        C_CSPlayer *pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+        int iLocalIndex = pLocalPlayer ? pLocalPlayer->entindex() : -1;
+
         // --- CT slot outlines (blue) - ONLY for ALIVE players ---
         for ( int i = 0; i < m_iNumActiveCTSlots; i++ )
         {
@@ -390,8 +394,12 @@ void CHudTeamCounter::PaintBackground()
 
                 const SlotRect_t &r = m_CTSlotRects[i];
 
-                // Outer border (team color)
-                pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+                // Outer border (team color or own color)
+                if ( m_CTSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 // Inner fill (dark background)
@@ -412,7 +420,11 @@ void CHudTeamCounter::PaintBackground()
 
                 const SlotRect_t &r = m_TSlotRects[i];
 
-                pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+                if ( m_TSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 pSurface->DrawSetColor( TC_DEAD_BG_COLOR );
@@ -441,6 +453,22 @@ bool CHudTeamCounter::ShouldDraw()
 {
         // Only show when hud_teamcounter_style = 1 (avatar mode)
         if ( hud_teamcounter_style.GetInt() != 1 )
+                return false;
+
+        // Use this 2-row layout only when there are more than 10 players
+        int iPlayerCount = 0;
+        if ( g_PR )
+        {
+                for ( int i = 1; i <= MAX_PLAYERS; i++ )
+                {
+                        if ( g_PR->IsConnected( i ) && ( g_PR->GetTeam( i ) == TEAM_CT || g_PR->GetTeam( i ) == TEAM_TERRORIST ) )
+                        {
+                                iPlayerCount++;
+                        }
+                }
+        }
+
+        if ( iPlayerCount <= 10 )
                 return false;
 
         C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();

@@ -46,23 +46,25 @@ using namespace vgui;
 COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "OptionsDialog")
 {
 	SetDeleteSelfOnClose(true);
+	int w, h;
+	vgui::surface()->GetScreenSize(w, h);
+	SetCenterSheetEnabled(true);
+	SetCloseButtonVisible(false);
 	SetMoveable(false);
-    SetSizeable(false);
-    SetCloseButtonVisible(false);
-
-	// Get screen size for fullscreen
-	int screenW, screenH;
-	vgui::surface()->GetScreenSize(screenW, screenH);
-
-	// Set fullscreen bounds
-	SetBounds(0, 0, screenW, screenH);
 	
+	SetFixedSheetWidth(512);
+	SetBounds(0, 0, w, h);
+
 	SetSizeable( false );
 
 	SetTitle("#GameUI_Options", true);
+	SetTabSide(vgui::PropertySheet::TAB_LEFT);
+	SetTabWidth(124);
+
+	SetPaintBackgroundEnabled(true);
 
 	// debug timing code, this function takes too long
-//	double s4 = system()->GetCurrentTime();
+    // double s4 = system()->GetCurrentTime();
 
 #if defined( WIN32 ) && !defined( _X360 )
 	// NVNT START see if the user has a haptic device via convar. if so create haptics dialog.
@@ -74,7 +76,15 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	}
 	// NVNT END
 #endif
+	if (ModInfo().IsSinglePlayerOnly() && !ModInfo().NoDifficulty())
+	{
+		AddPage(new COptionsSubDifficulty(this), "#GameUI_Difficulty");
+	}
 
+	if (ModInfo().HasPortals())
+	{
+		AddPage(new COptionsSubPortal(this), "#GameUI_Portal");
+	}
 	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
 	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
 #ifdef ANDROID
@@ -85,12 +95,19 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	AddPage(m_pOptionsSubAudio, "#GameUI_Audio");
 	m_pOptionsSubVideo = new COptionsSubVideo(this);
 	AddPage(m_pOptionsSubVideo, "#GameUI_Video");
-    AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
-	
+
+	if ( !ModInfo().IsSinglePlayerOnly() ) 
+	{
+		AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
+	}
+
 	// add the multiplay page last, if we're combo single/multi or just multi
-	m_pOptionsSubMultiplayer = new COptionsSubMultiplayer(this);
-	AddPage(m_pOptionsSubMultiplayer, "#GameUI_Multiplayer");
-	
+	if ( (ModInfo().IsMultiplayerOnly() && !ModInfo().IsSinglePlayerOnly()) ||
+		 (!ModInfo().IsMultiplayerOnly() && !ModInfo().IsSinglePlayerOnly()) )
+	{
+		m_pOptionsSubMultiplayer = new COptionsSubMultiplayer(this);
+		AddPage(m_pOptionsSubMultiplayer, "#GameUI_Multiplayer");
+	}
 
 //	double s5 = system()->GetCurrentTime();
 //	Msg("COptionsDialog::COptionsDialog(): %.3fms\n", (float)(s5 - s4) * 1000.0f);
@@ -150,4 +167,9 @@ void COptionsDialog::OnGameUIHidden()
 			PostMessage( pChild, new KeyValues( "GameUIHidden" ) );
 		}
 	}
+}
+
+void COptionsDialog::PaintBackground()
+{
+	m_BlurHelper.DrawBlur(this, 160.0f);
 }

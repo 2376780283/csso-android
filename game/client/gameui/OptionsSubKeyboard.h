@@ -32,7 +32,6 @@ public:
 	virtual void	OnApplyChanges();
 	virtual void	OnKeyCodePressed( vgui::KeyCode code );
 	virtual void	OnThink();
-	virtual void	PerformLayout();
 
 	// Trap row selection message
 	MESSAGE_FUNC_INT( ItemSelected, "ItemSelected", itemID );
@@ -89,8 +88,6 @@ private:
 
 	VControlsListPanel	*m_pKeyBindList;
 
-	vgui::Button *m_pDefaultsButton;
-	vgui::Button *m_pKeyAdvancedButton;
 	vgui::Button *m_pSetBindingButton;
 	vgui::Button *m_pClearBindingButton;
 

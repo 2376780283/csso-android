@@ -48,15 +48,16 @@ static ConVarRef mp_freezetime_ref( "mp_freezetime" );
 // Base pixel sizes designed at 1080p; all multiplied by flScale at runtime.
 #define TC_BASE_AVATAR_SIZE     55      // avatar square size (px at 1080p) - Singerline mode
 #define TC_BASE_AVATAR_GAP      3       // gap between avatar tiles
-#define TC_BASE_OUTLINE         2       // colored border thickness around each tile
+#define TC_BASE_OUTLINE         4       // colored border thickness around each tile
 #define TC_BASE_CENTER_W        84      // width of center timer/score block
 #define TC_BASE_CENTER_GAP      6       // gap between team block and center block
 
 // Team outline colors (RGBA)
-static const Color TC_CT_OUTLINE_COLOR  ( 74,  155, 214, 230 );  // CT blue
-static const Color TC_T_OUTLINE_COLOR   ( 190,  189, 144,  230 );  // T green
+static const Color TC_CT_OUTLINE_COLOR  ( 150, 200, 255, 220 );  // CT blue
+static const Color TC_T_OUTLINE_COLOR   ( 226, 212, 157, 220 );  // T yellow
 static const Color TC_DEAD_BG_COLOR     ( 15,  15,  15, 200 );   // dark bg for dead slots
 
+static const Color TC_OWN_OUTLINE_COLOR  ( 255, 255, 255, 128 );
 
 //=============================================================================
 //
@@ -134,8 +135,8 @@ private:
         //-------------------------------------------------------------------------
         // C4 colors (from original script - CPanelAnimationVar style)
         //-------------------------------------------------------------------------
-        CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
-        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "White" );
+        CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "Red" );
+        CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "SteamLightGreen" );
 };
 
 DECLARE_HUDELEMENT( CHudTeamCounterSingerline );
@@ -364,8 +365,8 @@ void CHudTeamCounterSingerline::Layout()
         m_pRoundTimerLabel->SetPos( roundTimerX, 0 );
 
         // BombIcon: centered in center block
-        int bombWide = ScalePx( 42 );
-        int bombTall = m_iRoundTimerLabelTall;  // Match timer label height
+        int bombWide = ScalePx( 30 );
+        int bombTall = ScalePx( 30 );  // Match timer label height
         int bombX = centerBlockX + ( centerW - bombWide ) / 2;
         m_pBombIcon->SetBounds( bombX, ScalePx( -2 ), bombWide, bombTall );
 
@@ -375,7 +376,7 @@ void CHudTeamCounterSingerline::Layout()
 
         // TWinCounterLabel: centered in right half of center block
         int tWinX = centerBlockX + centerW / 2 + ( 2 + centerW / 2 - tWinWide ) / 2;
-        m_pTWinCounterLabel->SetPos( tWinX, ScalePx( 29 ) );
+        m_pTWinCounterLabel->SetPos( tWinX + 1, ScalePx( 29 ) );
 
         // --- T block origin (right side) ---
         int centerOriginX = teamBlockW + centerGap;
@@ -424,6 +425,9 @@ void CHudTeamCounterSingerline::PaintBackground()
         if ( !pSurface )
                 return;
 
+        C_CSPlayer *pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+        int iLocalIndex = pLocalPlayer ? pLocalPlayer->entindex() : -1;
+
         // --- CT slot outlines (blue) - ONLY for ALIVE players ---
         for ( int i = 0; i < m_iNumActiveCTSlots; i++ )
         {
@@ -433,8 +437,12 @@ void CHudTeamCounterSingerline::PaintBackground()
 
                 const SlotRect_t &r = m_CTSlotRects[i];
 
-                // Outer border (team color)
-                pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+                // Outer border (own color or team color)
+                if ( m_CTSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_CT_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 // Inner fill (dark background)
@@ -455,7 +463,12 @@ void CHudTeamCounterSingerline::PaintBackground()
 
                 const SlotRect_t &r = m_TSlotRects[i];
 
-                pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+                // Outer border (own color or team color)
+                if ( m_TSlots[i].iLastPlayerIndex == iLocalIndex )
+                        pSurface->DrawSetColor( TC_OWN_OUTLINE_COLOR );
+                else
+                        pSurface->DrawSetColor( TC_T_OUTLINE_COLOR );
+
                 pSurface->DrawFilledRect( r.x, r.y, r.x + r.w, r.y + r.h );
 
                 pSurface->DrawSetColor( TC_DEAD_BG_COLOR );
@@ -482,8 +495,24 @@ void CHudTeamCounterSingerline::Reset()
 //-----------------------------------------------------------------------------
 bool CHudTeamCounterSingerline::ShouldDraw()
 {
-        // Only show when hud_teamcounter_style = 2 (singerline mode)
-        if ( hud_teamcounter_style.GetInt() != 2 )
+        // Part of hud_teamcounter_style = 1
+        if ( hud_teamcounter_style.GetInt() != 1 )
+                return false;
+
+        // Use this single-row layout when there are 10 or fewer players
+        int iPlayerCount = 0;
+        if ( g_PR )
+        {
+                for ( int i = 1; i <= MAX_PLAYERS; i++ )
+                {
+                        if ( g_PR->IsConnected( i ) && ( g_PR->GetTeam( i ) == TEAM_CT || g_PR->GetTeam( i ) == TEAM_TERRORIST ) )
+                        {
+                                iPlayerCount++;
+                        }
+                }
+        }
+
+        if ( iPlayerCount > 10 )
                 return false;
 
         C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();

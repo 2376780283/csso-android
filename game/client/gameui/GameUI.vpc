@@ -78,7 +78,7 @@ $Project "GameUI"
 	{
 		$File	"BackgroundMenuButton.h"
 		$File	"BasePanel.h"
-		$File	"CustomMenu.h"		
+		$File	"CustomMenu.h"
 		$File	"BaseSaveGameDialog.h"
 		$File	"CDKeyEntryDialog.h"
 		$File	"ChangeGameDialog.h"
@@ -251,8 +251,6 @@ $Project "GameUI"
 		$File	"ModOptionsSubKnives.h"
 		$File	"ModOptionsSubLoadout.cpp"
 		$File	"ModOptionsSubLoadout.h"
-		$File	"ExtraManagerPanel.h"
-		$File	"ExtraManagerPanel.cpp"
 	}
 	
 	$Folder	"Link Libraries"

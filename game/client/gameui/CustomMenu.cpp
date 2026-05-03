@@ -14,6 +14,8 @@
 #include "tier1/utlbuffer.h"
 #include "filesystem.h"
 
+#include <materialsystem/itexture.h>
+#include <materialsystem/imaterialvar.h>
 #include "stb/stb_image.h"
 
 #include "stb/stb_image_resize.h"
@@ -135,6 +137,102 @@ void ImageButton::ApplySchemeSettings(vgui::IScheme *pScheme)
 }
 
 // ====================================
+// CGUIBlurHelper 实现
+// ====================================
+CGUIBlurHelper::CGUIBlurHelper()
+{
+    m_bInitialized = false;
+}
+
+void CGUIBlurHelper::InitResources()
+{
+    if (m_bInitialized) return;
+
+    materials->BeginRenderTargetAllocation();
+
+    m_HelperRT.Init(materials->CreateNamedRenderTargetTextureEx2(
+        "_rt_GUI_BlurTemp0", 256, 256, RT_SIZE_DEFAULT, IMAGE_FORMAT_RGBA8888,
+        MATERIAL_RT_DEPTH_NONE, TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT, 0
+    ));
+
+    m_CaptureRT.Init(materials->CreateNamedRenderTargetTextureEx2(
+        "_rt_GUI_BlurCapture", 256, 256, RT_SIZE_DEFAULT, IMAGE_FORMAT_RGBA8888,
+        MATERIAL_RT_DEPTH_NONE, TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT, 0
+    ));
+
+    m_BlurX.Init("vgui/blur_x", TEXTURE_GROUP_OTHER);
+    m_BlurY.Init("vgui/blur_y", TEXTURE_GROUP_OTHER);
+
+    materials->EndRenderTargetAllocation();
+    m_bInitialized = true;
+}
+
+void CGUIBlurHelper::DrawBlur(vgui::Panel *pPanel, float fDarkness)
+{
+    if (!pPanel) return;
+
+    int x, y, w, h;
+    vgui::ipanel()->GetAbsPos(pPanel->GetVPanel(), x, y);
+    w = pPanel->GetWide();
+    h = pPanel->GetTall();
+
+    if (w <= 0 || h <= 0) return;
+
+    InitResources();
+
+    CMatRenderContextPtr pRenderContext(materials);
+
+    if (m_BlurX.IsValid() && m_BlurY.IsValid() && m_HelperRT.IsValid() && m_CaptureRT.IsValid())
+    {
+        // 1. Capture screen area behind this panel to m_CaptureRT
+        pRenderContext->Flush();
+        Rect_t srcRect = { x, y, w, h };
+        Rect_t dstRect = { 0, 0, 256, 256 };
+        pRenderContext->CopyRenderTargetToTextureEx(m_CaptureRT, 0, &srcRect, &dstRect);
+
+        // 2. Pass 1: Horizontal Blur (m_CaptureRT -> m_HelperRT)
+        IMaterialVar *pBaseTextureVar = m_BlurX->FindVar("$basetexture", NULL);
+        if (pBaseTextureVar)
+        {
+            pBaseTextureVar->SetTextureValue(m_CaptureRT);
+        }
+
+        pRenderContext->PushRenderTargetAndViewport(m_HelperRT);
+        pRenderContext->ClearColor4ub(0, 0, 0, 255);
+        pRenderContext->ClearBuffers(true, false);
+
+        pRenderContext->DrawScreenSpaceRectangle(m_BlurX, 0, 0, 256, 256, 
+                                                0, 0, 255, 255, 
+                                                256, 256);
+        pRenderContext->PopRenderTargetAndViewport();
+
+        // 3. Pass 2: Vertical Blur (m_HelperRT -> Screen)
+        pBaseTextureVar = m_BlurY->FindVar("$basetexture", NULL);
+        if (pBaseTextureVar)
+        {
+            pBaseTextureVar->SetTextureValue(m_HelperRT);
+        }
+
+        pRenderContext->DrawScreenSpaceRectangle(m_BlurY, x, y, w, h, 
+                                                0, 0, 255, 255, 
+                                                256, 256);
+    }
+    else
+    {
+        // Fallback
+        vgui::surface()->DrawSetColor(30, 30, 30, 200);
+        vgui::surface()->DrawFilledRect(0, 0, w, h);
+    }
+
+    // Overlay dark layer
+    if (fDarkness > 0)
+    {
+        vgui::surface()->DrawSetColor(30, 30, 30, (int)fDarkness);
+        vgui::surface()->DrawFilledRect(0, 0, w, h);
+    }
+}
+
+// ====================================
 // NvgBarPanel 实现
 // ====================================
 NvgBarPanel::NvgBarPanel(vgui::Panel *parent, const char *name) : BaseClass(parent, name)
@@ -146,10 +244,7 @@ NvgBarPanel::NvgBarPanel(vgui::Panel *parent, const char *name) : BaseClass(pare
 
 void NvgBarPanel::PaintBackground()
 {
-    int wide, tall;
-    GetSize(wide, tall);
-    vgui::surface()->DrawSetColor(Color(90, 90, 90, 169));
-    vgui::surface()->DrawFilledRect(0, 0, wide, tall);
+    m_BlurHelper.DrawBlur(this);
 }
 
 void NvgBarPanel::UpdateLayout()

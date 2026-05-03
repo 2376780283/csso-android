@@ -56,7 +56,6 @@ using namespace vgui;
 #include "LoadGameDialog.h"
 #include "SaveGameDialog.h"
 #include "OptionsDialog.h"
-#include "ExtraManagerPanel.h" // unh?
 #include "ModOptionsDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
@@ -64,7 +63,6 @@ using namespace vgui;
 #include "PlayerListDialog.h"
 #include "BenchmarkDialog.h"
 #include "LoadCommentaryDialog.h"
-#include "ControllerDialog.h"
 #include "BonusMapsDatabase.h"
 #include "engine/IEngineSound.h"
 #include "bitbuf.h"
@@ -81,6 +79,7 @@ using namespace vgui;
 #include "OptionsSubAudio.h"
 #include "hl2orange.spa.h"
 #include "CustomTabExplanationDialog.h"
+#include "ResetsData/image_bilibili.h"
 
 #include "../engine/imatchmaking.h"
 #include "tier1/utlstring.h"
@@ -185,6 +184,105 @@ VPANEL GetGameUIBasePanel()
 {
 	return BasePanel()->GetVPanel();
 }
+
+// =========================================================
+// ImageUrlButton
+// =========================================================
+class ImageUrlButton : public vgui::Panel
+{
+public:
+    ImageUrlButton(Panel *parent, const char *name, const unsigned char *imageData, int imageSize, unsigned char xorKey, const char *url) : Panel(parent, name)
+    {
+        m_szUrl = url;
+        m_bSelected = false;
+        m_textureID = -1;
+        
+        SetMouseInputEnabled(true);
+        SetPaintBackgroundEnabled(false);
+        
+        LoadImageFromEmbedded(imageData, imageSize, xorKey);
+    }
+
+    virtual ~ImageUrlButton() {
+        if (m_textureID != -1 && vgui::surface()->IsTextureIDValid(m_textureID)) {
+            vgui::surface()->DeleteTextureByID(m_textureID);
+        }
+    }
+    
+    void LoadImageFromEmbedded(const unsigned char *imageData, int imageSize, unsigned char xorKey)
+    {
+        if (!imageData || imageSize <= 0) {
+            Msg("ImageUrlButton: Invalid image data\n");
+            return;
+        }
+        
+        unsigned char *decrypted = new unsigned char[imageSize];
+        for (int i = 0; i < imageSize; i++) {
+            decrypted[i] = imageData[i] ^ xorKey;
+        }
+        
+        int width = 0, height = 0, channels = 0;
+        // Force 4 channels (RGBA)
+        unsigned char *imagePixels = stbi_load_from_memory(
+            decrypted, imageSize, &width, &height, &channels, 4);
+        
+        delete[] decrypted;
+        
+        if (!imagePixels) {
+            Msg("ImageUrlButton: Failed to load image from memory\n");
+            return;
+        }
+        
+        if (width <= 0 || height <= 0) {
+            Msg("ImageUrlButton: Invalid image dimensions: %dx%d\n", width, height);
+            stbi_image_free(imagePixels);
+            return;
+        }
+        
+        // Create as procedural texture (very important for DrawSetTextureRGBA to work)
+        m_textureID = vgui::surface()->CreateNewTextureID(true);
+        
+        // Use DrawSetTextureRGBAEx with IMAGE_FORMAT_RGBA8888 (0)
+        vgui::surface()->DrawSetTextureRGBAEx(m_textureID, imagePixels, width, height, IMAGE_FORMAT_RGBA8888);
+        
+        Msg("ImageUrlButton: Texture loaded successfully. TextureID: %d, Size: %dx%d\n", m_textureID, width, height);
+        stbi_image_free(imagePixels);
+    }
+
+    virtual void Paint()
+    {
+        if (m_textureID == -1) return;
+        
+        int alpha = m_bSelected ? 200 : 255;
+        // Use neutral color to avoid tinting the texture
+        vgui::surface()->DrawSetColor(255, 255, 255, alpha);
+        vgui::surface()->DrawSetTexture(m_textureID);
+        vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
+    }
+
+    virtual void OnMousePressed(MouseCode code) {
+        if (code == MOUSE_LEFT) { m_bSelected = true; input()->SetMouseCapture(GetVPanel()); }
+    }
+
+    virtual void OnMouseReleased(MouseCode code) {
+        if (code == MOUSE_LEFT) {
+            m_bSelected = false;
+            input()->SetMouseCapture(NULL);
+            if (IsCursorOver() && m_szUrl) {
+#ifdef ANDROID
+                SDL_OpenURL(m_szUrl);
+#else
+                vgui::system()->ShellExecute("open", m_szUrl);
+#endif
+            }
+        }
+    }
+
+private:
+    bool m_bSelected;
+    int m_textureID;
+    const char *m_szUrl;
+};
 
 CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem") 
 {
@@ -1163,6 +1261,14 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	if( NeedProportional() )
 		SetProportional( true );
 
+    vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFile("resource/menuscheme.res", "MenuScheme");
+    // vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ClientScheme.res", "ClientScheme");
+    if (scheme)
+    {
+       // vgui::scheme()->SetDefaultScheme(scheme);
+       SetScheme(scheme);
+    }	
+
 	g_pBasePanel = this;
 	m_bLevelLoading = false;
 	m_eBackgroundState = BACKGROUND_INITIAL;
@@ -1197,6 +1303,8 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	m_pDemoBtn = NULL;
 	m_pSettingsBtn = NULL;
 	m_pQuitBtn = NULL;
+	m_pAchievementsBtn = NULL;
+	m_pBilibiliBtn = NULL;
 
 	m_bUserRefusedSignIn = false;
 	m_bUserRefusedStorageDevice = false;
@@ -1466,11 +1574,6 @@ void CBaseModPanel::PaintBackground()
 		// not in the game or loading dialog active or exiting, draw the ui background
 		DrawBackgroundImage();
 	}
-	else if ( IsX360() )
-	{
-		// only valid during loading from level to level
-		m_bUseRenderTargetImage = false;
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1495,7 +1598,7 @@ void CBaseModPanel::UpdateBackgroundState()
 	{
 		// 360 guarantees a progress bar
 		// level loading is truly completed when the progress bar is gone, then transition to main menu
-		if ( IsPC() || ( IsX360() && !g_hLoadingDialog.Get() ) )
+		if ( IsPC() || ( !g_hLoadingDialog.Get() ) )
 		{
 			SetBackgroundRenderState( BACKGROUND_MAINMENU );
 		}
@@ -1971,7 +2074,7 @@ void CBaseModPanel::UpdateAgentModel()
 
 void CBaseModPanel::DrawBackgroundImage()
 {
-	if ( IsX360() && m_bCopyFrameBuffer )
+	if ( m_bCopyFrameBuffer )
 	{
 		// force the engine to do an image capture ONCE into this image's render target
 		char filename[MAX_PATH];
@@ -2190,6 +2293,12 @@ void CBaseModPanel::CreateCustomMenuUI()
     	m_pAchievementsBtn = new ImageButton( m_pRightNvgbar, this, "achievementsbtn", "resource/ui/menu/achievements.png" );
     	m_pAchievementsBtn->SetActions( &CBaseModPanel::OnOpenCSAchievementsDialog );
     	m_pAchievementsBtn->SetVisible(true);
+    	
+    	// Create Bilibili button with embedded image
+    	m_pBilibiliBtn = new ImageUrlButton( this, "bilibilibtn", 
+    		ResourceData::g_zzhBiliData, ResourceData::g_zzhBiliData_size, 
+    		ResourceData::g_xorKey, "https://m.bilibili.com/space/3493284326410960" );
+    	m_pBilibiliBtn->SetVisible(true);
     
     	m_pLeftTopLogo->SetVisible(true);
     	m_pPlayBtn->SetVisible(true);
@@ -2231,6 +2340,7 @@ void CBaseModPanel::CreateCustomMenuUI()
 	SETUP_PANEL( m_pSettingsBtn );
 	SETUP_PANEL( m_pQuitBtn );
 	SETUP_PANEL( m_pAchievementsBtn );
+	SETUP_PANEL( m_pBilibiliBtn );
 
 	// Initial layout update
 	UpdateCustomMenuUI();
@@ -2323,6 +2433,17 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		m_pAchievementsBtn->SetBounds( btnOffset, achievementsY, btnSize, btnSize );
 	}
 
+	// Bilibili button positioned at the bottom of the left navigation bar's right side
+	if ( m_pBilibiliBtn )
+	{
+		// Position in the blank area to the right of the left nav bar, at the bottom
+		int bilibiliWidth = scheme()->GetProportionalScaledValue( 100 );  // 600px image at typical resolution
+		int bilibiliHeight = scheme()->GetProportionalScaledValue( 50 );  // 300px image scaled down
+		int bilibiliX = navWidth + gap;  // Start after the left nav bar
+		int bilibiliY = screenTall - bilibiliHeight - gap ;
+		m_pBilibiliBtn->SetBounds( bilibiliX, bilibiliY, bilibiliWidth, bilibiliHeight );
+	}
+
 	// Position the PlayerModel panel on the right side with no vertical margins and larger size
 	if ( m_pPlayerModel )
 	{
@@ -2332,7 +2453,7 @@ void CBaseModPanel::UpdateCustomMenuUI()
 		if ( bShouldShowModel )
 		{
 			// Use larger dimensions for the player model
-			int modelWidth = scheme()->GetProportionalScaledValue( 460 );  // 增大模型面板宽度
+			int modelWidth = scheme()->GetProportionalScaledValue( 450 );  // 增大模型面板宽度
 			int modelHeight = screenTall;  // 上下无边距，占满屏幕高度
 			int modelX = screenWide - modelWidth - navWidth - scheme()->GetProportionalScaledValue( 2 );  // 靠右放置，在右侧导航栏左侧
 			int modelY = 0;  // 顶部无边界
@@ -2506,7 +2627,6 @@ void CBaseModPanel::RunFrame()
 void CBaseModPanel::UpdateRichPresenceInfo()
 {
 }
-
 //-----------------------------------------------------------------------------
 // Purpose: Lays out the position of the taskbar
 //-----------------------------------------------------------------------------
@@ -2850,10 +2970,6 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	{
 		OnOpenLoadCommentaryDialog();	
 	}
-	else if ( !Q_stricmp( command, "Extra_manager" ) )
-	{
-		ShowExtraManager();
-	}
 	else if ( !Q_stricmp( command, "OpenLoadSingleplayerCommentaryDialog" ) )
 	{
 		OpenLoadSingleplayerCommentaryDialog();	
@@ -3028,7 +3144,6 @@ bool CBaseModPanel::IsPromptableCommand( const char *command )
 		 !Q_stricmp( command, "OpenBonusMapsDialog" ) ||
 		 !Q_stricmp( command, "OpenOptionsDialog" ) ||
 		 !Q_stricmp( command, "OpenModOptionsDialog" ) ||
-		 !Q_stricmp( command, "OpenControllerDialog" ) ||
 		 !Q_stricmp( command, "OpenLoadCommentaryDialog" ) ||
          !Q_stricmp( command, "OpenLoadSingleplayerCommentaryDialog" ) ||
          !Q_stricmp( command, "OpenAchievementsDialog" ) ||
@@ -3142,8 +3257,7 @@ bool CBaseModPanel::CommandRequiresStorageDevice( const char *command )
 bool CBaseModPanel::CommandRespectsSignInDenied( const char *command )
 {
 	// Anything which touches the user profile must prompt
-	if ( !Q_stricmp( command, "OpenOptionsDialog" ) ||
-		 !Q_stricmp( command, "OpenControllerDialog" ) )
+	if ( !Q_stricmp( command, "OpenOptionsDialog" ))
 		return true;
 
 	return false;
@@ -3227,18 +3341,6 @@ void CBaseModPanel::OnCompletedAsyncDeviceAttached( CAsyncCtxOnDeviceAttached *j
 
 	BonusMapsDatabase()->ReadBonusMapSaveData();
 
-	if ( m_hSaveGameDialog_Xbox.Get() )
-	{
-		m_hSaveGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-	}
-	if ( m_hLoadGameDialog_Xbox.Get() )
-	{
-		m_hLoadGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-	}
-	if ( m_hOptionsDialog_Xbox.Get() )
-	{
-		m_hOptionsDialog_Xbox->OnCommand( "RefreshOptions" );
-	}
 	if ( m_pStorageDeviceValidatedNotify )
 	{
 		*m_pStorageDeviceValidatedNotify = 1;
@@ -3783,19 +3885,6 @@ void CBaseModPanel::OnOpenLoadGameDialog()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenLoadGameDialog_Xbox()
-{
-	if ( !m_hLoadGameDialog_Xbox.Get() )
-	{
-		m_hLoadGameDialog_Xbox = new CLoadGameDialogXbox(this);
-		PositionDialog( m_hLoadGameDialog_Xbox );
-	}
-	m_hLoadGameDialog_Xbox->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenSaveGameDialog()
 {
 	if ( !m_hSaveGameDialog.Get() )
@@ -3806,18 +3895,6 @@ void CBaseModPanel::OnOpenSaveGameDialog()
 	m_hSaveGameDialog->Activate();
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenSaveGameDialog_Xbox()
-{
-	if ( !m_hSaveGameDialog_Xbox.Get() )
-	{
-		m_hSaveGameDialog_Xbox = new CSaveGameDialogXbox(this);
-		PositionDialog( m_hSaveGameDialog_Xbox );
-	}
-	m_hSaveGameDialog_Xbox->Activate();
-}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -3852,19 +3929,6 @@ void CBaseModPanel::OnResumeGame()
 {
     GameUI().HideGameUI(); 
 }
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenOptionsDialog_Xbox()
-{
-	if ( !m_hOptionsDialog_Xbox.Get() )
-	{
-		m_hOptionsDialog_Xbox = new COptionsDialogXbox( this );
-		PositionDialog( m_hOptionsDialog_Xbox );
-	}
-
-	m_hOptionsDialog_Xbox->Activate();
-}
 
 //-----------------------------------------------------------------------------
 // Purpose: forces any changed options dialog settings to be applied immediately, if it's open
@@ -3879,20 +3943,6 @@ void CBaseModPanel::ApplyOptionsDialogSettings()
 	{
 		m_hModOptionsDialog->ApplyChanges();
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenControllerDialog()
-{
-	if ( !m_hControllerDialog.Get() )
-	{
-		m_hControllerDialog = new CControllerDialog( this );
-		PositionDialog( m_hControllerDialog );
-	}
-
-	m_hControllerDialog->Activate();
 }
 
 //-----------------------------------------------------------------------------
@@ -3945,19 +3995,12 @@ void CBaseModPanel::OnOpenVoteDialog()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenCreateMultiplayerGameDialog()
 {
-/*	if (!m_hCreateMultiplayerGameDialog.Get())
+	if (!m_hCreateMultiplayerGameDialog.Get())
 	{
 		m_hCreateMultiplayerGameDialog = new CCreateMultiplayerGameDialog(this);
 		PositionDialog(m_hCreateMultiplayerGameDialog);
 	}
-	m_hCreateMultiplayerGameDialog->Activate();*/
-    if ( !m_hExtraDialog.Get() )
-	{
-	    m_hExtraDialog = new ExtraManagerPanel(this);
-		PositionDialog( m_hExtraDialog );
-		m_hExtraDialog->MoveToCenterOfScreen(); 
-	}
-    m_hExtraDialog->Activate();  
+	m_hCreateMultiplayerGameDialog->Activate();
 }
 
 //-----------------------------------------------------------------------------
@@ -4076,31 +4119,6 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 	}
 	m_hAchievementsDialog->Activate();
 }
-
-// -------
-// unh i will delete the shit func motherfuck 
-// -------
-void CBaseModPanel::ShowExtraManager()
-{ 
-/*    if ( !m_hExtraDialog.Get() )
-	{
-	    m_hExtraDialog = new ExtraManagerPanel(this);
-		PositionDialog( m_hExtraDialog );
-		m_hExtraDialog->MoveToCenterOfScreen(); 
-	}
-    m_hExtraDialog->Activate(); */  
-  
-}
-
-void CC_ShowExtraManager(const CCommand &args)
-{
-/*    if (g_pBasePanel)
-    {
-        g_pBasePanel->ShowExtraManager();
-    } */
-}
-
-static ConCommand Extra_manager("Extra_manager", CC_ShowExtraManager, "Open Extra Manager dialog", FCVAR_NONE);
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -4270,12 +4288,7 @@ void CBaseModPanel::SystemNotification( const int notification )
 		OnCommand( "OpenMainMenu" );
 	}
 	else if ( notification == SYSTEMNOTIFY_STORAGEDEVICES_CHANGED )
-	{
-		if ( m_hSaveGameDialog_Xbox.Get() )
-			m_hSaveGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-		if ( m_hLoadGameDialog_Xbox.Get() )
-			m_hLoadGameDialog_Xbox->OnCommand( "RefreshSaveGames" );
-
+	{	
 		// FIXME: This code is incorrect, they do NOT need a storage device, it is only recommended that they do
 		if ( GameUI().IsInLevel() )
 		{
@@ -5587,18 +5600,6 @@ void CBaseModPanel::CloseBaseDialogs( void )
 	if ( m_hBonusMapsDialog.Get() )
 		m_hBonusMapsDialog->Close();
 	
-	if ( m_hControllerDialog.Get() )
-		m_hControllerDialog->Close();
-
-	if ( m_hLoadGameDialog_Xbox.Get() )
-		m_hLoadGameDialog_Xbox->Close();
-
-	if ( m_hOptionsDialog_Xbox.Get() )
-		m_hOptionsDialog_Xbox->Close();
-
-	if ( m_hSaveGameDialog_Xbox.Get() )
-		m_hSaveGameDialog_Xbox->Close();
-
 	if ( m_hLoadCommentaryDialog.Get() )
 		m_hLoadCommentaryDialog->Close();
 

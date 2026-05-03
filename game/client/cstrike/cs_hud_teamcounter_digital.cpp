@@ -57,8 +57,8 @@ private:
 	int m_iRoundTime;
 	bool m_bIsAtTheBottom;
 
-	CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "White" );
-	CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "White" );
+	CPanelAnimationVar( Color, m_clrC4Planted, "C4PlantedColor", "Red" );
+	CPanelAnimationVar( Color, m_clrC4Defused, "C4DefusedColor", "SteamLightGreen" );
 };
 
 DECLARE_HUDELEMENT( CHudTeamCounterDigital );
@@ -138,7 +138,7 @@ void CHudTeamCounterDigital::Reset()
 
 bool CHudTeamCounterDigital::ShouldDraw()
 {
-	if ( hud_teamcounter_style.GetInt() != 0 )
+	if ( hud_teamcounter_style.GetInt() != 2 )
 		return false;
 
 	if ( cl_draw_only_deathnotices.GetBool() )

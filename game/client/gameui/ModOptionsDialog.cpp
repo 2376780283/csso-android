@@ -60,7 +60,7 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	SetBorder(pScheme->GetBorder("FrameBorder"));
 	SetBgColor(pScheme->GetColor("Frame.BgColor", Color(0, 0, 0, 200)));
 	SetPaintBackgroundEnabled(true);
-
+    
 	// Create sub-pages
 	CModOptionsSubGameplay* pGameplay = new CModOptionsSubGameplay(this);
 	CModOptionsSubCrosshair* pCrosshair = new CModOptionsSubCrosshair(this);
@@ -70,13 +70,14 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	CModOptionsSubGloves* pGloves = new CModOptionsSubGloves(this);
 	CModOptionsSubHUD* pHUD = new CModOptionsSubHUD(this);
 
+    AddPage(pLoadout, "#GameUI_Loadout");
 	AddPage(pGameplay, "#GameUI_Gameplay");
-	AddPage(pCrosshair, "#GameUI_Crosshair");
-	AddPage(pLoadout, "#GameUI_Loadout");
+	AddPage(pCrosshair, "#GameUI_Crosshair");	
 	AddPage(pKnives, "#GameUI_Knives");
 	AddPage(pAgents, "#GameUI_Agents");
 	AddPage(pGloves, "#GameUI_Gloves");
 	AddPage(pHUD, "#GameUI_HUD");
+	
 
 	SetApplyButtonVisible(true);
 	
@@ -135,4 +136,9 @@ void CModOptionsDialog::OnGameUIHidden()
 			PostMessage( pChild, new KeyValues( "GameUIHidden" ) );
 		}
 	}
+}
+
+void CModOptionsDialog::PaintBackground()
+{
+	m_BlurHelper.DrawBlur(this, 160.0f);
 }

@@ -836,7 +836,7 @@ void COptionsSubMultiplayer::RemapAvatar()
 		g_pFullFileSystem->Close( fp );
 	}
 
-	Q_snprintf( fullAvatarName, sizeof( fullAvatarName ), "logos/UI/%s", szFileName );
+	Q_snprintf( fullAvatarName, sizeof( fullAvatarName ), "VGUI/logos/UI/%s", szFileName );
 	m_pAvatarImage->SetImage( fullAvatarName );
 }
 
@@ -1068,6 +1068,14 @@ void COptionsSubMultiplayer::OnApplyChanges()
 	{
 		Q_strncpy( cmd, "cl_logofile \"\"\n", sizeof( cmd ) );
 	}
+	if ( m_pClanTagText )
+    {
+        m_pClanTagText->ApplyChanges();
+    }
+    if ( m_pPlayerNameText )
+    {
+        m_pPlayerNameText->ApplyChanges();
+    }
 	engine->ClientCmd_Unrestricted(cmd);
 
 	// save the avatar path

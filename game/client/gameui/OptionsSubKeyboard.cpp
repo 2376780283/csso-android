@@ -47,103 +47,18 @@ COptionsSubKeyboard::COptionsSubKeyboard(vgui::Panel *parent) : PropertyPage(par
 
 	// create the key bindings list
 	CreateKeyBindingList();
-
 	// Store all current key bindings
 	SaveCurrentBindings();
 	// Parse default descriptions
 	ParseActionDescriptions();
+	
+	m_pSetBindingButton = new Button(this, "ChangeKeyButton", "");
+	m_pClearBindingButton = new Button(this, "ClearKeyButton", "");
 
-	// 创建按钮
-	m_pDefaultsButton = new Button(this, "Defaults", "#GameUI_UseDefaults");
-	m_pDefaultsButton->SetCommand("Defaults");
-
-	// KeyAdvancedButton
-	m_pKeyAdvancedButton = new Button(this, "KeyAdvancedButton", "#GameUI_AdvancedEllipsis");
-	m_pKeyAdvancedButton->SetCommand("Advanced");
-
-	// ChangeKeyButton
-	m_pSetBindingButton = new Button(this, "ChangeKeyButton", "#GameUI_SetNewKey");
-	m_pSetBindingButton->SetCommand("ChangeKey");
-
-	// ClearKeyButton
-	m_pClearBindingButton = new Button(this, "ClearKeyButton", "#GameUI_ClearKey");
-	m_pClearBindingButton->SetCommand("ClearKey");
+	LoadControlSettings("Resource/OptionsSubKeyboard.res");
 
 	m_pSetBindingButton->SetEnabled(false);
 	m_pClearBindingButton->SetEnabled(false);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Perform layout - calculate centered positions based on current panel size
-//-----------------------------------------------------------------------------
-void COptionsSubKeyboard::PerformLayout()
-{
-	BaseClass::PerformLayout();
-
-	// Get current panel size
-	int pw = GetWide();
-	int ph = GetTall();
-
-	if (pw < 100 || ph < 100)
-		return;
-
-	// Content dimensions
-	int buttonHeight = 28;
-	int margin = 16;
-	int buttonSpacing = 8;
-	int buttonAreaHeight = buttonHeight + margin;
-
-	// List fills width with margins
-	int listWidth = pw - margin * 2;
-	if (listWidth < 100)
-		listWidth = 100;
-
-	// Calculate available height for the list
-	int availableHeight = ph - buttonAreaHeight - margin * 2;
-	if (availableHeight < 100)
-		availableHeight = 100;
-
-	// Calculate vertical center offset
-	int contentHeight = availableHeight + buttonAreaHeight;
-	int vertOffset = (ph - contentHeight) / 2;
-	if (vertOffset < margin)
-		vertOffset = margin;
-
-	// List always starts at margin (left edge), width fills container
-	// Position key binding list - fills available width and height
-	m_pKeyBindList->SetBounds(margin, vertOffset, listWidth, availableHeight);
-
-	// Position buttons - centered below the list
-	int buttonY = vertOffset + availableHeight + margin;
-
-	// Button total width
-	int btnDefaultsWidth = 134;
-	int btnAdvancedWidth = 111;
-	int btnChangeWidth = 106;
-	int btnClearWidth = 105;
-	int totalButtonWidth = btnDefaultsWidth + btnAdvancedWidth + btnChangeWidth + btnClearWidth + buttonSpacing * 3;
-
-	// Calculate center offset for buttons
-	int buttonStartX = margin + (listWidth - totalButtonWidth) / 2;
-	if (buttonStartX < margin)
-		buttonStartX = margin;
-
-	int currentX = buttonStartX;
-
-	// Defaults button
-	m_pDefaultsButton->SetBounds(currentX, buttonY, btnDefaultsWidth, buttonHeight);
-	currentX += btnDefaultsWidth + buttonSpacing;
-
-	// Advanced button
-	m_pKeyAdvancedButton->SetBounds(currentX, buttonY, btnAdvancedWidth, buttonHeight);
-	currentX += btnAdvancedWidth + buttonSpacing;
-
-	// Change Key button
-	m_pSetBindingButton->SetBounds(currentX, buttonY, btnChangeWidth, buttonHeight);
-	currentX += btnChangeWidth + buttonSpacing;
-
-	// Clear Key button
-	m_pClearBindingButton->SetBounds(currentX, buttonY, btnClearWidth, buttonHeight);
 }
 
 //-----------------------------------------------------------------------------
