@@ -1085,7 +1085,7 @@ GameTypes::Map *GameTypes::GetMap_Internal( const char *mapName )
 {
 	if ( m_Maps.Count() == 0 )
 	{
-		Warning( "GamesTypes: no maps have been loaded.\n" );
+		// Warning( "GamesTypes: no maps have been loaded.\n" );
 		return NULL;
 	}
 

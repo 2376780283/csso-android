@@ -747,8 +747,11 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 
 void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
-		LoadControlSettings( "resource/UI/BaseChat.res" );
-
+    if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )    	
+        LoadControlSettings( "resource/UI/customchat.res" );
+    else
+        LoadControlSettings( "resource/UI/BaseChat.res" );
+        
 	BaseClass::ApplySchemeSettings( pScheme );
 
 	SetPaintBackgroundType( 2 );

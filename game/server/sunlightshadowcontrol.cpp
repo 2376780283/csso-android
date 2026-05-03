@@ -141,7 +141,7 @@ CSunlightShadowControl::CSunlightShadowControl()
 CSunlightShadowControl::~CSunlightShadowControl()
 {
 	g_pSunlightShadowControl = NULL;
-    Msg( "CCascadeLight::~CCascadeLight\n" );
+    // Msg( "CCascadeLight::~CCascadeLight\n" );
 }
 
 //------------------------------------------------------------------------------

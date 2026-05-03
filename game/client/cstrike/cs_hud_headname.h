@@ -28,7 +28,6 @@ private:
     vgui::Label            *m_pHPLabel;
     vgui::VectorImagePanel *m_pWeaponIcons[6];
     vgui::Label            *m_pArrowLabel;
-    vgui::HFont             m_hFont;
     vgui::HFont             m_hFontSmall;
 
     // --- Weapon state cache ---

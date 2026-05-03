@@ -516,11 +516,11 @@ void CParticleSystemDefinition::ParseOperators(
 			break;
 		}
 
-		if ( !bFound )
+/*		if ( !bFound )
 		{
 			if ( flist.Count() )							// don't warn if no ops of that type defined (server)
 				Warning( "Didn't find particle function %s\n", pOpName );
-		}
+		}*/
 	}
 }
 

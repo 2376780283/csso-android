@@ -195,11 +195,9 @@ public:
     {
         m_szUrl = url;
         m_bSelected = false;
-        m_textureID = -1;
-        
+        m_textureID = -1;        
         SetMouseInputEnabled(true);
-        SetPaintBackgroundEnabled(false);
-        
+        SetPaintBackgroundEnabled(false);       
         LoadImageFromEmbedded(imageData, imageSize, xorKey);
     }
 
@@ -212,10 +210,8 @@ public:
     void LoadImageFromEmbedded(const unsigned char *imageData, int imageSize, unsigned char xorKey)
     {
         if (!imageData || imageSize <= 0) {
-            Msg("ImageUrlButton: Invalid image data\n");
             return;
-        }
-        
+        }        
         unsigned char *decrypted = new unsigned char[imageSize];
         for (int i = 0; i < imageSize; i++) {
             decrypted[i] = imageData[i] ^ xorKey;
@@ -229,32 +225,22 @@ public:
         delete[] decrypted;
         
         if (!imagePixels) {
-            Msg("ImageUrlButton: Failed to load image from memory\n");
             return;
         }
         
         if (width <= 0 || height <= 0) {
-            Msg("ImageUrlButton: Invalid image dimensions: %dx%d\n", width, height);
             stbi_image_free(imagePixels);
             return;
         }
-        
-        // Create as procedural texture (very important for DrawSetTextureRGBA to work)
         m_textureID = vgui::surface()->CreateNewTextureID(true);
-        
-        // Use DrawSetTextureRGBAEx with IMAGE_FORMAT_RGBA8888 (0)
         vgui::surface()->DrawSetTextureRGBAEx(m_textureID, imagePixels, width, height, IMAGE_FORMAT_RGBA8888);
-        
-        Msg("ImageUrlButton: Texture loaded successfully. TextureID: %d, Size: %dx%d\n", m_textureID, width, height);
         stbi_image_free(imagePixels);
     }
 
     virtual void Paint()
     {
-        if (m_textureID == -1) return;
-        
+        if (m_textureID == -1) return;        
         int alpha = m_bSelected ? 200 : 255;
-        // Use neutral color to avoid tinting the texture
         vgui::surface()->DrawSetColor(255, 255, 255, alpha);
         vgui::surface()->DrawSetTexture(m_textureID);
         vgui::surface()->DrawTexturedRect(0, 0, GetWide(), GetTall());
@@ -1261,14 +1247,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 	if( NeedProportional() )
 		SetProportional( true );
 
-    vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFile("resource/menuscheme.res", "MenuScheme");
-    // vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ClientScheme.res", "ClientScheme");
-    if (scheme)
-    {
-       // vgui::scheme()->SetDefaultScheme(scheme);
-       SetScheme(scheme);
-    }	
-
 	g_pBasePanel = this;
 	m_bLevelLoading = false;
 	m_eBackgroundState = BACKGROUND_INITIAL;
@@ -1340,13 +1318,6 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 
 	m_pGameMenuButtons.AddToTail( CreateMenuButton( this, "GameMenuButton", ModInfo().GetGameTitle() ) );
 	m_pGameMenuButtons.AddToTail( CreateMenuButton( this, "GameMenuButton2", ModInfo().GetGameTitle2() ) );
-#ifdef CS_BETA
-	if ( !ModInfo().NoCrosshair() ) // hack to not show the BETA for HL2 or HL1Port
-	{
-		m_pGameMenuButtons.AddToTail( CreateMenuButton( this, "BetaButton", L"BETA" ) );
-	}
-#endif // CS_BETA
-
 	m_pGameMenu = NULL;
 	m_pGameLogo = NULL;
 	m_hMainMenuOverridePanel = NULL;

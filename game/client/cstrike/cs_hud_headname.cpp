@@ -112,16 +112,10 @@ CPlayerNamePanel::CPlayerNamePanel(vgui::Panel *pParent)
     SetPaintBackgroundEnabled(false);
     SetPaintBorderEnabled(false);
 
-    vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(
-        vgui::scheme()->GetScheme("ClientScheme"));
-    m_hFont = pScheme ? pScheme->GetFont("HeadName", true) : vgui::INVALID_FONT;
+    vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(vgui::scheme()->GetScheme("ClientScheme"));
     m_hFontSmall = pScheme ? pScheme->GetFont("DefaultVerySmall", true) : vgui::INVALID_FONT;
-    if (m_hFont == vgui::INVALID_FONT)
-        Warning("CPlayerNamePanel: Could not load 'HeadName' font\n");
-
     // Name label — centered
     m_pNameLabel = new vgui::Label(this, "Name", "");
-    m_pNameLabel->SetFont(m_hFont);
     m_pNameLabel->SetPaintBackgroundEnabled(false);
     m_pNameLabel->SetContentAlignment(vgui::Label::a_center);
 
@@ -133,7 +127,6 @@ CPlayerNamePanel::CPlayerNamePanel(vgui::Panel *pParent)
 
     // Arrow label — centered, points down toward player
     m_pArrowLabel = new vgui::Label(this, "Arrow", "");
-    m_pArrowLabel->SetFont(m_hFont);
     m_pArrowLabel->SetPaintBackgroundEnabled(false);
     m_pArrowLabel->SetContentAlignment(vgui::Label::a_north);
     {

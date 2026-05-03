@@ -1872,7 +1872,7 @@ void ClientDLL_Init( void )
 	Assert ( g_ClientFactory );
 
 	// this will get updated after we load a map, but this gets video info if we sys_error() prior to loading a map
-	CL_SetSteamCrashComment();
+	// CL_SetSteamCrashComment();
 
 	if ( g_ClientDLL )
 	{
