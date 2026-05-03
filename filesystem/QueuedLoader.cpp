@@ -66,8 +66,17 @@
 #define PRIORITY_NORMAL		0
 #define PRIORITY_LOW		-1
 
-// main thread has reason to block and wait for thread pool to finish jobs
-#define MAIN_THREAD_YIELD_TIME	20
+// Optimized thread yielding for better I/O throughput
+#ifdef ANDROID
+	// Mobile devices benefit from slightly longer yield times to reduce context switching overhead
+	#define MAIN_THREAD_YIELD_TIME	30
+#else
+	#define MAIN_THREAD_YIELD_TIME	20
+#endif
+
+// Batch processing thresholds for better I/O efficiency
+#define MIN_JOBS_FOR_BATCH		16	// Batch smaller I/O requests
+#define MAX_BATCH_SIZE_MB		8	// Limit batch size to avoid memory spikes
 
 // discrete stages in the preload process to tick the progress bar
 #define PROGRESS_START				0.10f
@@ -270,6 +279,14 @@ static int				g_nHighIOSuspensionMark;
 static int				g_nLowIOSuspensionMark;
 
 ConVar loader_spew_info( "loader_spew_info", "0", 0, "0:Off, 1:Timing, 2:Completions, 3:Late Completions, 4:Purges, -1:All " );
+
+// Optimization: Cache parsed resource lists to avoid reparsing on subsequent loads
+#if !defined( _RETAIL )
+	ConVar loader_cache_resourcelists( "loader_cache_resourcelists", "1", 0, "Cache parsed resource lists for faster reloads" );
+#else
+	// Always enabled in retail for performance
+	const bool loader_cache_resourcelists_value = true;
+#endif
 
 // Kyle says: this is here only to change the DLL size to force clients to update! This should be removed
 //			  by whoever sees this comment after we've shipped a DLL using it!

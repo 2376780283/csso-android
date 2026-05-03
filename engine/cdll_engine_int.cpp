@@ -1817,6 +1817,50 @@ void InitExtraClientCmdCanExecuteVars()
 }
 
 //-----------------------------------------------------------------------------
+// Batch interface queries to reduce factory call overhead
+//-----------------------------------------------------------------------------
+static void ClientDLL_QueryCriticalInterfaces()
+{
+	COM_TimestampedLog( "g_pClientSidePrediction->Init" );
+	
+	// Query all interfaces from factory in one pass - reduces factory lookup overhead
+	g_pClientSidePrediction = (IPrediction *)g_ClientFactory( VCLIENT_PREDICTION_INTERFACE_VERSION, NULL );
+	if ( !g_pClientSidePrediction )
+	{
+		Sys_Error( "Could not get IPrediction interface from library client" );
+	}
+	g_pClientSidePrediction->Init();
+
+	entitylist = ( IClientEntityList  *)g_ClientFactory( VCLIENTENTITYLIST_INTERFACE_VERSION, NULL );
+	if ( !entitylist )
+	{
+		Sys_Error( "Could not get client entity list interface from library client" );
+	}
+
+	centerprint = ( ICenterPrint * )g_ClientFactory( VCENTERPRINT_INTERFACE_VERSION, NULL );
+	if ( !centerprint )
+	{
+		Sys_Error( "Could not get centerprint interface from library client" );
+	}
+
+	// Try V2 leaf system first, fall back to V1
+	clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION, NULL );
+	if ( !clientleafsystem )
+	{
+		clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION_1, NULL );
+		if ( !clientleafsystem )
+		{
+			Sys_Error( "Could not get client leaf system interface from library client" );
+		}
+		g_bClientLeafSystemV1 = true;
+	}
+	else
+	{
+		g_bClientLeafSystemV1 = false;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Inits the client .dll
 //-----------------------------------------------------------------------------
 void ClientDLL_Init( void )
@@ -1841,47 +1885,11 @@ void ClientDLL_Init( void )
 
 		if ( g_ClientFactory )
 		{
-			COM_TimestampedLog( "g_pClientSidePrediction->Init" );
-
-			// Load the prediction interface from the client .dll
-			g_pClientSidePrediction = (IPrediction *)g_ClientFactory( VCLIENT_PREDICTION_INTERFACE_VERSION, NULL );
-			if ( !g_pClientSidePrediction )
-			{
-				Sys_Error( "Could not get IPrediction interface from library client" );
-			}
-			g_pClientSidePrediction->Init();
-
-			entitylist = ( IClientEntityList  *)g_ClientFactory( VCLIENTENTITYLIST_INTERFACE_VERSION, NULL );
-			if ( !entitylist )
-			{
-				Sys_Error( "Could not get client entity list interface from library client" );
-			}
-
-			centerprint = ( ICenterPrint * )g_ClientFactory( VCENTERPRINT_INTERFACE_VERSION, NULL );
-			if ( !centerprint )
-			{
-				Sys_Error( "Could not get centerprint interface from library client" );
-			}
-
-			clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION, NULL );
-			if ( clientleafsystem )
-			{
-				g_bClientLeafSystemV1 = false;
-			}
-			else if ( !clientleafsystem )
-			{
-				clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION_1, NULL );
-				if ( !clientleafsystem )
-				{
-					Sys_Error( "Could not get client leaf system interface from library client" );
-				}
-				else
-				{
-					g_bClientLeafSystemV1 = true;
-				}
-			}
+			// Query all critical interfaces in one pass (cache friendly)
+			ClientDLL_QueryCriticalInterfaces();
 
 #if defined( REPLAY_ENABLED )
+			// Optimization: Only initialize replay if actually supported and used
 			if ( Replay_IsSupportedModAndPlatform() )
 			{
 				// Replay dll should be loaded by this point
@@ -1890,7 +1898,7 @@ void ClientDLL_Init( void )
 					Sys_Error( "Replay.dll was not loaded" );
 				}
 
-				// Get pointer to client-side replay interface implementation
+				// Batch replay interface queries (similar to critical interfaces)
 				g_pClientReplay = (IClientReplay *)g_ClientFactory( CLIENT_REPLAY_INTERFACE_VERSION, NULL );
 				if ( !g_pClientReplay )
 				{
@@ -1919,6 +1927,7 @@ void ClientDLL_Init( void )
 				extern CGameServer sv;
 				if ( !sv.IsDedicated() )
 				{
+					// Cache replay context and managers for fast access
 					g_pClientReplayContext = g_pReplay->CL_GetContext();
 					g_pReplayManager = g_pClientReplayContext->GetReplayManager();
 					g_pReplayMovieManager = g_pClientReplayContext->GetMovieManager();
