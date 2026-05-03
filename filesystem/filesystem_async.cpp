@@ -50,6 +50,8 @@ ConVar async_mode( "async_mode", "0", 0, "Set the async filesystem mode (0 = asy
 
 ConVar async_simulate_delay( "async_simulate_delay", "0", 0, "Simulate a delay of up to a set msec per file operation" );
 ConVar async_allow_held_files( "async_allow_held_files", "1", 0, "Allow AsyncBegin/EndRead()" );
+ConVar async_buffer_size( "async_buffer_size", "1048576", 0, "Set the async I/O buffer size in bytes (1MB for modern devices)" );
+ConVar async_max_concurrent_io( "async_max_concurrent_io", "8", 0, "Maximum concurrent I/O operations (increased for multi-core)" );
 
 #define SimulateDelay() if ( async_simulate_delay.GetInt() == 0 || ThreadInMainThread() ) ; else ThreadSleep( RandomInt( 1, async_simulate_delay.GetInt() ) )
 #define AsyncAllowHeldFiles() async_allow_held_files.GetBool()

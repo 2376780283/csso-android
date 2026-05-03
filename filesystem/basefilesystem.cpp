@@ -123,10 +123,12 @@ CBaseFileSystem *BaseFileSystem()
 }
 
 ConVar filesystem_buffer_size( "filesystem_buffer_size", 
-#if defined(LINUX) || defined(ANDROID)
-	"262144",  // 256KB for Linux/Android
+#if defined(ANDROID)
+	"1048576",  // 1MB for modern Android devices (UFS 4.0 support)
+#elif defined(LINUX)
+	"524288",   // 512KB for Linux
 #else
-	"0",       // Default (32KB on Windows)
+	"0",        // Default (32KB on Windows)
 #endif
 	0, "Size of per file buffers. 0 for default" );
 
@@ -3443,6 +3445,10 @@ EFileCRCStatus CBaseFileSystem::CheckCachedFileHash( const char *pPathID, const 
 
 void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllVPKHashes, bool bRecalculateAndCheckHashes )
 {
+	// no caching
+	m_WhitelistFileTrackingEnabled = false;
+
+	/*
 	if ( IsX360() )
 	{
 		m_WhitelistFileTrackingEnabled = false;
@@ -3459,6 +3465,7 @@ void CBaseFileSystem::EnableWhitelistFileTracking( bool bEnable, bool bCacheAllV
 	{
 		CacheAllVPKFileHashes( bCacheAllVPKHashes, bRecalculateAndCheckHashes );
 	}
+	*/
 }
 
 
