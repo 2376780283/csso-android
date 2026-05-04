@@ -52,7 +52,7 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	SetCloseButtonVisible(false);
 	SetMoveable(false);
 	
-	SetFixedSheetWidth(512);
+	SetFixedSheetWidth(652);
 	SetBounds(0, 0, w, h);
 
 	SetSizeable( false );
