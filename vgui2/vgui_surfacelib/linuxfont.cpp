@@ -710,6 +710,14 @@ void CLinuxFont::GetKernedCharWidth( wchar_t ch, wchar_t chBefore, wchar_t chAft
 {
 	abcA = abcC = wide = 0.0f;
 
+	// Shim for symbol fonts (like Marlett). Most symbol fonts map glyphs to the 0xF000 range.
+	if ( ( m_iFlags & vgui::ISurface::FONTFLAG_SYMBOL ) || ( V_stristr( m_szName.String(), "Marlett" ) != NULL ) )
+	{
+		if ( ch < 256 ) ch += 0xF000;
+		if ( chBefore < 256 ) chBefore += 0xF000;
+		if ( chAfter < 256 ) chAfter += 0xF000;
+	}
+
 	// look for it in the cache
 	kerned_abc_cache_t finder = { ch, chBefore, chAfter };
 	
@@ -772,6 +780,13 @@ void CLinuxFont::GetKernedCharWidth( wchar_t ch, wchar_t chBefore, wchar_t chAft
 void CLinuxFont::GetCharABCWidths(int ch, int &a, int &b, int &c)
 {
 	Assert(IsValid());
+
+	// Shim for symbol fonts (like Marlett). Most symbol fonts map glyphs to the 0xF000 range.
+	if ( ( m_iFlags & vgui::ISurface::FONTFLAG_SYMBOL ) || ( V_stristr( m_szName.String(), "Marlett" ) != NULL ) )
+	{
+		if ( ch < 256 )
+			ch += 0xF000;
+	}
 
 	// look for it in the cache
 	abc_cache_t finder = { (wchar_t)ch };
@@ -918,6 +933,13 @@ void *CLinuxFont::SetAsActiveFont( void *cglContext )
 //-----------------------------------------------------------------------------
 bool CLinuxFont::HasChar(wchar_t wch)
 {
+	// Shim for symbol fonts (like Marlett). Most symbol fonts map glyphs to the 0xF000 range.
+	if ( ( m_iFlags & vgui::ISurface::FONTFLAG_SYMBOL ) || ( V_stristr( m_szName.String(), "Marlett" ) != NULL ) )
+	{
+		if ( wch < 256 )
+			wch += 0xF000;
+	}
+
     return FT_Get_Char_Index( m_face, wch ) != 0;
 }
 
