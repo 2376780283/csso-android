@@ -535,18 +535,17 @@ static void FileSystem_AddLoadedSearchPath(
 	}
 
 	
-	if ( initInfo.m_pLanguage &&
-	     Q_stricmp( initInfo.m_pLanguage, "english" ) &&
-	     V_strstr( fullLocationPath, "_english" ) != NULL )
+	if ( initInfo.m_pLanguage && Q_stricmp( initInfo.m_pLanguage, "english" ) )
 	{
-		char szPath[MAX_PATH];
-		char szLangString[MAX_PATH];		
-		
-		// Need to add a language version of this path first
-
-		Q_snprintf( szLangString, sizeof(szLangString), "_%s", initInfo.m_pLanguage);
-		V_StrSubst( fullLocationPath, "_english", szLangString, szPath, sizeof( szPath ), true );
-		initInfo.m_pFileSystem->AddSearchPath( szPath, pPathID, PATH_ADD_TO_TAIL );		
+		const char *pEngPos = V_strstr( fullLocationPath, "_english" );
+		if ( pEngPos )
+		{
+			char szPath[MAX_PATH];
+			char szLangString[MAX_PATH];		
+			Q_snprintf( szLangString, sizeof(szLangString), "_%s", initInfo.m_pLanguage);
+			V_StrSubst( fullLocationPath, "_english", szLangString, szPath, sizeof( szPath ), true );
+			initInfo.m_pFileSystem->AddSearchPath( szPath, pPathID, PATH_ADD_TO_TAIL );		
+		}
 	}
 
 	initInfo.m_pFileSystem->AddSearchPath( fullLocationPath, pPathID, PATH_ADD_TO_TAIL );
@@ -761,6 +760,9 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 		
 		if ( numPaths > 0 && numPathIDs > 0 )
 		{
+			// Sort paths to potentially improve locality and prevent redundant filesystem checks in some layers
+			vecFullLocationPaths.Sort( SortStricmp );
+
 			int numThreads = std::min( (int)std::thread::hardware_concurrency(), numPaths );
 			numThreads = std::max( 1, numThreads );
 			
@@ -776,13 +778,14 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 				{
 					threads.emplace_back( [&initInfo, &vecPathIDs, &vecFullLocationPaths, startPath, endPath, bLowViolence]()
 					{
+						// Iterate locations and then path IDs to reduce lock/unlock cycles
 						for ( int idxLocation = startPath; idxLocation < endPath; ++idxLocation )
 						{
+							const char *pLocation = vecFullLocationPaths[idxLocation];
 							for ( int idxPathID = 0; idxPathID < vecPathIDs.Count(); ++idxPathID )
 							{
-								FilesystemThreading::g_PathMutex.lock();
-								FileSystem_AddLoadedSearchPath( initInfo, vecPathIDs[ idxPathID ], vecFullLocationPaths[ idxLocation ], bLowViolence );
-								FilesystemThreading::g_PathMutex.unlock();
+								std::lock_guard<std::mutex> lock(FilesystemThreading::g_PathMutex);
+								FileSystem_AddLoadedSearchPath( initInfo, vecPathIDs[ idxPathID ], pLocation, bLowViolence );
 							}
 						}
 					});

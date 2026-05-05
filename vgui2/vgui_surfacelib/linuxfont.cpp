@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <sys/stat.h>
 #ifdef OSX
 #include <malloc/malloc.h>
 #else
@@ -245,16 +246,30 @@ bool CLinuxFont::CreateFromMemory(const char *windowsFontName, void *data, int d
 		return false;
 	} 
 
-	if ( m_face->charmap == NULL )
+	// Select the correct charmap. Unicode for normal fonts, Symbol for symbol fonts (like Marlett).
+	bool bIsSymbolFont = ( flags & vgui::ISurface::FONTFLAG_SYMBOL ) || ( V_stristr( windowsFontName, "Marlett" ) != NULL );
+	FT_Encoding encoding = bIsSymbolFont ? FT_ENCODING_MS_SYMBOL : FT_ENCODING_UNICODE;
+
+	if ( m_face->charmap == NULL || m_face->charmap->encoding != encoding )
 	{
-		FT_Error error = FT_Select_Charmap( m_face, FT_ENCODING_APPLE_ROMAN );
+		FT_Error error = FT_Select_Charmap( m_face, encoding );
 		if ( error )
 		{
-			FT_Done_Face( m_face );
-			m_face = NULL;
-
-			Msg( "Font %s has no valid charmap\n", windowsFontName );
-			return false;
+			// Try to find the requested charmap manually
+			for ( int i = 0; i < m_face->num_charmaps; i++ )
+			{
+				if ( m_face->charmaps[i]->encoding == encoding )
+				{
+					FT_Set_Charmap( m_face, m_face->charmaps[i] );
+					break;
+				}
+			}
+			
+			// If we still don't have a valid charmap and we were looking for Unicode, just take the first one
+			if ( m_face->charmap == NULL && encoding == FT_ENCODING_UNICODE && m_face->num_charmaps > 0 )
+			{
+				FT_Set_Charmap( m_face, m_face->charmaps[0] );
+			}
 		}
 	}
 
@@ -264,7 +279,8 @@ bool CLinuxFont::CreateFromMemory(const char *windowsFontName, void *data, int d
 	//  We tried using the BBOX ascender / descender, but it was overly large compared to Windows.
 	//  We also tried using the size metrics, but the ascender wasn't high enough and accents were cut off.
 	//  Descender from size metrics was too low for fonts with no lower case characters.
-	// Compromise: Use ascent from O' and descent from bbox. Diffs on textures indicate this is best choice.
+	// Compromise: Use ascent from O' and descent from metrics (or bbox for symbols). 
+	// Diffs on textures indicate this is best choice.
 	//  Used these command lines vars and convars to help beyond compare linux and windows:
 	//    -precachefontintlchars / -enable_font_bounding_boxes / vgui_spew_fonts / mat_texture_save_fonts
 
@@ -331,26 +347,23 @@ bool CLinuxFont::CreateFromMemory(const char *windowsFontName, void *data, int d
 		}
 		else
 		{
-			// Full bounding box ascent and descent:
-			//   ( a * b ) / 0x10000. y_scale is 16.16.
-			//$ ascender = FT_MulFix( m_face->bbox.yMax, m_face->size->metrics.y_scale );
-			descender = FT_MulFix( m_face->bbox.yMin, m_face->size->metrics.y_scale );
-
 			// Metrics ascent and descent
 			ascender = m_face->size->metrics.ascender;
-			//$ descender = m_face->size->metrics.descender;
+			// For normal fonts, use metrics descender. For symbol fonts, use full bounding box to ensure glyphs fit.
+			if ( bIsSymbolFont )
+				descender = FT_MulFix( m_face->bbox.yMin, m_face->size->metrics.y_scale );
+			else
+				descender = m_face->size->metrics.descender;
 
 			// While running with Spanish, the m_face->size->metrics.ascender is less
 			// than the bitmap_top for the character.  This makes GetCharRGBA() chop off
 			// the top of the O and the accent is skipped.  Complete hack here, but we
 			// check for the tallest character we know about (O') and bump up the ascender
 			// value if it is greater than what we've currently got.
-			wchar_t ch = 0xd3;
-			error = FT_Load_Char( m_face, ch, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL); 
-			if ( !error )
+			if ( !bIsSymbolFont )
 			{
-				int glyph_index = FT_Get_Char_Index( m_face, ch );
-				error = FT_Load_Glyph( m_face, glyph_index, FT_LOAD_RENDER );
+				wchar_t ch = 0xd3;
+				error = FT_Load_Char( m_face, ch, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL); 
 				if ( !error )
 				{
 					FT_GlyphSlot slot = m_face->glyph;
@@ -419,6 +432,28 @@ char *TryFindFont(const char *winFontName, bool bBold, int italic)
 
 #ifdef ANDROID
 	const char *lang = cl_language.GetString();
+	bool bIsAsian = (strcmp(lang, "japanese") == 0 ||
+					 strcmp(lang, "koreana") == 0 ||
+					 strcmp(lang, "korean") == 0 ||
+					 strcmp(lang, "tchinese") == 0 ||
+					 strcmp(lang, "schinese") == 0);
+
+	struct stat st;
+	// 1. First, check if a font with the EXACT requested name exists locally in the app data path.
+	// This is crucial for mods that bundle custom fonts or symbol fonts like 'marlett.ttf'.
+	const char *extensions[] = { "ttf", "otf", "ttc" };
+	for ( int i = 0; i < ARRAYSIZE(extensions); ++i )
+	{
+		snprintf( fontFile, sizeof fontFile, "%s/files/%s.%s", getenv("APP_DATA_PATH"), winFontName, extensions[i]);
+		if ( stat( fontFile, &st ) == 0 ) return fontFile;
+
+		// Try lowercase version just in case
+		char lowercaseName[MAX_PATH];
+		Q_strncpy( lowercaseName, winFontName, sizeof(lowercaseName) );
+		Q_strlower( lowercaseName );
+		snprintf( fontFile, sizeof fontFile, "%s/files/%s.%s", getenv("APP_DATA_PATH"), lowercaseName, extensions[i]);
+		if ( stat( fontFile, &st ) == 0 ) return fontFile;
+	}
 
 	if( strcmp( winFontName, "Courier New") == 0 )
 	{
@@ -427,21 +462,43 @@ char *TryFindFont(const char *winFontName, bool bBold, int italic)
 		return fontFile;
 	}
 
-	if( strcmp(lang, "japanese") == 0 ||
-		strcmp(lang, "koreana") == 0 ||
-		strcmp(lang, "korean") == 0 ||
-		strcmp(lang, "tchinese") == 0 ||
-		strcmp(lang, "schinese") == 0 )
+	// For standard UI fonts, prefer Roboto or Droid Sans on Android for English/Latin text.
+	// These fonts have metrics that match the engine's expectations better than CJK fonts.
+	const char *standardFonts[] = {
+		"Roboto-Regular.ttf",
+		"Roboto-Bold.ttf",
+		"DroidSans.ttf",
+		"DroidSans-Bold.ttf",
+		"dejavusans.ttf"
+	};
+
+	// Exclude 'Marlett' and other specialized fonts from system overrides to preserve mod-provided or fallback icons.
+	if ( !bIsAsian && !V_stristr(winFontName, "Marlett") && !V_stristr(winFontName, "Fallback") && !V_stristr(winFontName, "Chinese") && !V_stristr(winFontName, "Japanese") )
 	{
-		fontName = "DroidSansFallback.ttf"; // for chinese/japanese/korean
-		snprintf( fontFile, sizeof fontFile, "%s/files/%s", getenv("APP_DATA_PATH"), fontName);
-		return fontFile;
+		for ( int i = 0; i < ARRAYSIZE(standardFonts); ++i )
+		{
+			snprintf( fontFile, sizeof fontFile, "/system/fonts/%s", standardFonts[i]);
+			if ( stat( fontFile, &st ) == 0 ) return fontFile;
+		}
 	}
-	else if( strcmp(lang, "thai") == 0 )
+
+	// Use CJK fonts as fallbacks or when explicitly requested.
+	const char *fallbackFonts[] = {
+		"NotoSansCJK-Regular.ttc",
+		"DroidSansFallback.ttf",
+		"SourceHanSans-Regular.ttc",
+		"NotoSansSC-Regular.otf"
+	};
+
+	for ( int i = 0; i < ARRAYSIZE(fallbackFonts); ++i )
 	{
-		fontName = "Itim-Regular.otf";
-		snprintf( fontFile, sizeof fontFile, "%s/files/%s", getenv("APP_DATA_PATH"), fontName);
-		return fontFile;
+		// Try app local files first
+		snprintf( fontFile, sizeof fontFile, "%s/files/%s", getenv("APP_DATA_PATH"), fallbackFonts[i]);
+		if ( stat( fontFile, &st ) == 0 ) return fontFile;
+
+		// Try system fonts
+		snprintf( fontFile, sizeof fontFile, "/system/fonts/%s", fallbackFonts[i]);
+		if ( stat( fontFile, &st ) == 0 ) return fontFile;
 	}
 
 	fontName = "dejavusans";
@@ -553,31 +610,27 @@ char *CLinuxFont::GetFontFileName( const char *windowsFontName, int flags )
 //-----------------------------------------------------------------------------
 void CLinuxFont::GetCharRGBA( wchar_t ch, int rgbaWide, int rgbaTall, unsigned char *prgba )
 {
-	bool bShouldAntialias = m_bAntiAliased;
-
-	// filter out 
-	if ( ( ch > 0x00FF ) && !( m_iFlags & vgui::ISurface::FONTFLAG_CUSTOM ) )
+	// Shim for symbol fonts (like Marlett). Most symbol fonts map glyphs to the 0xF000 range.
+	if ( ( m_iFlags & vgui::ISurface::FONTFLAG_SYMBOL ) || ( V_stristr( m_szName.String(), "Marlett" ) != NULL ) )
 	{
-		bShouldAntialias = false;
+		if ( ch < 256 )
+			ch += 0xF000;
 	}
-	
+
 	FT_Error error = FT_Load_Char( m_face, ch, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL ); 
 	if ( error )
 	{
-		Msg( "Error in FT_Load_Char: ch:%x error:%x\n", (int)ch, error );
-		return;
+		// Try without hinting for complex characters if normal fails
+		error = FT_Load_Char( m_face, ch, FT_LOAD_RENDER | FT_LOAD_NO_HINTING );
+		if ( error )
+		{
+			Msg( "Error in FT_Load_Char: ch:%x error:%x\n", (int)ch, error );
+			return;
+		}
 	}
 
-	int glyph_index = FT_Get_Char_Index( m_face, ch );
-	error = FT_Load_Glyph( m_face, glyph_index, FT_LOAD_RENDER | FT_LOAD_FLAGS );
-	if ( error )
-	{
-		Msg( "Error in FL_Load_Glyph: glyph_index:%d error:%x\n", glyph_index, error );
-		return;
-	}
-
-	int yBitmapStart = 0;
 	FT_GlyphSlot slot = m_face->glyph;
+	int yBitmapStart = 0;
 	int nSkipRows = ( m_iAscent - slot->bitmap_top );
 
 	if( nSkipRows < 0 )
@@ -749,6 +802,13 @@ void CLinuxFont::GetCharABCWidths(int ch, int &a, int &b, int &c)
 	finder.abc.a = metrics.horiBearingX / 64 - m_iBlur - m_iOutlineSize;
 	finder.abc.b = metrics.width / 64 + ( ( m_iBlur + m_iOutlineSize ) * 2 ) + m_iDropShadowOffset;
 	finder.abc.c = ( metrics.horiAdvance  - metrics.horiBearingX - metrics.width ) / 64 - m_iBlur - m_iDropShadowOffset - m_iOutlineSize;
+
+	if ( finder.abc.b <= 0 && ch > 127 )
+	{
+		finder.abc.a = 0;
+		finder.abc.b = m_iTall / 2; // Default to half height width
+		finder.abc.c = 0;
+	}
 
 	m_ExtendedABCWidthsCache.Insert( finder );
 

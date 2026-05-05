@@ -1792,28 +1792,18 @@ bool ClientDLL_Load()
 void InitExtraClientCmdCanExecuteVars()
 {	
 	// This can go away when we ship a client DLL with the FCVAR_CLIENTCMD_CAN_EXECUTE flag set on these cvars/concommands.
-	Cmd_AddClientCmdCanExecuteVar( "cancelselect" );
-	Cmd_AddClientCmdCanExecuteVar( "menuselect" );
-	Cmd_AddClientCmdCanExecuteVar( "playgamesound" );
-	Cmd_AddClientCmdCanExecuteVar( "_cl_classmenuopen" );
-	Cmd_AddClientCmdCanExecuteVar( "cl_buy_favorite" );
-	Cmd_AddClientCmdCanExecuteVar( "voice_modenable" );
-	Cmd_AddClientCmdCanExecuteVar( "togglescores" );
+	static const char *s_pszClientCmds[] = {
+		"cancelselect", "menuselect", "playgamesound", "_cl_classmenuopen",
+		"cl_buy_favorite", "voice_modenable", "togglescores", "spec_next",
+		"spec_prev", "spec_mode", "spec_menu", "spec_autodirector",
+		"overview_zoom", "overview_mode", "overview_health", "overview_names",
+		"overview_tracks", "overview_locked", "overview_alpha"
+	};
 
-	Cmd_AddClientCmdCanExecuteVar( "spec_next" );
-	Cmd_AddClientCmdCanExecuteVar( "spec_prev" );
-	Cmd_AddClientCmdCanExecuteVar( "spec_mode" );
-	Cmd_AddClientCmdCanExecuteVar( "spec_menu" );
-	Cmd_AddClientCmdCanExecuteVar( "spec_autodirector" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_zoom" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_mode" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_health" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_names" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_tracks" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_locked" );
-	Cmd_AddClientCmdCanExecuteVar( "overview_alpha" );
-
-	Cmd_AddClientCmdCanExecuteVar( "playgamesound" );
+	for ( int i = 0; i < (int)ARRAYSIZE(s_pszClientCmds); ++i )
+	{
+		Cmd_AddClientCmdCanExecuteVar( s_pszClientCmds[i] );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1821,7 +1811,7 @@ void InitExtraClientCmdCanExecuteVars()
 //-----------------------------------------------------------------------------
 static void ClientDLL_QueryCriticalInterfaces()
 {
-	COM_TimestampedLog( "g_pClientSidePrediction->Init" );
+	COM_TimestampedLog( "QueryCriticalInterfaces" );
 	
 	// Query all interfaces from factory in one pass - reduces factory lookup overhead
 	g_pClientSidePrediction = (IPrediction *)g_ClientFactory( VCLIENT_PREDICTION_INTERFACE_VERSION, NULL );
@@ -1858,6 +1848,13 @@ static void ClientDLL_QueryCriticalInterfaces()
 	{
 		g_bClientLeafSystemV1 = false;
 	}
+
+	// Batch VR and RenderTargets too if they are available
+	if ( g_pSourceVR )
+	{
+		g_pClientVR = (IClientVirtualReality *)g_ClientFactory( CLIENTVIRTUALREALITY_INTERFACE_VERSION, NULL );
+	}
+	g_pClientRenderTargets = (IClientRenderTargets *)g_ClientFactory( CLIENTRENDERTARGETS_INTERFACE_VERSION, NULL );
 }
 
 //-----------------------------------------------------------------------------
@@ -1870,9 +1867,6 @@ void ClientDLL_Init( void )
 	// Assert ClientDLL_Load successfully created these interfaces, as we need them to init properly
 	Assert ( g_ClientDLL );
 	Assert ( g_ClientFactory );
-
-	// this will get updated after we load a map, but this gets video info if we sys_error() prior to loading a map
-	// CL_SetSteamCrashComment();
 
 	if ( g_ClientDLL )
 	{

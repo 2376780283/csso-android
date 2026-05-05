@@ -51,10 +51,10 @@ CFontManager::CFontManager()
 #endif
 
 	// setup our text locale
-	setlocale( LC_CTYPE, "" );
-	setlocale( LC_TIME, "" );
-	setlocale( LC_COLLATE, "" );
-	setlocale( LC_MONETARY, "" );
+	setlocale( LC_CTYPE, "en_US.UTF-8" );
+	setlocale( LC_TIME, "en_US.UTF-8" );
+	setlocale( LC_COLLATE, "en_US.UTF-8" );
+	setlocale( LC_MONETARY, "en_US.UTF-8" );
 
 	m_pFileSystem = NULL;
 	m_pMaterialSystem = NULL;
@@ -585,7 +585,7 @@ FallbackFont_t g_FallbackFonts[] =
 };
 
 #elif defined(LINUX) || defined(PLATFORM_BSD)
-static const char *g_szValidAsianFonts[] = { "Marlett", "WenQuanYi Zen Hei", "unifont", NULL };
+static const char *g_szValidAsianFonts[] = { "Marlett", "WenQuanYi Zen Hei", "unifont", "Droid Sans Fallback", "Noto Sans CJK", "Source Han Sans", NULL };
 
 // list of how fonts fallback
 FallbackFont_t g_FallbackFonts[] =
@@ -644,7 +644,9 @@ const char *CFontManager::GetFallbackFontName(const char *windowsFontName)
 //-----------------------------------------------------------------------------
 const char *CFontManager::GetForeignFallbackFontName()
 {
-#ifdef WIN32
+#ifdef ANDROID
+	return "Droid Sans Fallback";
+#elif defined(WIN32)
 	// tahoma has all the necessary characters for asian/russian languages for winXP/2K+
 	return "Tahoma";
 #elif defined(OSX)
