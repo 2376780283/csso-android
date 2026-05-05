@@ -7,7 +7,6 @@
 #include "cbase.h"
 #include "cstrikespectatorgui.h"
 #include "cs_hud_chat.h"
-#include "cdll_client_int.h"
 #include "c_cs_player.h"
 #include "c_cs_playerresource.h"
 #include "hud_macros.h"
@@ -32,20 +31,6 @@ DECLARE_HUD_MESSAGE( CHudChat, RawAudio );
 
 extern ConVar cl_draw_only_deathnotices;
 
-// Safezone support for chat
-/*
-static CHudChat *s_pChatInstance = NULL;
-static int s_nChatBaseXPos = 0;
-static int s_nChatBaseYPos = 0;
-
-static void ChatSafeZoneCallback()
-{
-	if ( s_pChatInstance )
-	{
-		s_pChatInstance->UpdateSafeZonePosition();
-	}
-}
-*/
 
 //=====================
 //CHudChatLine
@@ -53,23 +38,12 @@ static void ChatSafeZoneCallback()
 
 CHudChatLine::CHudChatLine( vgui::Panel *parent, const char *panelName ) : CBaseHudChatLine( parent, panelName )
 {
-	m_text = NULL;
+        m_text = NULL;
 }
 
 void CHudChatLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
-	BaseClass::ApplySchemeSettings( pScheme );
-}
-
-void CHudChatLine::Paint()
-{
-    int wide, tall;
-    GetSize( wide, tall );
-  /* 
-    vgui::surface()->DrawSetColor( Color(0, 0, 0, 150) );
-    vgui::surface()->DrawFilledRect( 0, 0, wide, tall );
-    */
-    BaseClass::Paint();
+        BaseClass::ApplySchemeSettings( pScheme );
 }
 //=====================
 //CHudChatInputLine
@@ -77,14 +51,14 @@ void CHudChatLine::Paint()
 
 void CHudChatInputLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
-	BaseClass::ApplySchemeSettings(pScheme);
+        BaseClass::ApplySchemeSettings(pScheme);
 
-	vgui::HFont hFont = pScheme->GetFont( "ChatFont" );
+        vgui::HFont hFont = pScheme->GetFont( "ChatFont" );
 
-	m_pPrompt->SetFont( hFont );
-	m_pInput->SetFont( hFont );
+        m_pPrompt->SetFont( hFont );
+        m_pInput->SetFont( hFont );
 
-	m_pInput->SetFgColor( pScheme->GetColor( "Chat.TypingText", pScheme->GetColor( "Panel.FgColor", Color( 255, 255, 255, 255 ) ) ) );
+        m_pInput->SetFgColor( pScheme->GetColor( "Chat.TypingText", pScheme->GetColor( "Panel.FgColor", Color( 255, 255, 255, 255 ) ) ) );
 }
 
 
@@ -95,65 +69,54 @@ void CHudChatInputLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 CHudChat::CHudChat( const char *pElementName ) : BaseClass( pElementName )
 {
-//	s_pChatInstance = this;
-
-	//=============================================================================
-	// HPE_BEGIN:
-	// [tj] Add this to the render group that disappears when the scoreboard is up
-	//
-	// [pmf] Removed from render group so that chat still works during intermission
-	// (when the scoreboard is forced to be up). The downside is that chat shows
-	// over the scoreboard during regular play, but this might be less of an issue
-	// if we reduce the need to display it constantly by adding HUD support for
-	// live player counts.
-	//=============================================================================
-//	RegisterForRenderGroup("hide_for_scoreboard");
-	//=============================================================================
-	// HPE_END
-	//=============================================================================
-
-	//RegisterSafeZoneCallback( ChatSafeZoneCallback );
-}
-
-CHudChat::~CHudChat()
-{
-/*	UnregisterSafeZoneCallback( ChatSafeZoneCallback );
-	s_pChatInstance = NULL;*/
+        //=============================================================================
+        // HPE_BEGIN:
+        // [tj] Add this to the render group that disappears when the scoreboard is up
+        //
+        // [pmf] Removed from render group so that chat still works during intermission
+        // (when the scoreboard is forced to be up). The downside is that chat shows
+        // over the scoreboard during regular play, but this might be less of an issue
+        // if we reduce the need to display it constantly by adding HUD support for
+        // live player counts.
+        //=============================================================================
+//      RegisterForRenderGroup("hide_for_scoreboard");
+        //=============================================================================
+        // HPE_END
+        //=============================================================================
 }
 
 bool CHudChat::ShouldDraw()
 {
-	if ( cl_draw_only_deathnotices.GetBool() )
-		return false;
+        if ( cl_draw_only_deathnotices.GetBool() )
+                return false;
 
-	return CHudElement::ShouldDraw();
+        return CHudElement::ShouldDraw();
 }
 
 void CHudChat::CreateChatInputLine( void )
 {
-	m_pChatInput = new CHudChatInputLine( this, "ChatInputLine" );
-	m_pChatInput->SetVisible( false );
+        m_pChatInput = new CHudChatInputLine( this, "ChatInputLine" );
+        m_pChatInput->SetVisible( false );
 }
 
 void CHudChat::CreateChatLines( void )
 {
 #ifndef _XBOX
-	m_ChatLine = new CHudChatLine( this, "ChatLine1" );
-	m_ChatLine->SetVisible( false );		
+        m_ChatLine = new CHudChatLine( this, "ChatLine1" );
+        m_ChatLine->SetVisible( false );                
 
 #endif
 }
 
 void CHudChat::Init( void )
 {
-	BaseClass::Init();
+        BaseClass::Init();
 
-	HOOK_HUD_MESSAGE( CHudChat, RadioText );
-	HOOK_HUD_MESSAGE( CHudChat, SayText );
-	HOOK_HUD_MESSAGE( CHudChat, SayText2 );
-	HOOK_HUD_MESSAGE( CHudChat, TextMsg );
-	HOOK_HUD_MESSAGE( CHudChat, RawAudio );
-	m_bIsRadioMessage = false;
+        HOOK_HUD_MESSAGE( CHudChat, RadioText );
+        HOOK_HUD_MESSAGE( CHudChat, SayText );
+        HOOK_HUD_MESSAGE( CHudChat, SayText2 );
+        HOOK_HUD_MESSAGE( CHudChat, TextMsg );
+        HOOK_HUD_MESSAGE( CHudChat, RawAudio );
 }
 
 //-----------------------------------------------------------------------------
@@ -161,7 +124,6 @@ void CHudChat::Init( void )
 //-----------------------------------------------------------------------------
 void CHudChat::Reset( void )
 {
-	m_bIsRadioMessage = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -169,30 +131,27 @@ void CHudChat::Reset( void )
 //-----------------------------------------------------------------------------
 void CHudChat::MsgFunc_RadioText( bf_read &msg )
 {
-	int msg_dest = msg.ReadByte();
-	NOTE_UNUSED( msg_dest );
-	int client = msg.ReadByte();
+        int msg_dest = msg.ReadByte();
+        NOTE_UNUSED( msg_dest );
+        int client = msg.ReadByte();
 
-	wchar_t szBuf[6][128];
-	wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false );
+        wchar_t szBuf[6][128];
+        wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false );
 
-	// keep reading strings and using C format strings for subsituting the strings into the localised text string
-	ReadChatTextString ( msg, szBuf[1], sizeof( szBuf[1] ) );		// player name
-	ReadLocalizedString( msg, szBuf[2], sizeof( szBuf[2] ), true );	// location
-	ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true );	// radio text
-	ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true );	// unused :(
+        // keep reading strings and using C format strings for subsituting the strings into the localised text string
+        ReadChatTextString ( msg, szBuf[1], sizeof( szBuf[1] ) );               // player name
+        ReadLocalizedString( msg, szBuf[2], sizeof( szBuf[2] ), true ); // location
+        ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true ); // radio text
+        ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true ); // unused :(
 
-	g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
+        g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
 
-	char ansiString[512];
-	g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[5] ), ansiString, sizeof( ansiString ) );
-    
-    m_bIsRadioMessage = true;
-	ChatPrintf( client, CHAT_FILTER_TEAMCHANGE, "%s", ansiString );
-    m_bIsRadioMessage = false;
-    
-	CLocalPlayerFilter filter;
-	C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
+        char ansiString[512];
+        g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[5] ), ansiString, sizeof( ansiString ) );
+        ChatPrintf( client, CHAT_FILTER_TEAMCHANGE, "%s", ansiString );
+
+        CLocalPlayerFilter filter;
+        C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
 }
 
 //-----------------------------------------------------------------------------
@@ -200,76 +159,76 @@ void CHudChat::MsgFunc_RadioText( bf_read &msg )
 //-----------------------------------------------------------------------------
 void CHudChat::MsgFunc_SayText2( bf_read &msg )
 {
-	// Got message during connection
-	if ( !g_PR )
-		return;
+        // Got message during connection
+        if ( !g_PR )
+                return;
 
-	int client = msg.ReadByte();
-	bool bWantsToChat = msg.ReadByte();
+        int client = msg.ReadByte();
+        bool bWantsToChat = msg.ReadByte();
 
-	wchar_t szBuf[6][256];
-	char untranslated_msg_text[256];
-	wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false, untranslated_msg_text, sizeof( untranslated_msg_text ) );
+        wchar_t szBuf[6][256];
+        char untranslated_msg_text[256];
+        wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false, untranslated_msg_text, sizeof( untranslated_msg_text ) );
 
-	// keep reading strings and using C format strings for subsituting the strings into the localised text string
-	ReadChatTextString ( msg, szBuf[1], sizeof( szBuf[1] ) );		// player name
-	ReadChatTextString ( msg, szBuf[2], sizeof( szBuf[2] ) );		// chat text
-	ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true );	// location
-	ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true );	// unused :(
+        // keep reading strings and using C format strings for subsituting the strings into the localised text string
+        ReadChatTextString ( msg, szBuf[1], sizeof( szBuf[1] ) );               // player name
+        ReadChatTextString ( msg, szBuf[2], sizeof( szBuf[2] ) );               // chat text
+        ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true ); // location
+        ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true ); // unused :(
 
-	g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
+        g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
 
-	char ansiString[512];
-	g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[5] ), ansiString, sizeof( ansiString ) );
+        char ansiString[512];
+        g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[5] ), ansiString, sizeof( ansiString ) );
 
-	// flash speaking player dot
-	if ( client > 0 )
-		Radar_FlashPlayer( client );
+        // flash speaking player dot
+        if ( client > 0 )
+                Radar_FlashPlayer( client );
 
-	if ( bWantsToChat )
-	{
-		int iFilter = CHAT_FILTER_NONE;
-		bool playChatSound = true;
+        if ( bWantsToChat )
+        {
+                int iFilter = CHAT_FILTER_NONE;
+                bool playChatSound = true;
 
-		if ( client > 0 && (g_PR->GetTeam( client ) != g_PR->GetTeam( GetLocalPlayerIndex() )) )
-		{
-			iFilter = CHAT_FILTER_PUBLICCHAT;
-			if ( !( iFilter & GetFilterFlags() ) )
-			{
-				playChatSound = false;
-			}
-		}
+                if ( client > 0 && (g_PR->GetTeam( client ) != g_PR->GetTeam( GetLocalPlayerIndex() )) )
+                {
+                        iFilter = CHAT_FILTER_PUBLICCHAT;
+                        if ( !( iFilter & GetFilterFlags() ) )
+                        {
+                                playChatSound = false;
+                        }
+                }
 
-		// print raw chat text
-		ChatPrintf( client, iFilter, "%s", ansiString );
+                // print raw chat text
+                ChatPrintf( client, iFilter, "%s", ansiString );
 
-		Msg( "%s\n", RemoveColorMarkup(ansiString) );
+                Msg( "%s\n", RemoveColorMarkup(ansiString) );
 
-		if ( playChatSound )
-		{
-			CLocalPlayerFilter filter;
-			C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
-		}
-	}
-	else
-	{
-		// print raw chat text
-		ChatPrintf( client, GetFilterForString( untranslated_msg_text), "%s", ansiString );
-	}
+                if ( playChatSound )
+                {
+                        CLocalPlayerFilter filter;
+                        C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
+                }
+        }
+        else
+        {
+                // print raw chat text
+                ChatPrintf( client, GetFilterForString( untranslated_msg_text), "%s", ansiString );
+        }
 }
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 int CHudChat::GetChatInputOffset( void )
 {
-	if ( m_pChatInput->IsVisible() )
-	{
-		return m_iFontHeight;
-	}
-	else
-	{
-		return 0;
-	}
+        if ( m_pChatInput->IsVisible() )
+        {
+                return m_iFontHeight;
+        }
+        else
+        {
+                return 0;
+        }
 }
 
 //-----------------------------------------------------------------------------
@@ -278,54 +237,53 @@ int CHudChat::GetChatInputOffset( void )
 //-----------------------------------------------------------------------------
 void CHudChat::MsgFunc_RawAudio( bf_read &msg )
 {
-	char szString[2048];
-	int pitch = msg.ReadByte();
-	int playerIndex = msg.ReadByte();
-	float feedbackDuration = msg.ReadFloat();
-	msg.ReadString( szString, sizeof(szString) );
+        char szString[2048];
+        int pitch = msg.ReadByte();
+        int playerIndex = msg.ReadByte();
+        float feedbackDuration = msg.ReadFloat();
+        msg.ReadString( szString, sizeof(szString) );
 
-	EmitSound_t ep;
-	ep.m_nChannel = CHAN_VOICE;
-	ep.m_pSoundName = szString;
-	ep.m_flVolume = 1.0f;
-	ep.m_SoundLevel = SNDLVL_NORM;
-	ep.m_nPitch = pitch;
+        EmitSound_t ep;
+        ep.m_nChannel = CHAN_VOICE;
+        ep.m_pSoundName = szString;
+        ep.m_flVolume = 1.0f;
+        ep.m_SoundLevel = SNDLVL_NORM;
+        ep.m_nPitch = pitch;
 
-	CLocalPlayerFilter filter;
-	C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, ep );
+        CLocalPlayerFilter filter;
+        C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, ep );
 
-	if ( feedbackDuration > 0.0f )
-	{
-		//Flash them on the radar
-		C_CSPlayer *pPlayer = static_cast<C_CSPlayer*>( cl_entitylist->GetEnt(playerIndex) );
+        if ( feedbackDuration > 0.0f )
+        {
+                //Flash them on the radar
+                C_CSPlayer *pPlayer = static_cast<C_CSPlayer*>( cl_entitylist->GetEnt(playerIndex) );
 
-		if ( pPlayer )
-		{
-			// Create the flashy above player's head
-			RadioManager()->UpdateVoiceStatus( playerIndex, feedbackDuration );
-		}
-	}
+                if ( pPlayer )
+                {
+                        // Create the flashy above player's head
+                        RadioManager()->UpdateVoiceStatus( playerIndex, feedbackDuration );
+                }
+        }
 }
 
 
 //-----------------------------------------------------------------------------
 Color CHudChat::GetClientColor( int clientIndex )
 {
-	if ( clientIndex == 0 ) // console msg
-	{
-		return g_ColorGreen;
-	}
-	else if( g_PR )
-	{
-		switch ( g_PR->GetTeam( clientIndex ) )
-		{
-		case 2	: return g_ColorTer;
-		case 3	: return g_ColorBlue;
-		default	: return g_ColorGrey;
-		}
-	}
+        if ( clientIndex == 0 ) // console / server msg
+                return g_ColorWhite;
 
-	return g_ColorWhite;
+        if ( g_PR )
+        {
+                switch ( g_PR->GetTeam( clientIndex ) )
+                {
+                case 2: return g_ColorDarkGreen;            // T  — bright green
+                case 3: return g_ColorBlue;                 // CT — light blue
+                default: return g_ColorWhite;
+                }
+        }
+
+        return g_ColorWhite;
 }
 
 //-----------------------------------------------------------------------------
@@ -333,100 +291,64 @@ Color CHudChat::GetClientColor( int clientIndex )
 //-----------------------------------------------------------------------------
 Color CHudChat::GetTextColorForClient( TextColor colorNum, int clientIndex )
 {
-	Color c;
-	switch ( colorNum )
-	{
-	case COLOR_PLAYERNAME:
-		c = GetClientColor( clientIndex );
-		break;
-
-	case COLOR_LOCATION:
-		c = g_ColorDarkGreen;
-		break;
-
-
-    // [tj] Adding support for achievement coloring. 
-    //      Just doing what all the other games do
-    case COLOR_ACHIEVEMENT:
+        Color c;
+        switch ( colorNum )
         {
-            vgui::IScheme *pSourceScheme = vgui::scheme()->GetIScheme( vgui::scheme()->GetScheme( "SourceScheme" ) ); 
-            if ( pSourceScheme )
-            {
-                c = pSourceScheme->GetColor( "SteamLightGreen", GetBgColor() );
-            }
-            else
-            {
-                c = GetDefaultTextColor();
-            }
+        case COLOR_PLAYERNAME:
+                c = GetClientColor( clientIndex );
+                break;
+
+        case COLOR_LOCATION:
+                c = Color( 0, 195, 195, 255 );              // cyan/teal for locations
+                break;
+
+        case COLOR_ACHIEVEMENT:
+                {
+                        vgui::IScheme *pSourceScheme = vgui::scheme()->GetIScheme( vgui::scheme()->GetScheme( "SourceScheme" ) );
+                        c = pSourceScheme ? pSourceScheme->GetColor( "SteamLightGreen", g_ColorDarkGreen ) : g_ColorDarkGreen;
+                }
+                break;
+
+        case COLOR_AWARD:
+                c = g_ColorGreen;                           // positive money / award — white
+                break;
+
+        case COLOR_PENALTY:
+                c = g_ColorRed;                             // negative money / penalty — red
+                break;
+
+        default:
+                c = g_ColorWhite;                           // all other text — white
         }
-        break;
 
-	case COLOR_AWARD:
-		c = Color( 162, 255, 71 );
-		break;
-
-	case COLOR_PENALTY:
-		c = g_ColorRed;
-		break;
-
-	default:
-	    if (m_bIsRadioMessage)
-	    {
-		    c = GetClientColor( clientIndex );
-		}
-		else
-		{
-		c = g_ColorWhite;
-		}
-	}
-
-	return Color( c[0], c[1], c[2], 255 );
+        return Color( c[0], c[1], c[2], 255 );
 }
 
 int CHudChat::GetFilterForString( const char *pString )
 {
-	int iFilter = BaseClass::GetFilterForString( pString );
+        int iFilter = BaseClass::GetFilterForString( pString );
 
-	if ( iFilter == CHAT_FILTER_NONE )
-	{
-		if ( !Q_stricmp( pString, "#CStrike_Name_Change" ) ) 
-		{
-			return CHAT_FILTER_NAMECHANGE;
-		}
-	}
+        if ( iFilter == CHAT_FILTER_NONE )
+        {
+                if ( !Q_stricmp( pString, "#CStrike_Name_Change" ) ) 
+                {
+                        return CHAT_FILTER_NAMECHANGE;
+                }
+        }
 
-	return iFilter;
+        return iFilter;
 }
 
 void CHudChat::StartMessageMode( int iMessageModeType )
 {
-	BaseClass::StartMessageMode(iMessageModeType);
+        BaseClass::StartMessageMode(iMessageModeType);
 
-	vgui::ipanel()->SetTopmostPopup(GetVPanel(), true);
+        vgui::ipanel()->SetTopmostPopup(GetVPanel(), true);
 }
 
 void CHudChat::StopMessageMode( void )
 {
-	vgui::ipanel()->SetTopmostPopup(GetVPanel(), false);
+        vgui::ipanel()->SetTopmostPopup(GetVPanel(), false);
 
-	BaseClass::StopMessageMode();
+        BaseClass::StopMessageMode();
 }
-
-void CHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
-{
-	BaseClass::ApplySchemeSettings( pScheme );
-
-	// Store base position from .res file
-	//GetPos( s_nChatBaseXPos, s_nChatBaseYPos );
-	//UpdateSafeZonePosition();
-}
-/*
-void CHudChat::UpdateSafeZonePosition()
-{
-	// Apply safezone offset - chat is anchored to bottom-left
-	int left, top, right, bottom;
-	GetSafeZoneMargins( left, top, right, bottom );
-
-	SetPos( s_nChatBaseXPos + left, s_nChatBaseYPos - bottom );
-}
-*/

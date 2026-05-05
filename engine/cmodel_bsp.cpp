@@ -24,10 +24,6 @@ extern IMaterialSystem *materials;
 #include "vphysics_interface.h"
 #include "sys_dll.h"
 #include "tier2/tier2.h"
-#include <thread>
-#include <vector>
-#include <atomic>
-#include <algorithm>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1187,137 +1183,118 @@ void CollisionBSPData_LoadDispInfo( CCollisionBSPData *pBSPData )
 		pDispIndexToFaceIndex[pFaces->dispinfo] = (unsigned short)i;
     }
 
-	// Pre-calculate offsets for vertices and triangles to allow multi-threaded processing
-	struct DispOffsets
-	{
-		int iVert;
-		int iTri;
-	};
-	CUtlVector<DispOffsets> dispOffsets;
-	dispOffsets.EnsureCount( coreDispCount );
-	
+	// Load one dispinfo from disk at a time and set it up.
 	int iCurVert = 0;
 	int iCurTri = 0;
+	CDispVert tempVerts[MAX_DISPVERTS];
+	CDispTri  tempTris[MAX_DISPTRIS];
+
+	int nSize = 0;
+	int nCacheSize = 0;
+	int nPowerCount[3] = { 0, 0, 0 };
+
 	CMapLoadHelper lhDispInfo( LUMP_DISPINFO );
-	
+	CMapLoadHelper lhDispVerts( LUMP_DISP_VERTS );
+	CMapLoadHelper lhDispTris( LUMP_DISP_TRIS );
+
 	for ( i = 0; i < coreDispCount; ++i )
 	{
-		dispOffsets[i].iVert = iCurVert;
-		dispOffsets[i].iTri = iCurTri;
-
+		// Find the face associated with this dispinfo
 		unsigned short nFaceIndex = pDispIndexToFaceIndex[i];
-		if ( nFaceIndex != 0xFFFF )
-		{
-			ddispinfo_t dispInfo;
-			lhDispInfo.LoadLumpElement( i, sizeof(ddispinfo_t), &dispInfo );
-			iCurVert += NUM_DISP_POWER_VERTS( dispInfo.power );
-			iCurTri += NUM_DISP_POWER_TRIS( dispInfo.power );
-		}
-	}
+		if ( nFaceIndex == 0xFFFF )
+			continue;
 
-	std::atomic<int> nTotalSize(0);
-	std::atomic<int> nTotalCacheSize(0);
-	std::atomic<int> nPowerCountAtomics[3];
-	for (int k = 0; k < 3; ++k) nPowerCountAtomics[k].store(0);
+		// Load up the dispinfo and create the CCoreDispInfo from it.
+		ddispinfo_t dispInfo;
+		lhDispInfo.LoadLumpElement( i, sizeof(ddispinfo_t), &dispInfo );
 
-	auto LoadDispWorker = [&](int startIdx, int endIdx) {
-		CDispVert tempVerts[MAX_DISPVERTS];
-		CDispTri  tempTris[MAX_DISPTRIS];
-		CMapLoadHelper lhDispInfoLocal( LUMP_DISPINFO );
-		CMapLoadHelper lhDispVerts( LUMP_DISP_VERTS );
-		CMapLoadHelper lhDispTris( LUMP_DISP_TRIS );
-
-		for ( int idx = startIdx; idx < endIdx; ++idx )
-		{
-			unsigned short nFaceIndex = pDispIndexToFaceIndex[idx];
-			if ( nFaceIndex == 0xFFFF )
-				continue;
-
-			ddispinfo_t dispInfo;
-			lhDispInfoLocal.LoadLumpElement( idx, sizeof(ddispinfo_t), &dispInfo );
-
-			int nVerts = NUM_DISP_POWER_VERTS( dispInfo.power );
-			lhDispVerts.LoadLumpData( dispOffsets[idx].iVert * sizeof(CDispVert), nVerts * sizeof(CDispVert), tempVerts );
-			
-			int nTris = NUM_DISP_POWER_TRIS( dispInfo.power );
-			lhDispTris.LoadLumpData( dispOffsets[idx].iTri * sizeof(CDispTri), nTris * sizeof(CDispTri), tempTris );
-
-			CCoreDispInfo coreDisp;
-			CCoreDispSurface *pDispSurf = coreDisp.GetSurface();
-			pDispSurf->SetPointStart( dispInfo.startPosition );
-			pDispSurf->SetContents( dispInfo.contents );
+		// Read in the vertices.
+		int nVerts = NUM_DISP_POWER_VERTS( dispInfo.power );
+		lhDispVerts.LoadLumpData( iCurVert * sizeof(CDispVert), nVerts*sizeof(CDispVert), tempVerts );
+		iCurVert += nVerts;
 		
-			coreDisp.InitDispInfo( dispInfo.power, dispInfo.minTess, dispInfo.smoothingAngle, tempVerts, tempTris );
+		// Read in the tris.
+		int nTris = NUM_DISP_POWER_TRIS( dispInfo.power );
+		lhDispTris.LoadLumpData( iCurTri * sizeof( CDispTri ), nTris*sizeof( CDispTri), tempTris );
+		iCurTri += nTris;
 
-			pDispSurf->SetHandle( nFaceIndex );
+		CCoreDispInfo coreDisp;
+		CCoreDispSurface *pDispSurf = coreDisp.GetSurface();
+		pDispSurf->SetPointStart( dispInfo.startPosition );
+		pDispSurf->SetContents( dispInfo.contents );
+	
+		coreDisp.InitDispInfo( dispInfo.power, dispInfo.minTess, dispInfo.smoothingAngle, tempVerts, tempTris );
 
-			dface_t *pFace = &pFaceList[ nFaceIndex ];
-			if ( pFace->numedges > 4 )
-				continue;
+		// Hook the disp surface to the face
+		pFaces = &pFaceList[ nFaceIndex ];
+		pDispSurf->SetHandle( nFaceIndex );
 
-			Vector surfPoints[4];
-			pDispSurf->SetPointCount( pFace->numedges );
-			for ( int j = 0; j < pFace->numedges; j++ )
+		// get points
+		if ( pFaces->numedges > 4 )
+			continue;
+
+		Vector surfPoints[4];
+		pDispSurf->SetPointCount( pFaces->numedges );
+		int j;
+		for ( j = 0; j < pFaces->numedges; j++ )
+		{
+			int eIndex = pSurfEdges[pFaces->firstedge+j];
+			if ( eIndex < 0 )
 			{
-				int eIndex = pSurfEdges[pFace->firstedge+j];
-				if ( eIndex < 0 )
-					VectorCopy( pVerts[pEdges[-eIndex].v[1]].point, surfPoints[j] );
-				else
-					VectorCopy( pVerts[pEdges[eIndex].v[0]].point, surfPoints[j] );
+				VectorCopy( pVerts[pEdges[-eIndex].v[1]].point, surfPoints[j] );
 			}
-
-			for ( int j = 0; j < 4; j++ )
-				pDispSurf->SetPoint( j, surfPoints[j] );
-
-			pDispSurf->FindSurfPointStartIndex();
-			pDispSurf->AdjustSurfPointData();
-
-			CDispCollTree *pDispTree = &g_pDispCollTrees[idx];
-			pDispTree->SetPower( 0 );
-
-			if ( pDispSurf->GetPointCount() != 4 )
-				continue;
-
-			coreDisp.Create();
-			pDispTree->Create( &coreDisp );
-			g_pDispBounds[idx].Init(pDispTree->m_mins, pDispTree->m_maxs, pDispTree->m_iCounter, pDispTree->GetContents());
-			
-			nTotalSize += pDispTree->GetMemorySize();
-			nTotalCacheSize += pDispTree->GetCacheMemorySize();
-			int powerIdx = pDispTree->GetPower() - 2;
-			if (powerIdx >= 0 && powerIdx < 3)
-				nPowerCountAtomics[powerIdx]++;
-
-			texinfo_t *pTex = &pTexinfoList[pFace->texinfo];
-			if ( pTex->texdata >= 0 && pTex->texdata < g_MaterialSurfaceCache.Count() )
+			else
 			{
-				const MaterialSurfaceCache &cache = g_MaterialSurfaceCache[pTex->texdata];
-				if ( cache.surfaceProp0 != 0 )
-				{
-					pDispTree->SetSurfaceProps( 0, cache.surfaceProp0 );
-					pDispTree->SetSurfaceProps( 1, cache.surfaceProp0 );
-				}
-				if ( cache.surfaceProp1 != 0 )
-					pDispTree->SetSurfaceProps( 1, cache.surfaceProp1 );
+				VectorCopy( pVerts[pEdges[eIndex].v[0]].point, surfPoints[j] );
 			}
 		}
-	};
 
-	int numThreads = std::min((int)std::thread::hardware_concurrency(), coreDispCount);
-	numThreads = std::max(1, numThreads);
-	
-	std::vector<std::thread> threads;
-	int chunk = (coreDispCount + numThreads - 1) / numThreads;
-	for (int t = 0; t < numThreads; ++t)
-	{
-		int start = t * chunk;
-		int end = std::min(start + chunk, coreDispCount);
-		if (start < end)
-			threads.emplace_back(LoadDispWorker, start, end);
+		for ( j = 0; j < 4; j++ )
+		{
+			pDispSurf->SetPoint( j, surfPoints[j] );
+		}
+
+		pDispSurf->FindSurfPointStartIndex();
+		pDispSurf->AdjustSurfPointData();
+
+		//
+		// generate the collision displacement surfaces
+		//
+		CDispCollTree *pDispTree = &g_pDispCollTrees[i];
+		pDispTree->SetPower( 0 );
+
+		//
+		// check for null faces, should have been taken care of in vbsp!!!
+		//
+		int pointCount = pDispSurf->GetPointCount();
+		if ( pointCount != 4 )
+			continue;
+
+		coreDisp.Create();
+
+		// new collision
+		pDispTree->Create( &coreDisp );
+		g_pDispBounds[i].Init(pDispTree->m_mins, pDispTree->m_maxs, pDispTree->m_iCounter, pDispTree->GetContents());
+		nSize += pDispTree->GetMemorySize();
+		nCacheSize += pDispTree->GetCacheMemorySize();
+		nPowerCount[pDispTree->GetPower()-2]++;
+
+		// Surface props - use cached material properties instead of re-querying
+		texinfo_t *pTex = &pTexinfoList[pFaces->texinfo];
+		if ( pTex->texdata >= 0 && pTex->texdata < g_MaterialSurfaceCache.Count() )
+		{
+			const MaterialSurfaceCache &cache = g_MaterialSurfaceCache[pTex->texdata];
+			if ( cache.surfaceProp0 != 0 )
+			{
+				pDispTree->SetSurfaceProps( 0, cache.surfaceProp0 );
+				pDispTree->SetSurfaceProps( 1, cache.surfaceProp0 );
+			}
+			if ( cache.surfaceProp1 != 0 )
+			{
+				pDispTree->SetSurfaceProps( 1, cache.surfaceProp1 );
+			}
+		}
 	}
-
-	for (auto &t : threads)
-		t.join();
 
 	CMapLoadHelper lhDispPhys( LUMP_PHYSDISP );
 	dphysdisp_t *pDispPhys = (dphysdisp_t *)lhDispPhys.LumpBase();
