@@ -140,7 +140,9 @@ CON_COMMAND_F( togglescores, "Toggles score panel", FCVAR_CLIENTCMD_CAN_EXECUTE)
 
 void radiomenu_on_f()
 {
-	gViewPortInterface->ShowPanel( PANEL_RADIO_MENU, true );
+	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+	if ( pPlayer && pPlayer->IsAlive() )
+		gViewPortInterface->ShowPanel( PANEL_RADIO_MENU, true );
 }
 ConCommand radiomenu_on( "+radiomenu", radiomenu_on_f );
 void radiomenu_off_f()
@@ -150,9 +152,11 @@ void radiomenu_off_f()
 ConCommand radiomenu_off( "-radiomenu", radiomenu_off_f );
 void radiomenu_toggle_f()
 {
-	IViewPortPanel *pPanel = gViewPortInterface->FindPanelByName( PANEL_RADIO_MENU );
+	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+
+	IViewPortPanel* pPanel = gViewPortInterface->FindPanelByName( PANEL_RADIO_MENU );
 	if ( pPanel )
-		pPanel->ShowPanel( !pPanel->IsVisible() );
+		pPanel->ShowPanel( !pPanel->IsVisible() && pPlayer && pPlayer->IsAlive() );
 }
 ConCommand radiomenu_toggle( "radiomenu_toggle", radiomenu_toggle_f );
 
