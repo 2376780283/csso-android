@@ -1792,69 +1792,28 @@ bool ClientDLL_Load()
 void InitExtraClientCmdCanExecuteVars()
 {	
 	// This can go away when we ship a client DLL with the FCVAR_CLIENTCMD_CAN_EXECUTE flag set on these cvars/concommands.
-	static const char *s_pszClientCmds[] = {
-		"cancelselect", "menuselect", "playgamesound", "_cl_classmenuopen",
-		"cl_buy_favorite", "voice_modenable", "togglescores", "spec_next",
-		"spec_prev", "spec_mode", "spec_menu", "spec_autodirector",
-		"overview_zoom", "overview_mode", "overview_health", "overview_names",
-		"overview_tracks", "overview_locked", "overview_alpha"
-	};
+	Cmd_AddClientCmdCanExecuteVar( "cancelselect" );
+	Cmd_AddClientCmdCanExecuteVar( "menuselect" );
+	Cmd_AddClientCmdCanExecuteVar( "playgamesound" );
+	Cmd_AddClientCmdCanExecuteVar( "_cl_classmenuopen" );
+	Cmd_AddClientCmdCanExecuteVar( "cl_buy_favorite" );
+	Cmd_AddClientCmdCanExecuteVar( "voice_modenable" );
+	Cmd_AddClientCmdCanExecuteVar( "togglescores" );
 
-	for ( int i = 0; i < (int)ARRAYSIZE(s_pszClientCmds); ++i )
-	{
-		Cmd_AddClientCmdCanExecuteVar( s_pszClientCmds[i] );
-	}
-}
+	Cmd_AddClientCmdCanExecuteVar( "spec_next" );
+	Cmd_AddClientCmdCanExecuteVar( "spec_prev" );
+	Cmd_AddClientCmdCanExecuteVar( "spec_mode" );
+	Cmd_AddClientCmdCanExecuteVar( "spec_menu" );
+	Cmd_AddClientCmdCanExecuteVar( "spec_autodirector" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_zoom" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_mode" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_health" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_names" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_tracks" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_locked" );
+	Cmd_AddClientCmdCanExecuteVar( "overview_alpha" );
 
-//-----------------------------------------------------------------------------
-// Batch interface queries to reduce factory call overhead
-//-----------------------------------------------------------------------------
-static void ClientDLL_QueryCriticalInterfaces()
-{
-	COM_TimestampedLog( "QueryCriticalInterfaces" );
-	
-	// Query all interfaces from factory in one pass - reduces factory lookup overhead
-	g_pClientSidePrediction = (IPrediction *)g_ClientFactory( VCLIENT_PREDICTION_INTERFACE_VERSION, NULL );
-	if ( !g_pClientSidePrediction )
-	{
-		Sys_Error( "Could not get IPrediction interface from library client" );
-	}
-	g_pClientSidePrediction->Init();
-
-	entitylist = ( IClientEntityList  *)g_ClientFactory( VCLIENTENTITYLIST_INTERFACE_VERSION, NULL );
-	if ( !entitylist )
-	{
-		Sys_Error( "Could not get client entity list interface from library client" );
-	}
-
-	centerprint = ( ICenterPrint * )g_ClientFactory( VCENTERPRINT_INTERFACE_VERSION, NULL );
-	if ( !centerprint )
-	{
-		Sys_Error( "Could not get centerprint interface from library client" );
-	}
-
-	// Try V2 leaf system first, fall back to V1
-	clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION, NULL );
-	if ( !clientleafsystem )
-	{
-		clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION_1, NULL );
-		if ( !clientleafsystem )
-		{
-			Sys_Error( "Could not get client leaf system interface from library client" );
-		}
-		g_bClientLeafSystemV1 = true;
-	}
-	else
-	{
-		g_bClientLeafSystemV1 = false;
-	}
-
-	// Batch VR and RenderTargets too if they are available
-	if ( g_pSourceVR )
-	{
-		g_pClientVR = (IClientVirtualReality *)g_ClientFactory( CLIENTVIRTUALREALITY_INTERFACE_VERSION, NULL );
-	}
-	g_pClientRenderTargets = (IClientRenderTargets *)g_ClientFactory( CLIENTRENDERTARGETS_INTERFACE_VERSION, NULL );
+	Cmd_AddClientCmdCanExecuteVar( "playgamesound" );
 }
 
 //-----------------------------------------------------------------------------
@@ -1868,6 +1827,9 @@ void ClientDLL_Init( void )
 	Assert ( g_ClientDLL );
 	Assert ( g_ClientFactory );
 
+	// this will get updated after we load a map, but this gets video info if we sys_error() prior to loading a map
+	CL_SetSteamCrashComment();
+
 	if ( g_ClientDLL )
 	{
 		COM_TimestampedLog( "g_ClientDLL->Init" );
@@ -1879,11 +1841,47 @@ void ClientDLL_Init( void )
 
 		if ( g_ClientFactory )
 		{
-			// Query all critical interfaces in one pass (cache friendly)
-			ClientDLL_QueryCriticalInterfaces();
+			COM_TimestampedLog( "g_pClientSidePrediction->Init" );
+
+			// Load the prediction interface from the client .dll
+			g_pClientSidePrediction = (IPrediction *)g_ClientFactory( VCLIENT_PREDICTION_INTERFACE_VERSION, NULL );
+			if ( !g_pClientSidePrediction )
+			{
+				Sys_Error( "Could not get IPrediction interface from library client" );
+			}
+			g_pClientSidePrediction->Init();
+
+			entitylist = ( IClientEntityList  *)g_ClientFactory( VCLIENTENTITYLIST_INTERFACE_VERSION, NULL );
+			if ( !entitylist )
+			{
+				Sys_Error( "Could not get client entity list interface from library client" );
+			}
+
+			centerprint = ( ICenterPrint * )g_ClientFactory( VCENTERPRINT_INTERFACE_VERSION, NULL );
+			if ( !centerprint )
+			{
+				Sys_Error( "Could not get centerprint interface from library client" );
+			}
+
+			clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION, NULL );
+			if ( clientleafsystem )
+			{
+				g_bClientLeafSystemV1 = false;
+			}
+			else if ( !clientleafsystem )
+			{
+				clientleafsystem = ( IClientLeafSystemEngine *)g_ClientFactory( CLIENTLEAFSYSTEM_INTERFACE_VERSION_1, NULL );
+				if ( !clientleafsystem )
+				{
+					Sys_Error( "Could not get client leaf system interface from library client" );
+				}
+				else
+				{
+					g_bClientLeafSystemV1 = true;
+				}
+			}
 
 #if defined( REPLAY_ENABLED )
-			// Optimization: Only initialize replay if actually supported and used
 			if ( Replay_IsSupportedModAndPlatform() )
 			{
 				// Replay dll should be loaded by this point
@@ -1892,7 +1890,7 @@ void ClientDLL_Init( void )
 					Sys_Error( "Replay.dll was not loaded" );
 				}
 
-				// Batch replay interface queries (similar to critical interfaces)
+				// Get pointer to client-side replay interface implementation
 				g_pClientReplay = (IClientReplay *)g_ClientFactory( CLIENT_REPLAY_INTERFACE_VERSION, NULL );
 				if ( !g_pClientReplay )
 				{
@@ -1921,7 +1919,6 @@ void ClientDLL_Init( void )
 				extern CGameServer sv;
 				if ( !sv.IsDedicated() )
 				{
-					// Cache replay context and managers for fast access
 					g_pClientReplayContext = g_pReplay->CL_GetContext();
 					g_pReplayManager = g_pClientReplayContext->GetReplayManager();
 					g_pReplayMovieManager = g_pClientReplayContext->GetMovieManager();
