@@ -72,6 +72,10 @@
 #include "replay_internal.h"
 #endif
 
+#if defined( POSIX )
+#include <locale.h>
+#endif
+
 #include "language.h"
 #include "igame.h"
 
@@ -2757,11 +2761,18 @@ void CL_InitLanguageCvar()
 			if( Q_strncmp(szShortLang, "none", 4) != 0 )
 			{
 				cl_language.SetValue( szShortLang );
+				// Ensure system locale is initialized with UTF-8 for this language
+				setlocale( LC_ALL, GetLanguageCLocaleName( lang ) );
 				return;
 			}
 		}
 
 		cl_language.SetValue( "english" );
+		// Default to UTF-8 English for better multi-byte support
+		if ( !setlocale( LC_ALL, "en_US.UTF-8" ) )
+		{
+			setlocale( LC_ALL, "C.UTF-8" );
+		}
 	}
 }
 
