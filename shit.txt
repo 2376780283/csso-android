@@ -1,0 +1,455 @@
+Waf: Entering directory `/data/data/com.termux/files/home/csso-android/build'
+[ 128/2430] Compiling tier3/studiohdrstub.cpp
+[ 130/2430] Compiling tier3/choreoutils.cpp
+[ 131/2430] Compiling tier3/mdlutils.cpp
+[ 132/2430] Compiling tier3/tier3.cpp
+[ 297/2430] Compiling particles/particles.cpp
+[ 299/2430] Compiling particles/builtin_particle_ops.cpp
+[ 306/2430] Compiling vgui2/matsys_controls/sequencepicker.cpp
+[ 311/2430] Compiling vgui2/matsys_controls/matsyscontrols.cpp
+In file included from ../tier3/choreoutils.cpp:10:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+In file included from ../tier3/choreoutils.cpp:14:
+In file included from ../public/bone_setup.h:15:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+
+In file included from ../tier3/tier3.cpp:9:
+In file included from ../public/istudiorender.h:23:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+13 errors generated.
+
+In file included from ../tier3/studiohdrstub.cpp:7:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+In file included from ../tier3/studiohdrstub.cpp:10:
+In file included from ../public/istudiorender.h:23:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+
+In file included from ../vgui2/matsys_controls/matsyscontrols.cpp:13:
+In file included from ../public/istudiorender.h:23:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+13 errors generated.
+
+In file included from ../tier3/mdlutils.cpp:7:
+In file included from ../public/tier3/mdlutils.h:18:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+In file included from ../tier3/mdlutils.cpp:11:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+
+In file included from ../vgui2/matsys_controls/sequencepicker.cpp:7:
+In file included from ../public/matsys_controls/sequencepicker.h:18:
+In file included from ../public/matsys_controls/mdlpanel.h:19:
+In file included from ../public/tier3/mdlutils.h:18:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+In file included from ../vgui2/matsys_controls/sequencepicker.cpp:11:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+
+In file included from ../particles/builtin_particle_ops.cpp:15:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+13 errors generated.
+
+In file included from ../particles/particles.cpp:26:
+../public/studio.h:3456:2: error: expected external declaration
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |  ^
+../public/studio.h:3456:16: error: use of undeclared identifier 'i'
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                ^
+../public/studio.h:3456:4: error: a type specifier is required for all declarations
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |    ^
+../public/studio.h:3456:18: error: expected ';' after top level declarator
+ 3456 |  + pFixupTable[i].sourceVertexID),
+      |                  ^
+      |                  ;
+../public/studio.h:3458:3: error: extraneous closing brace ('}')
+ 3458 |                 }
+      |                 ^
+../public/studio.h:3461:3: error: unknown type name 'target'
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                 ^
+../public/studio.h:3461:10: error: expected unqualified-id
+ 3461 |                 target += pFixupTable[i].numVertexes;
+      |                        ^
+../public/studio.h:3462:2: error: extraneous closing brace ('}')
+ 3462 |         }
+      |         ^
+../public/studio.h:3464:2: error: unknown type name 'pNewVvdHdr'
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |         ^
+../public/studio.h:3464:12: error: cannot use arrow operator on a type
+ 3464 |         pNewVvdHdr->numFixups = 0;
+      |                   ^
+../public/studio.h:3466:2: error: expected unqualified-id
+ 3466 |         return target;
+      |         ^
+../public/studio.h:3467:1: error: extraneous closing brace ('}')
+ 3467 | }
+      | ^
+../public/studio.h:3469:2: error: #endif without #if
+ 3469 | #endif // STUDIO_H
+      |  ^
+13 errors generated.
+
+Waf: Leaving directory `/data/data/com.termux/files/home/csso-android/build'
+Build failed
+ -> task in 'tier3' failed with exit status 1 (run with -v to display more information)
+ -> task in 'tier3' failed with exit status 1 (run with -v to display more information)
+ -> task in 'tier3' failed with exit status 1 (run with -v to display more information)
+ -> task in 'matsys_controls' failed with exit status 1 (run with -v to display more information)
+ -> task in 'tier3' failed with exit status 1 (run with -v to display more information)
+ -> task in 'matsys_controls' failed with exit status 1 (run with -v to display more information)
+ -> task in 'particles' failed with exit status 1 (run with -v to display more information)
+ -> task in 'particles' failed with exit status 1 (run with -v to display more information)
