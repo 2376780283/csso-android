@@ -122,6 +122,7 @@
 #include "soundservice.h"
 #include "profile.h"
 #include "steam/isteamremotestorage.h"
+#include "snd_sfx.h"
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
 #include "audio_pch.h"
@@ -2915,20 +2916,34 @@ void _Host_RunFrame_Sound()
 #endif
 }
 
+float SV_GetSoundDuration( const char *pSample );
+#ifndef DEDICATED
+float AudioSource_GetSoundDuration( CSfxTable *pSfx );
+#endif
+
 float Host_GetSoundDuration( const char *pSample )
 {
-#ifndef SWDS
-	if (!sv.IsDedicated())
+#ifndef DEDICATED
+	// bug 27822 (crash when leaving 360 credits map)
+	// If we don't check connected here, then client can be partially through disconnecting (stringtable dictionary wiped, etc)
+	//  but still have the m_pStringTableDictionary pointer hanging around and then the server, on another thread,
+	//  calls through this case and tries to read the memory and crashes...
+
+	if ( cl.IsConnected() )
 	{
-		extern float SV_GetSoundDuration(const char *pSample);
-		extern float AudioSource_GetSoundDuration(CSfxTable *pSfx);
-		int index = cl.LookupSoundIndex(pSample);
-		if (index >= 0)
-			return AudioSource_GetSoundDuration(cl.GetSound(index));
-		return SV_GetSoundDuration(pSample);
+		int index = cl.LookupSoundIndex( pSample );
+		if ( index >= 0 )
+		{
+			CSfxTable *pSfxTable = cl.GetSound( index );
+			if ( ( pSfxTable != NULL) && pSfxTable->m_bIsLateLoad )
+			{
+				DevMsg( "    Reason for late load of '%s': Calling Host_GetSoundDuration().\n", pSample );
+			}
+			return AudioSource_GetSoundDuration( pSfxTable );
+		}
 	}
 #endif
-	return 0.0f;
+	return SV_GetSoundDuration( pSample );
 }
 
 CON_COMMAND( host_runofftime, "Run off some time without rendering/updating sounds\n" )
