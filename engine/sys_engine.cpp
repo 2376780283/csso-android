@@ -312,6 +312,12 @@ void CEngine::Frame( void )
 	// Get current time
 	m_flCurrentTime	= Sys_FloatTime();
 
+	// Initialize previous time if it's our first frame, otherwise dt will be huge (equal to system uptime)
+	if ( m_flPreviousTime == 0.0 )
+	{
+		m_flPreviousTime = m_flCurrentTime;
+	}
+
 	// Watch for data from the CPU frequency monitoring system and print it to the console.
 	const CPUFrequencyResults frequency = GetCPUFrequencyResults();
 	static double s_lastFrequencyTimestamp;
@@ -360,12 +366,12 @@ void CEngine::Frame( void )
 	if ( !FilterTime( m_flFrameTime ) )
 	{
 #ifdef POSIX
-		double fSleepNS = ( m_flMinFrameTime - m_flFrameTime ) * 1000000000.0;
-		unsigned nSleepNS = (unsigned)floor( fSleepNS );
-		if ( nSleepNS && sleep_when_meeting_framerate.GetInt() )
+		double fSleepMS = ( m_flMinFrameTime - m_flFrameTime ) * 1000.0;
+		unsigned nSleepMS = (unsigned)floor( fSleepMS );
+		if ( nSleepMS && sleep_when_meeting_framerate.GetInt() )
 		{
-			TM_ZONE( TELEMETRY_LEVEL0, TMZF_NONE, "Engine Nano Sleep" );
-			ThreadSleep( nSleepNS );
+			TM_ZONE( TELEMETRY_LEVEL0, TMZF_NONE, "Engine Sleep" );
+			ThreadSleep( nSleepMS );
 		}
 #else //POSIX
 		float fSleepMS = ( m_flMinFrameTime - m_flFrameTime ) * 1000;
