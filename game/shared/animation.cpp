@@ -529,7 +529,7 @@ int LookupSequence( CStudioHdr *pstudiohdr, const char *label )
 		if (stricmp( seqdesc.pszLabel(), label ) == 0)
 			return i;
 	}
-
+#if 0
 	//
 	// Not found, look up by activity name.
 	//
@@ -538,7 +538,7 @@ int LookupSequence( CStudioHdr *pstudiohdr, const char *label )
 	{
 		return SelectWeightedSequence( pstudiohdr, nActivity );
 	}
-
+#endif
 	return ACT_INVALID;
 }
 

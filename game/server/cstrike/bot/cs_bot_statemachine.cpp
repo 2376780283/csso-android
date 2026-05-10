@@ -168,7 +168,7 @@ void CCSBot::OpenDoor( CBaseEntity *door )
 void CCSBot::Hide( CNavArea *searchFromArea, float duration, float hideRange, bool holdPosition )
 {
 	if ( !TheCSBots()->AllowedToDoExpensiveBotOperationThisFrame() )
- 		return;
+		return;
 
 	DestroyPath();
 
@@ -660,9 +660,9 @@ bool CCSBot::MoveToInitialEncounter( void )
 	}
 
 	if ( !TheCSBots()->AllowedToDoExpensiveBotOperationThisFrame() )
- 		return false;
- 
- 	TheCSBots()->OnExpensiveBotOperation();
+		return false;
+
+	TheCSBots()->OnExpensiveBotOperation();
 
 	// build a path from us to the enemy spawn
 	CCSNavPath path;

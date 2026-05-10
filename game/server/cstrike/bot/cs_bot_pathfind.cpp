@@ -948,9 +948,9 @@ int CCSBot::FindPathPoint( float aheadRange, Vector *point, int *prevIndex )
 		}
 	}
 
-	// if we hit a ladder, stop, or jump area, must stop (dont use ladder behind us)
+	// if we hit a ladder, stop, stair, or jump area, must stop (dont use ladder behind us)
 	if (startIndex > m_pathIndex && startIndex < m_pathLength && 
-		(m_path[ startIndex ].ladder || m_path[ startIndex ].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP)))
+		(m_path[ startIndex ].ladder || m_path[ startIndex ].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP | NAV_MESH_STAIRS)))
 	{
 		*point = m_path[ startIndex ].pos;
 		return startIndex;
@@ -963,7 +963,7 @@ int CCSBot::FindPathPoint( float aheadRange, Vector *point, int *prevIndex )
 
 	// if we hit a ladder, stop, or jump area, must stop
 	if (startIndex < m_pathLength && 
-		(m_path[ startIndex ].ladder || m_path[ startIndex ].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP)))
+		(m_path[ startIndex ].ladder || m_path[ startIndex ].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP | NAV_MESH_STAIRS)))
 	{
 		*point = m_path[ startIndex ].pos;
 		return startIndex;
@@ -992,6 +992,14 @@ int CCSBot::FindPathPoint( float aheadRange, Vector *point, int *prevIndex )
 		Vector dir = to;
 		dir.NormalizeInPlace();
 
+		// if path crosses damaging areas (ie: fire), stop and wait for it to go away
+		if ( GetTimeSinceBurnedByFlames() > 1.0f && m_path[i].area->IsDamaging() && rangeSoFar < 100.0f )
+		{
+			Wait( RandomFloat( 0.5f, 1.5f ) );
+			--i;
+			break;
+		}
+
 		// don't allow path to double-back from our starting direction (going upstairs, down curved passages, etc)
 		if (DotProduct( dir, initDir ) < 0.0f) // -0.25f
 		{
@@ -1017,9 +1025,9 @@ int CCSBot::FindPathPoint( float aheadRange, Vector *point, int *prevIndex )
 			break;
 		}
 
-		// if we encounter a ladder or jump area, we must stop
+		// if we encounter a ladder, stairs, or jump area, we must stop
 		if (i < m_pathLength && 
-				(m_path[ i ].ladder || m_path[ i ].area->GetAttributes() & NAV_MESH_JUMP))
+				(m_path[ i ].ladder || m_path[ i ].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP | NAV_MESH_STAIRS)))
 			break;
 
 		// Check straight-line path from our current position to this position
@@ -1101,7 +1109,7 @@ int CCSBot::FindPathPoint( float aheadRange, Vector *point, int *prevIndex )
 			{
 				toPoint.x = m_path[i].pos.x - myOrigin.x;
 				toPoint.y = m_path[i].pos.y - myOrigin.y;
-				if (m_path[i].ladder || m_path[i].area->GetAttributes() & NAV_MESH_JUMP || toPoint.IsLengthGreaterThan( epsilon ))
+				if (m_path[i].ladder || m_path[i].area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_STOP | NAV_MESH_STAIRS) || toPoint.IsLengthGreaterThan( epsilon ))
 				{
 					*point = m_path[i].pos;
 					startIndex = i;
@@ -1283,9 +1291,9 @@ void CCSBot::FeelerReflexAdjustment( Vector *goalPosition )
 	Vector dir( BotCOS( m_forwardAngle ), BotSIN( m_forwardAngle ), 0.0f );
 	Vector lat( -dir.y, dir.x, 0.0f );
 
-	const float feelerOffset = (IsCrouching()) ? 15.0f : 20.0f;
-	const float feelerLengthRun = 50.0f;	// 100 - too long for tight hallways (cs_747)
-	const float feelerLengthWalk = 30.0f;
+	const float feelerOffset = (IsCrouching()) ? 5.0f : 10.0f;
+	const float feelerLengthRun = 25.0f;	// 50
+	const float feelerLengthWalk = 15.0f;
 	const float feelerHeight = StepHeight + 0.1f;	// if obstacle is lower than StepHeight, we'll walk right over it
 
 	float feelerLength = (IsRunning()) ? feelerLengthRun : feelerLengthWalk;
@@ -1315,10 +1323,10 @@ void CCSBot::FeelerReflexAdjustment( Vector *goalPosition )
 	Vector to = from + feelerLength * dir;
 
 	const float hullSize = 10.0f;
- 	Vector mins( -hullSize, -hullSize, 0.0f );
- 	Vector maxs( hullSize, hullSize, HalfHumanHeight - feelerHeight );
- 
- 	bool leftClear = IsWalkableTraceHullClear( from, to, mins, maxs, WALK_THRU_DOORS | WALK_THRU_BREAKABLES );
+	Vector mins( -hullSize, -hullSize, 0.0f );
+	Vector maxs( hullSize, hullSize, HalfHumanHeight - feelerHeight );
+
+	bool leftClear = IsWalkableTraceHullClear( from, to, mins, maxs, WALK_THRU_DOORS | WALK_THRU_BREAKABLES );
 
 	// avoid ledges, too
 	// use 'from' so it doesn't interfere with legitimate gap jumping (its at our feet)

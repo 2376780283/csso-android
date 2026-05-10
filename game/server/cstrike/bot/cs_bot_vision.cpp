@@ -1251,8 +1251,11 @@ CCSPlayer *CCSBot::FindMostDangerousThreat( void )
 
 			CCSPlayer *player = static_cast<CCSPlayer *>( entity );
 
+			int thisIdx = entindex();
+			int playerIdx = player->entindex();
+
 			// ignore self
-			if (player->entindex() == entindex())
+			if (playerIdx == thisIdx)
 				continue;
 
 			// is it alive?
@@ -1262,11 +1265,15 @@ CCSPlayer *CCSBot::FindMostDangerousThreat( void )
 			// is it an enemy?
 			if ( !IsOtherEnemy( player ) )
 			{
+#ifdef OPT_VIS_CSGO
+				if ( ((thisIdx>>1) + gpGlobals->tickcount) % 5 ) continue;
+#endif
+
 				// keep track of nearby friends - use less exact visibility check
 				if (IsVisible( entity->WorldSpaceCenter(), false, this ))
 				{
 					// update watch timestamp
-					int idx = player->entindex();
+					int idx = playerIdx;
 					m_watchInfo[idx].timestamp = gpGlobals->curtime;
 					m_watchInfo[idx].isEnemy = false;
 
@@ -1291,9 +1298,32 @@ CCSPlayer *CCSBot::FindMostDangerousThreat( void )
 			}
 
 			// check if this enemy is fully or partially visible
+
+#ifdef OPT_VIS_CSGO
+			// We don't update the vis every other frame on PS3 for perf
+
+			bool		  bVis;
+			unsigned char visParts;
+
+			if ( ( ((thisIdx>>1) + gpGlobals->tickcount) % 5 ) == 0 )
+			{
+				bVis = IsVisible( player, CHECK_FOV, &visParts );
+
+				m_bVis[playerIdx] = bVis;
+				m_aVisParts[playerIdx] = visParts;
+			}
+			else
+			{
+				bVis = m_bVis[playerIdx];
+				visParts = m_aVisParts[playerIdx];
+			}
+
+			if (!bVis) continue;
+#else
 			unsigned char visParts;
 			if (!IsVisible( player, CHECK_FOV, &visParts ))
 				continue;
+#endif
 
 			// do we notice this enemy? (always notice current enemy)
 			if (player != currentThreat)
@@ -1305,7 +1335,7 @@ CCSPlayer *CCSBot::FindMostDangerousThreat( void )
 			}
 
 			// update watch timestamp
-			int idx = player->entindex();
+			int idx = playerIdx;
 			m_watchInfo[idx].timestamp = gpGlobals->curtime;
 			m_watchInfo[idx].isEnemy = true;
 

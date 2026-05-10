@@ -320,6 +320,7 @@ void HideState::OnUpdate( CCSBot *me )
 			me->PrintIfWatched( "Firing at anticipated enemy coming around the corner!\n" );
 		}
 */
+
 		// while sitting at our hiding spot, if we are being attacked but can't see our attacker, move somewhere else
 		const float hurtRecentlyTime = 1.0f;
 		if (!me->IsEnemyVisible() && me->GetTimeSinceAttacked() < hurtRecentlyTime)

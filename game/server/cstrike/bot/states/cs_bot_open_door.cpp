@@ -24,7 +24,7 @@
 void OpenDoorState::OnEnter( CCSBot *me )
 {
 	m_isDone = false;
-	m_timeout.Start( 1.0f );
+	m_timeout.Start( 0.5f );
 }
 
 
@@ -52,32 +52,58 @@ void OpenDoorState::OnUpdate( CCSBot *me )
 {
 	me->ResetStuckMonitor();
 
+	// look at the door
+	Vector pos;
+	bool isDoorMoving = false;
+	CBaseEntity *door = NULL;
+	CPropDoorRotatingBreakable* pPropDoor = NULL;
+
+	if ( m_funcDoor.Get() )
+	{
+		door = m_funcDoor;
+		isDoorMoving = m_funcDoor->m_toggle_state == TS_GOING_UP || m_funcDoor->m_toggle_state == TS_GOING_DOWN;
+	}
+	else if ( m_propDoor.Get() )
+	{
+		door = m_propDoor;
+		isDoorMoving = m_propDoor->IsDoorOpening() || m_propDoor->IsDoorClosing();
+
+		pPropDoor = dynamic_cast< CPropDoorRotatingBreakable* >( door );
+		if ( pPropDoor && pPropDoor->IsDoorLocked() && pPropDoor->IsBreakable() == false )
+		{
+			m_isDone = true;
+			return;
+		}
+	}
+
 	// wait for door to swing open before leaving state
-	if (m_timeout.IsElapsed())
+	if ( isDoorMoving || !door )
 	{
 		m_isDone = true;
 		return;
 	}
 
-	// look at the door
-	Vector pos;
-	bool isDoorMoving = false;
-	if ( m_funcDoor )
-	{
-		pos = m_funcDoor->WorldSpaceCenter();
-		isDoorMoving = m_funcDoor->m_toggle_state == TS_GOING_UP || m_funcDoor->m_toggle_state == TS_GOING_DOWN;
-	}
-	else
-	{
-		pos = m_propDoor->WorldSpaceCenter();
-		isDoorMoving = m_propDoor->IsDoorOpening() || m_propDoor->IsDoorClosing();
-	}
-
-	me->SetLookAt( "Open door", pos, PRIORITY_HIGH );
+	me->SetLookAt( "Open door", door->WorldSpaceCenter(), PRIORITY_UNINTERRUPTABLE );
 
 	// if we are looking at the door, "use" it and exit
-	if (me->IsLookingAtPosition( pos ))
+	if ( me->IsLookingAtPosition( door->WorldSpaceCenter() ) )
 	{
+		if ( m_timeout.IsElapsed() && pPropDoor && pPropDoor->IsBreakable() )
+		{
+			// possibly stuck - blow the damn door away!
+			me->PrimaryAttack();
+
+			if ( door )
+			{
+				AssertMsg( door->GetHealth() > 2, "Bot is stuck on a door and is going to destroy it to get free!\n" );
+
+				CTakeDamageInfo damageInfo( me, me, 2.0f, DMG_GENERIC );
+				door->TakeDamage( damageInfo );
+			}
+
+		}
+
+		// we are looking at it - use it
 		me->UseEnvironment();
 	}
 }

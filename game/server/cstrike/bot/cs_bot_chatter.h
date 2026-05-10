@@ -617,10 +617,10 @@ private:
 	static CountdownTimer m_encourageTimer;								///< timer to know when we can "encourage" the human player again - shared by all bots
 };
 
+extern ConVar mp_teammates_are_enemies;
 inline BotChatterInterface::VerbosityType BotChatterInterface::GetVerbosity( void ) const
 {
 	// disable bot chatter in last man standing rules
-	ConVarRef mp_teammates_are_enemies( "mp_teammates_are_enemies" );
 	if ( mp_teammates_are_enemies.GetBool() )
 		return OFF;
 

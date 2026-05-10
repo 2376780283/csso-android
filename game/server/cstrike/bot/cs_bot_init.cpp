@@ -242,6 +242,12 @@ void CCSBot::ResetValues( void )
 	m_closestVisibleFriend = NULL;
 	m_closestVisibleHumanFriend = NULL;
 
+	for( int w=0; w<MAX_PLAYERS; ++w )
+	{
+		m_watchInfo[w].timestamp = 0.0f;
+		m_watchInfo[w].isEnemy = false;
+	}
+
 	m_isEnemyVisible = false;
 	m_visibleEnemyParts = NONE;
 	m_lastSawEnemyTimestamp = -999.9f;
@@ -366,6 +372,11 @@ void CCSBot::ResetValues( void )
 	}
 
 	m_burnedByFlamesTimer.Invalidate();
+
+#ifdef OPT_VIS_CSGO
+	V_memset( m_bVis, 0, sizeof(m_bVis) );
+	V_memset( m_aVisParts, 0, sizeof(m_aVisParts) );
+#endif
 
 	// start in idle state
 	m_isOpeningDoor = false;

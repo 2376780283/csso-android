@@ -80,7 +80,7 @@
 #pragma warning( disable : 4355 )
 
 // Minimum interval between rate-limited commands that players can run.
-#define CS_COMMAND_MAX_RATE 0.3
+#define CS_COMMAND_MAX_RATE 1.0
 
 const float CycleLatchInterval = 0.2f;
 

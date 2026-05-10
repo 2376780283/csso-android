@@ -87,7 +87,7 @@ void AttackState::OnEnter( CCSBot *me )
 				float crouchChance;
 				
 				// more likely to crouch if using sniper rifle or if enemy is far away
-				if (me->IsUsingWeaponWithScope())
+				if (me->IsUsingSniperRifle())
 					crouchChance = 50.0f;
 				else if ((GetCentroid( me ) - GetCentroid( enemy )).IsLengthGreaterThan( crouchFarRange ))
 					crouchChance = 50.0f;
@@ -448,6 +448,7 @@ void AttackState::OnUpdate( CCSBot *me )
 		return;
 	}
 
+
 	// check if our weapon range is bad and we should switch to pistol
 	if (me->IsUsingSniperRifle())
 	{
@@ -463,7 +464,7 @@ void AttackState::OnUpdate( CCSBot *me )
 	}
 
 	// if we're sniping, look through the scope - need to do this here in case a reload resets our scope
-	if (me->IsUsingSniperRifle())
+	if (me->IsUsingWeaponWithScope())
 	{
 		// for Scouts and AWPs, we need to wait for zoom to resume
 		if (me->m_bResumeZoom)
@@ -665,6 +666,7 @@ void AttackState::OnExit( CCSBot *me )
 
 	// resume our original posture
 	me->PopPostureContext();
+
 
 	//me->StopAiming();
 }

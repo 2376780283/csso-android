@@ -15,6 +15,8 @@
 #ifndef _CS_BOT_H_
 #define _CS_BOT_H_
 
+#define OPT_VIS_CSGO
+
 #include "bot/bot.h"
 #include "bot/cs_bot_manager.h"
 #include "bot/cs_bot_chatter.h"
@@ -1307,6 +1309,15 @@ private:
 	BotChatterInterface m_chatter;									///< chatter mechanism
 
 	int ObjectCaps( void ) { return ( BaseClass::ObjectCaps() | FCAP_IMPULSE_USE ); } //allow +use
+
+#ifdef OPT_VIS_CSGO
+	//--------------------------------------------------------------------------------------------------
+	// PS3 vis cache
+	//--------------------------------------------------------------------------------------------------
+
+	bool m_bVis[MAX_PLAYERS];
+	char m_aVisParts[MAX_PLAYERS];
+#endif
 };
 
 
@@ -1483,10 +1494,10 @@ inline void CCSBot::SetTask( TaskType task, CBaseEntity *entity )
 	m_taskEntity = entity;
 
 	if ( task == CCSBot::PLANT_BOMB )
- 	{
- 		// don't stop to attack - get the bomb there
- 		SetDisposition( CCSBot::SELF_DEFENSE );
- 	}
+	{
+		// don't stop to attack - get the bomb there
+		SetDisposition( CCSBot::SELF_DEFENSE );
+	}
 }
 
 inline CCSBot::TaskType CCSBot::GetTask( void ) const
@@ -2033,13 +2044,13 @@ public:
 			}
 
 			// this term causes the same bot to choose different routes over time,
- 			// but keep the same route for a period in case of repaths
- 			int timeMod = (int)( gpGlobals->curtime / 10.0f ) + 1;
- 			
- 			int uniqueID = ((size_t)area) >> 7; // areas are 128-byte aligned, so shift address over
- 			// We just need a unique number approximately between 1 and 300, so take the mod 293 because it's prime
- 			unsigned int nRandomCost = ( unsigned int )( m_bot->entindex() * uniqueID * timeMod ) % 293;
- 			cost += 1.0f + (float)nRandomCost;
+			// but keep the same route for a period in case of repaths
+			int timeMod = (int)( gpGlobals->curtime / 10.0f ) + 1;
+			
+			int uniqueID = ((size_t)area) >> 7; // areas are 128-byte aligned, so shift address over
+			// We just need a unique number approximately between 1 and 300, so take the mod 293 because it's prime
+			unsigned int nRandomCost = ( unsigned int )( m_bot->entindex() * uniqueID * timeMod ) % 293;
+			cost += 1.0f + (float)nRandomCost;
 
 			if (!m_bot->IsAttacking())
 			{
@@ -2087,3 +2098,4 @@ extern const HidingSpot *FindInitialEncounterSpot( CBaseEntity *me, const Vector
 
 
 #endif	// _CS_BOT_H_
+

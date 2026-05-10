@@ -684,3 +684,4 @@ void BuyState::OnExit( CCSBot *me )
 	me->ResetStuckMonitor();
 	me->EquipBestWeapon();
 }
+

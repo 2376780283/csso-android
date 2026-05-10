@@ -78,7 +78,7 @@ void CCSBot::RespondToRadioCommands( void )
 	if (IsRogue())
 		respondTime += 2.0f;
 
-		if ((gpGlobals->curtime - m_lastRadioRecievedTimestamp < respondTime))
+	if ((gpGlobals->curtime - m_lastRadioRecievedTimestamp < respondTime))
 		return;
 
 	// rogues won't follow commands, unless already following the player

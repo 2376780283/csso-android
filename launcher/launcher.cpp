@@ -1404,7 +1404,7 @@ DLL_EXPORT int LauncherMain( int argc, char **argv )
 			// directly from the web browser. The -hijack command prevents the launcher from objecting that there is already an instance of the game.
 			if (CommandLine()->CheckParm( "-hijack" ))
 			{
-				HWND hwndEngine = FindWindow( "Valve001", NULL );
+				HWND hwndEngine = FindWindow( "Source001", NULL );
 
 				// Can't find the engine
 				if ( hwndEngine == NULL )

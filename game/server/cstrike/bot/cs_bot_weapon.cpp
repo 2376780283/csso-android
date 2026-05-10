@@ -1478,3 +1478,4 @@ bool CCSBot::DidPlayerJustFireWeapon( const CCSPlayer *player ) const
 	CWeaponCSBase *weapon = player->GetActiveCSWeapon();
 	return (weapon && !weapon->IsSilenced() && weapon->m_flNextPrimaryAttack > gpGlobals->curtime);
 }
+

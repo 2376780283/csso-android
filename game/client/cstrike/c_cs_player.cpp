@@ -1169,7 +1169,7 @@ C_CSPlayer::C_CSPlayer() :
 
 	m_bAddonModelsAreOutOfDate = false;
 	m_iLastAddonBits = m_iAddonBits = 0;
-	m_iLastPrimaryAddon = m_iLastSecondaryAddon = WEAPON_NONE;
+	m_iLastPrimaryAddon = m_iLastSecondaryAddon = m_iLastKnifeAddon = WEAPON_NONE;
 	m_iProgressBarDuration = 0;
 	m_flProgressBarStartTime = 0.0f;
 	m_ArmorValue = 0;

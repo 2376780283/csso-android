@@ -783,3 +783,4 @@ void IdleState::OnUpdate( CCSBot *me )
 	// if we have nothing special to do, go hunting for enemies
 	me->Hunt();
 }
+

@@ -732,9 +732,6 @@ void ClientModeCSNormal::FireGameEvent( IGameEvent *event )
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 	CLocalPlayerFilter filter;
 
-	if ( !pLocalPlayer )
-		return;
-
 	const char *eventname = event->GetName();
 
 	if ( !eventname || !eventname[0] )
@@ -742,6 +739,8 @@ void ClientModeCSNormal::FireGameEvent( IGameEvent *event )
 
 	if ( Q_strcmp( "round_start", eventname ) == 0 )
 	{
+		if ( !pLocalPlayer )
+	    	return;
 		m_nRoundMVP = 0;
 		// recreate all client side physics props
 		C_PhysPropClientside::RecreateAll();
