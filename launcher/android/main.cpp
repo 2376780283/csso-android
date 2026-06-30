@@ -121,13 +121,14 @@ DLL_EXPORT int LauncherMainAndroid( int argc, char **argv )
 {
 	InitCrashHandler();
 
-	//Msg("GetTotalMemory() = %.2f \n", GetTotalMemory());
-	/*android_property_print("ro.build.version.sdk");
+	Msg("GetTotalMemory() = %.2f \n", GetTotalMemory());
+
+	android_property_print("ro.build.version.sdk");
 	android_property_print("ro.product.device");
 	android_property_print("ro.product.manufacturer");
 	android_property_print("ro.product.model");
 	android_property_print("ro.product.name");
-	android_property_print("Inltlized Args");*/
+	android_property_print("Inltlized Args");
 
 	SetLauncherArgs();
 
