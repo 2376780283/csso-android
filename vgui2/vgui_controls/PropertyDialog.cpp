@@ -8,7 +8,6 @@
 #include <vgui/KeyCode.h>
 #include <KeyValues.h>
 
-#include <vgui/ISystem.h>
 #include <vgui_controls/Button.h>
 #include <vgui_controls/PropertyDialog.h>
 #include <vgui_controls/PropertySheet.h>
@@ -18,19 +17,11 @@
 
 using namespace vgui;
 
-// Fade animation duration in seconds
-const float PropertyDialog::FADE_DURATION = 0.3f;
-const int PropertyDialog::FADE_ALPHA_STEP = 15;  // Alpha increment per frame
-
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
 PropertyDialog::PropertyDialog(Panel *parent, const char *panelName) : Frame(parent, panelName)
 {
-	// Initialize fade animation
-	m_flFadeStartTime = 0.0f;
-	m_bFadeInActive = false;
-
 	// create the property sheet
 	_propertySheet = new PropertySheet(this, "Sheet");
 	_propertySheet->AddActionSignalTarget(this);
@@ -157,45 +148,6 @@ void PropertyDialog::PerformLayout()
 
 	_propertySheet->InvalidateLayout(); // tell the propertysheet to redraw!
 	Repaint();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Handles fade-in animation
-//-----------------------------------------------------------------------------
-void PropertyDialog::OnThink()
-{
-	BaseClass::OnThink();
-
-	// Handle fade-in animation
-	if ( m_bFadeInActive )
-	{
-		m_nCurrentAlpha += FADE_ALPHA_STEP;
-		
-		if ( m_nCurrentAlpha >= 255 )
-		{
-			// Fade complete
-			SetAlpha( 255 );
-			m_bFadeInActive = false;
-		}
-		else
-		{
-			SetAlpha( m_nCurrentAlpha );
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Activate the dialog with fade-in animation
-//-----------------------------------------------------------------------------
-void PropertyDialog::Activate()
-{
-	// Start fade-in animation
-	m_flFadeStartTime = 0.0f;
-	m_nCurrentAlpha = 0;
-	m_bFadeInActive = true;
-	SetAlpha( 0 );
-	
-	BaseClass::Activate();
 }
 
 //-----------------------------------------------------------------------------

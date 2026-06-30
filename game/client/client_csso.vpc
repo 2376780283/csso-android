@@ -348,7 +348,6 @@ $Project "Client (CStrike)"
 					$File	"gameui\ModOptionsSubGloves.cpp"
 					$File	"gameui\ModOptionsSubCrosshair.cpp"
 					$File	"gameui\ModOptionsSubHUD.cpp"
-					$File	"gameui\ExtraManagerPanel.cpp"
 					{
 						$Configuration
 						{
@@ -376,7 +375,6 @@ $Project "Client (CStrike)"
 					$File	"gameui\ModOptionsSubKnives.h"
 					$File	"gameui\ModOptionsSubGloves.h"
 					$File	"gameui\ModOptionsSubCrosshair.h"
-					$File	"gameui\ExtraManagerPanel.h"
 				}
 			}
 			$Folder "HUD Elements"
@@ -408,8 +406,6 @@ $Project "Client (CStrike)"
 				$File	"cstrike\cs_hud_achievement_tracker.cpp"
 				$File	"cstrike\radio_status.cpp"
 				$File	"cstrike\radio_status.h"
-				$File	"cstrike\cs_hud_headname.cpp"
-				$File	"cstrike\cs_hud_vignette.cpp"
 			}
 			
 			$Folder "Weapon"

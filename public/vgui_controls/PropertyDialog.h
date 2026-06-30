@@ -66,22 +66,8 @@ protected:
 	virtual void ActivateBuildMode();
 	virtual void OnKeyCodeTyped(KeyCode code);
 	virtual void RequestFocus(int direction = 0);
-	virtual void OnThink();
-
-public:
-	virtual void Activate();
-
-private:
-	// Fade animation
-	float m_flFadeStartTime;
-	bool m_bFadeInActive;
-	int m_nCurrentAlpha;
-	static const float FADE_DURATION;
-	static const int FADE_ALPHA_STEP;
 
 	MESSAGE_FUNC( OnApplyButtonEnable, "ApplyButtonEnable" );
-	
-protected:
 	void EnableApplyButton(bool bEnable);
 	
 private:

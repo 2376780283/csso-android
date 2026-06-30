@@ -136,20 +136,21 @@ public:
 
 	int				GetCount( void );
 
-			virtual void	ApplySchemeSettings(vgui::IScheme *pScheme);
-			virtual void	Paint();
+	virtual void	ApplySchemeSettings(vgui::IScheme *pScheme);
+
+	vgui::HFont		GetFont() { return m_hFont; }
+
+	Color			GetTextColor( void ) { return m_clrText; }
+	void			SetNameLength( int iLength ) { m_iNameLength = iLength;	}
+	void			SetNameColor( Color cColor ){ m_clrNameColor = cColor; 	}
 		
-			vgui::HFont		GetFont() { return m_hFont; }
-		
-			Color			GetTextColor( void ) { return m_clrText; }
-			void			SetNameLength( int iLength ) { m_iNameLength = iLength;	}
-			void			SetNameColor( Color cColor ){ m_clrNameColor = cColor; 	}
-			
-			virtual void	PerformFadeout( void );
-			virtual void	InsertAndColorizeText( wchar_t *buf, int clientIndex );
-			virtual			void Colorize( int alpha = 255 );									///< Re-inserts the text in the appropriate colors at the given alpha
-		
-			void			SetNameStart( int iStart ) { m_iNameStart = iStart;	}
+	virtual void	PerformFadeout( void );
+	virtual void	InsertAndColorizeText( wchar_t *buf, int clientIndex );
+	virtual			void Colorize( int alpha = 255 );								///< Re-inserts the text in the appropriate colors at the given alpha
+
+
+	void			SetNameStart( int iStart ) { m_iNameStart = iStart;	}
+
 protected:
 	int				m_iNameLength;
 	vgui::HFont		m_hFont;

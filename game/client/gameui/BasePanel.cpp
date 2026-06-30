@@ -56,7 +56,6 @@ using namespace vgui;
 #include "LoadGameDialog.h"
 #include "SaveGameDialog.h"
 #include "OptionsDialog.h"
-#include "ExtraManagerPanel.h" // unh?
 #include "ModOptionsDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "ChangeGameDialog.h"
@@ -98,12 +97,6 @@ using namespace vgui;
 #include "ai_activity.h"
 #include "cs_shareddefs.h"
 #include "bone_setup.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb/stb_image_resize.h"
 
 #ifdef ANDROID
 #include <SDL_misc.h>
@@ -249,6 +242,98 @@ void CGameMenuItem::ApplySettings( KeyValues *inResourceData )
 	}
 
 	_activationType = (ActivationType_t)inResourceData->GetInt( "button_activation_type", Button::ACTIVATE_ONPRESSED );
+}
+
+class ImageButton : public vgui::Panel
+{
+public:
+	ImageButton(Panel *parent, const char *imageName) : Panel(parent)
+	{
+		m_szUrl = NULL;
+
+		m_textureID = vgui::surface()->CreateNewTextureID();
+		vgui::surface()->DrawSetTextureFile( m_textureID, imageName, true, false);
+		m_bSelected = false;
+	}
+
+	virtual void Paint()
+	{
+		if( GameUI().IsInLevel() ) return;
+
+		int color = m_bSelected ? 120 : 160;
+
+		vgui::surface()->DrawSetColor(color, color, color, 100);
+		vgui::surface()->DrawFilledRect( 0, 0, GetWide(), GetTall() );
+		vgui::surface()->DrawSetTexture( m_textureID );
+
+		vgui::surface()->DrawSetColor( 255, 255, 255, 255 );
+		vgui::surface()->DrawTexturedRect( 0, 0, GetWide(), GetTall() );
+	}
+
+	virtual void OnMousePressed(MouseCode code)
+	{
+		if( GameUI().IsInLevel() ) return;
+
+		m_bSelected = true;
+		input()->SetMouseCapture(GetVPanel());
+	}
+
+	virtual void OnMouseReleased(MouseCode code)
+	{
+		if( GameUI().IsInLevel() ) return;
+
+		m_bSelected = false;
+#ifdef ANDROID
+		if( m_szUrl ) SDL_OpenURL( m_szUrl );
+#endif
+
+		input()->SetMouseCapture(NULL);
+	}
+
+	void SetUrl( const char *url )
+	{
+		m_szUrl = url;
+	}
+
+	virtual void OnScreenSizeChanged( int nOldWidth, int nOldHeight )
+	{
+		int nw, nh;
+		surface()->GetScreenSize(nw, nh);
+		int scaled_w = scheme()->GetProportionalScaledValue(m_iOldW);
+
+		Panel::SetPos(nw-scheme()->GetProportionalScaledValue(m_iOldX)-scaled_w, m_iOldY);
+		Panel::SetSize(scaled_w, scheme()->GetProportionalScaledValue(m_iOldH));
+	}
+
+	void SetBounds( int x, int y, int w, int h )
+	{
+		m_iOldX = x; m_iOldY = y;
+		m_iOldW = w; m_iOldH = h;
+
+		int nw, nh;
+		surface()->GetScreenSize(nw, nh);
+		int scaled_w = scheme()->GetProportionalScaledValue(m_iOldW);
+
+		Panel::SetPos(nw-scheme()->GetProportionalScaledValue(m_iOldX)-scaled_w, m_iOldY);
+		Panel::SetSize(scaled_w, scheme()->GetProportionalScaledValue(m_iOldH));
+	}
+
+private:
+	int m_iOldX, m_iOldY;
+	int m_iOldW, m_iOldH;
+
+	bool m_bSelected;
+	int m_textureID;
+	const char *m_szUrl;
+};
+
+void AddUrlButton(vgui::Panel *parent, const char *imgName, const char *url )
+{
+	static int i = 0;
+	ImageButton *panel = new ImageButton( parent, imgName );
+	panel->SetUrl( url );
+	panel->SetBounds( 15+i*52, 10, 48, 48 );
+	i++;
 }
 
 //-----------------------------------------------------------------------------
@@ -1313,6 +1398,14 @@ CBaseModPanel::CBaseModPanel() : EditablePanel(NULL, "BaseGameUIPanel")
 			m_bSinglePlayer = false;
 		}
 	}
+
+	// if( IsAndroid() )
+	// {
+	// 	AddUrlButton( this, "vgui/\x64\x69\x73\x63\x6f\x72\x64\x5f\x6c\x6f\x67\x6f", "\x68\x74\x74\x70\x73\x3a\x2f\x2f\x64\x69\x73\x63\x6f\x72\x64\x2e\x67\x67\x2f\x68\x5a\x52\x42\x37\x57\x4d\x67\x47\x77" );
+	// 	AddUrlButton( this, "vgui/\x74\x77\x69\x74\x74\x65\x72\x5f\x6c\x6f\x67\x6f", "\x68\x74\x74\x70\x73\x3a\x2f\x2f\x74\x77\x69\x74\x74\x65\x72\x2e\x63\x6f\x6d\x2f\x6e\x69\x6c\x6c\x65\x72\x75\x73\x72" );
+	// 	AddUrlButton( this, "vgui/\x74\x65\x6c\x65\x67\x72\x61\x6d\x5f\x6c\x6f\x67\x6f", "\x68\x74\x74\x70\x73\x3a\x2f\x2f\x74\x2e\x6d\x65\x2f\x6e\x69\x6c\x6c\x65\x72\x75\x73\x72\x5f\x73\x6f\x75\x72\x63\x65" );
+	// 	AddUrlButton( this, "vgui/\x67\x69\x74\x68\x75\x62\x5f\x6c\x6f\x67\x6f", "\x68\x74\x74\x70\x73\x3a\x2f\x2f\x67\x69\x74\x68\x75\x62\x2e\x63\x6f\x6d\x2f\x6e\x69\x6c\x6c\x65\x72\x75\x73\x72\x2f\x73\x6f\x75\x72\x63\x65\x2d\x65\x6e\x67\x69\x6e\x65" );
+	// }
 	m_VideoMaterial = NULL;
 	m_pMaterial = NULL;
 	m_nPlaybackWidth = m_nPlaybackHeight = 0;
@@ -2187,9 +2280,12 @@ CGameMenu *CBaseModPanel::RecursiveLoadGameMenu(KeyValues *datafile)
 {
 	CGameMenu *menu = new CGameMenu(this, datafile->GetName());
 
-	if (CommandLine()->CheckParm( "-console" )){	     		
-	    menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this); 
-    }
+	wchar_t *pString = g_pVGuiLocalize->Find( "#GameUI_Console" );
+
+	if( pString )
+		menu->AddMenuItem("Console", V_wcsupr(pString), "OpenConsole", this);
+	else
+		menu->AddMenuItem("Console", "CONSOLE", "OpenConsole", this);
 
 	bool bFoundServerBrowser = false;
 
@@ -2718,10 +2814,6 @@ void CBaseModPanel::RunMenuCommand(const char *command)
 	else if ( !Q_stricmp( command, "OpenLoadCommentaryDialog" ) )
 	{
 		OnOpenLoadCommentaryDialog();	
-	}
-	else if ( !Q_stricmp( command, "Extra_manager" ) )
-	{
-		ShowExtraManager();
 	}
 	else if ( !Q_stricmp( command, "OpenLoadSingleplayerCommentaryDialog" ) )
 	{
@@ -3712,22 +3804,6 @@ void CBaseModPanel::OnOpenDisconnectConfirmationDialog()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Helper function to activate dialog with fade-in animation
-//-----------------------------------------------------------------------------
-void CBaseModPanel::ActivateDialogWithFade( vgui::Frame *pDialog )
-{
-	if ( !pDialog )
-		return;
-
-	// Start with transparent and fade in
-	pDialog->SetAlpha( 0 );
-	pDialog->Activate();
-
-	// Request think to animate the fade-in
-	pDialog->RequestFocus();
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenNewGameDialog(const char *chapter )
@@ -3932,19 +4008,12 @@ void CBaseModPanel::OnOpenDemoDialog()
 //-----------------------------------------------------------------------------
 void CBaseModPanel::OnOpenCreateMultiplayerGameDialog()
 {
-/*	if (!m_hCreateMultiplayerGameDialog.Get())
+	if (!m_hCreateMultiplayerGameDialog.Get())
 	{
 		m_hCreateMultiplayerGameDialog = new CCreateMultiplayerGameDialog(this);
 		PositionDialog(m_hCreateMultiplayerGameDialog);
 	}
-	m_hCreateMultiplayerGameDialog->Activate();*/
-    if ( !m_hExtraDialog.Get() )
-	{
-	    m_hExtraDialog = new ExtraManagerPanel(this);
-		PositionDialog( m_hExtraDialog );
-		m_hExtraDialog->MoveToCenterOfScreen(); 
-	}
-    m_hExtraDialog->Activate();  
+	m_hCreateMultiplayerGameDialog->Activate();
 }
 
 //-----------------------------------------------------------------------------
@@ -4063,31 +4132,6 @@ void CBaseModPanel::OnOpenAchievementsDialog_Xbox()
 	}
 	m_hAchievementsDialog->Activate();
 }
-
-// -------
-// unh i will delete the shit func motherfuck 
-// -------
-void CBaseModPanel::ShowExtraManager()
-{ 
-/*    if ( !m_hExtraDialog.Get() )
-	{
-	    m_hExtraDialog = new ExtraManagerPanel(this);
-		PositionDialog( m_hExtraDialog );
-		m_hExtraDialog->MoveToCenterOfScreen(); 
-	}
-    m_hExtraDialog->Activate(); */  
-  
-}
-
-void CC_ShowExtraManager(const CCommand &args)
-{
-/*    if (g_pBasePanel)
-    {
-        g_pBasePanel->ShowExtraManager();
-    } */
-}
-
-static ConCommand Extra_manager("Extra_manager", CC_ShowExtraManager, "Open Extra Manager dialog", FCVAR_NONE);
 
 //-----------------------------------------------------------------------------
 // Purpose: 

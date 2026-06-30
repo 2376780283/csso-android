@@ -79,11 +79,6 @@ private:
 
 	CPanelAnimationVar( int, m_iAdditionalIndentX, "AdditionalIndentX", "0" );
 	CPanelAnimationVar( int, m_iAdditionalIndentY, "AdditionalIndentY", "0" );
-
-	// Fade-in animation
-	float m_flFadeInStartTime;
-	float m_flFadeInDuration;
-	bool m_bFadeInActive;
 };
 
 // singleton accessor

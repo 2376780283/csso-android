@@ -269,32 +269,6 @@ void CBaseHudChatLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetFont( m_hFont );
 }
 
-void CBaseHudChatLine::Paint()
-{
-	// Draw semi-transparent black background for each chat line (subtitle style with fade)
-	int wide, tall;
-	GetSize(wide, tall);
-	
-	// Calculate background alpha based on expiration time (fade out effect)
-	float curtime = gpGlobals->curtime;
-	int bgAlpha = 153; // Default 60% opacity
-	
-	// Fade out background when接近过期时间
-	if (curtime <= m_flExpireTime && curtime > m_flExpireTime - CHATLINE_FADE_TIME)
-	{
-		float frac = (m_flExpireTime - curtime) / CHATLINE_FADE_TIME;
-		bgAlpha = (int)(153.0f * frac); // Fade from 60% to 0%
-		bgAlpha = clamp(bgAlpha, 0, 153);
-	}
-	
-	// Draw background with dynamic alpha
-	vgui::surface()->DrawSetColor(Color(0, 0, 0, bgAlpha));
-	vgui::surface()->DrawFilledRect(0, 0, wide, tall);
-	
-	// Call parent Paint to draw the text
-	BaseClass::Paint();
-}
-
 
 void CBaseHudChatLine::PerformFadeout( void )
 {
@@ -766,7 +740,7 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 
 void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
-	if( !CommandLine()->FindParm( "-nocustomchat" ) )
+	if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )
 		LoadControlSettings( "resource/UI/customchat.res" );
 	else
 		LoadControlSettings( "resource/UI/BaseChat.res" );
