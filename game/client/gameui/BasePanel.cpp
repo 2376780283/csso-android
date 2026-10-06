@@ -2792,7 +2792,7 @@ void CBaseModPanel::ApplySchemeSettings(IScheme *pScheme)
 		if ( m_iLoadingImageID == -1 )
 		{
 			const char* loading = "console/startup_loading";
-			if ( IsSteamDeck() )
+			if ( IsGamepadUI() )
 				loading = "gamepadui/game_logo";
 			m_iLoadingImageID = surface()->CreateNewTextureID();
 			surface()->DrawSetTextureFile( m_iLoadingImageID, loading, false, false );
