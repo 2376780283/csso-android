@@ -117,6 +117,69 @@ mat_fullbright 1 doesn't work properly on alpha materials in testroom_standards
 #pragma warning (disable:4189)
 #endif
 
+#define SHADERAPI_DRAW_PERF_ANALYSIS 0
+
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+struct CShaderAPIDrawPerfStats
+{
+	CCycleCount m_DrawMeshTime;
+	CCycleCount m_SetVertexDeclTime;
+	CCycleCount m_CommitStateChangesTime;
+	CCycleCount m_MaterialDrawTime;
+	CCycleCount m_SetDefaultStateTime;
+	CCycleCount m_BindTime;
+	uint64 m_nDrawMeshes;
+	uint64 m_nSetDefaultStates;
+	uint64 m_nBinds;
+
+	void Reset()
+	{
+		m_DrawMeshTime.Init();
+		m_SetVertexDeclTime.Init();
+		m_CommitStateChangesTime.Init();
+		m_MaterialDrawTime.Init();
+		m_SetDefaultStateTime.Init();
+		m_BindTime.Init();
+		m_nDrawMeshes = 0;
+		m_nSetDefaultStates = 0;
+		m_nBinds = 0;
+	}
+};
+
+static CShaderAPIDrawPerfStats s_ShaderAPIDrawPerfStats;
+
+CON_COMMAND( mat_dump_shaderapi_stats, "Print shader API draw setup timing; pass 1 to reset after printing." )
+{
+	const double flDraws = (double)s_ShaderAPIDrawPerfStats.m_nDrawMeshes;
+	const double flDrawMS = s_ShaderAPIDrawPerfStats.m_DrawMeshTime.GetMillisecondsF();
+	const double flDeclMS = s_ShaderAPIDrawPerfStats.m_SetVertexDeclTime.GetMillisecondsF();
+	const double flCommitMS = s_ShaderAPIDrawPerfStats.m_CommitStateChangesTime.GetMillisecondsF();
+	const double flMaterialMS = s_ShaderAPIDrawPerfStats.m_MaterialDrawTime.GetMillisecondsF();
+	const double flDefaultMS = s_ShaderAPIDrawPerfStats.m_SetDefaultStateTime.GetMillisecondsF();
+	const double flBindMS = s_ShaderAPIDrawPerfStats.m_BindTime.GetMillisecondsF();
+
+	ConMsg( "ShaderAPI draws: %llu total, %4.3fms (%4.6fms/draw); SetVertexDecl: %4.3fms; CommitStateChanges: %4.3fms; MaterialDraw: %4.3fms\n",
+		(unsigned long long)s_ShaderAPIDrawPerfStats.m_nDrawMeshes,
+		flDrawMS,
+		flDraws ? flDrawMS / flDraws : 0.0,
+		flDeclMS,
+		flCommitMS,
+		flMaterialMS );
+	ConMsg( "ShaderAPI state: SetDefaultState: %llu calls, %4.3fms (%4.6fms/call); Bind: %llu calls, %4.3fms (%4.6fms/call)\n",
+		(unsigned long long)s_ShaderAPIDrawPerfStats.m_nSetDefaultStates,
+		flDefaultMS,
+		s_ShaderAPIDrawPerfStats.m_nSetDefaultStates ? flDefaultMS / s_ShaderAPIDrawPerfStats.m_nSetDefaultStates : 0.0,
+		(unsigned long long)s_ShaderAPIDrawPerfStats.m_nBinds,
+		flBindMS,
+		s_ShaderAPIDrawPerfStats.m_nBinds ? flBindMS / s_ShaderAPIDrawPerfStats.m_nBinds : 0.0 );
+
+	if ( args.ArgC() == 2 && args.Arg(1)[0] != '0' )
+	{
+		s_ShaderAPIDrawPerfStats.Reset();
+	}
+}
+#endif
+
 ConVar mat_texture_limit( "mat_texture_limit", "-1", FCVAR_NEVER_AS_STRING, 
 	"If this value is not -1, the material system will limit the amount of texture memory it uses in a frame."
 	" Useful for identifying performance cliffs. The value is in kilobytes." );
@@ -630,20 +693,7 @@ public:
 		// Chain to the device
 		BaseClass::GetBackBufferDimensions( nWidth, nHeight );
 	}
-
-	// Get the current viewport
-	virtual void GetCurrentViewport( int& nX, int& nY, int& nWidth, int& nHeight ) const
-	{
-		ShaderViewport_t viewport;
-		ShaderAPI()->GetViewports( &viewport, 1 );
-		nX = viewport.m_nTopLeftX;
-		nY = viewport.m_nTopLeftY;
-		nWidth = viewport.m_nWidth;
-		nHeight = viewport.m_nHeight;
-	}
-
 	virtual void MarkUnusedVertexFields( unsigned int nFlags, int nTexCoordCount, bool *pUnusedTexCoords );
-	virtual void SetScreenSizeForVPOS( int pshReg = 32 );
 
 public:
 	// Methods of CShaderAPIBase
@@ -1277,10 +1327,6 @@ private:
 	FlashlightState_t m_FlashlightState;
 	VMatrix m_FlashlightWorldToTexture;
 	ITexture *m_pFlashlightDepthTexture;
-	float m_pFlashlightAtten[4];
-	float m_pFlashlightPos[4];
-	float m_pFlashlightColor[4];
-	float m_pFlashlightTweaks[4];
 
 	CShaderAPIDx8( CShaderAPIDx8 const& );
 
@@ -1358,20 +1404,6 @@ private:
 
 	void SetPixelShaderFogParams( int reg );
 	void SetPixelShaderFogParams( int reg, ShaderFogMode_t fogMode );
-	void SetPixelShaderFogParams_CSGO( int reg );
-	void SetPixelShaderFogParams_CSGO( int reg, ShaderFogMode_t fogMode );
-
-	void SetVertexShaderCameraPos()
-	{
-		float vertexShaderCameraPos[4];
-		vertexShaderCameraPos[0] = m_WorldSpaceCameraPositon[0];
-		vertexShaderCameraPos[1] = m_WorldSpaceCameraPositon[1];
-		vertexShaderCameraPos[2] = m_WorldSpaceCameraPositon[2];
-		vertexShaderCameraPos[3] = m_DynamicState.m_FogZ;  //waterheight in water fog mode
-
-		// eyepos.x eyepos.y eyepos.z cWaterZ
-		SetVertexShaderConstantInternal( VERTEX_SHADER_CAMERA_POS, vertexShaderCameraPos );
-	}
 
 	FORCEINLINE void UpdateVertexShaderFogParams( void )
 	{
@@ -1395,9 +1427,17 @@ private:
 
 			fogParams[3] = ooFogRange;
 
+			float vertexShaderCameraPos[4];
+			vertexShaderCameraPos[0] = m_WorldSpaceCameraPositon[0];
+			vertexShaderCameraPos[1] = m_WorldSpaceCameraPositon[1];
+			vertexShaderCameraPos[2] = m_WorldSpaceCameraPositon[2];
+			vertexShaderCameraPos[3] = m_DynamicState.m_FogZ;  // waterheight
+
 			// cFogEndOverFogRange, cFogOne, unused, cOOFogRange
 			SetVertexShaderConstant( VERTEX_SHADER_FOG_PARAMS, fogParams, 1 );
-			SetVertexShaderCameraPos();
+
+			// eyepos.x eyepos.y eyepos.z cWaterZ
+			SetVertexShaderConstant( VERTEX_SHADER_CAMERA_POS, vertexShaderCameraPos );
 		}
 	}
 
@@ -1603,8 +1643,6 @@ private:
 	void PrintfVA( char *fmt, va_list vargs );
 	void Printf( const char *fmt, ... );	
 	float Knob( char *knobname, float *setvalue = NULL );
-
-	void AddShaderComboInformation( const ShaderComboSemantics_t *pSemantics );
 
 	// "normal" back buffer and depth buffer.  Need to keep this around so that we
 	// know what to set the render target to when we are done rendering to a texture.
@@ -2782,26 +2820,6 @@ inline void CShaderAPIDx8::SetRenderState( D3DRENDERSTATETYPE state, DWORD val, 
 	#define SetRenderStateConstMacro(t, state, val ) t->SetRenderState( state, val );
 #endif
 
-inline void CShaderAPIDx8::SetScreenSizeForVPOS( int pshReg /* = 32 */)
-{
-	int nWidth, nHeight;
-	ITexture *pTexture = ShaderAPI()->GetRenderTargetEx( 0 );
-	if ( pTexture == NULL )
-	{
-		ShaderAPI()->GetBackBufferDimensions( nWidth, nHeight );
-	}
-	else
-	{
-		nWidth  = pTexture->GetActualWidth();
-		nHeight = pTexture->GetActualHeight();
-	}
-
-	// Set constant to enable translation of VPOS to render target coordinates in ps_3_0
-	float vScreenSize[4] = { 1.0f/(float)nWidth, 1.0f/(float)nHeight, 0.5f/(float)nWidth, 0.5f/(float)nHeight };
-
-	SetPixelShaderConstantInternal( pshReg, vScreenSize, 1, true );
-}
-
 //-----------------------------------------------------------------------------
 // Commits viewports
 //-----------------------------------------------------------------------------
@@ -3819,6 +3837,11 @@ void CShaderAPIDx8::ResetRenderState( bool bFullReset )
 //-----------------------------------------------------------------------------
 void CShaderAPIDx8::SetDefaultState()
 {
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer setDefaultStateTimer;
+	setDefaultStateTimer.Start();
+	++s_ShaderAPIDrawPerfStats.m_nSetDefaultStates;
+#endif
 	LOCK_SHADERAPI();
 
 	// NOTE: This used to be in the material system, but I want to avoid all the per pass/batch
@@ -3846,6 +3869,10 @@ void CShaderAPIDx8::SetDefaultState()
 	CShaderAPIDx8::SetPixelShaderIndex( );
 
 	MeshMgr()->MarkUnusedVertexFields( 0, 0, NULL );
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	setDefaultStateTimer.End();
+	s_ShaderAPIDrawPerfStats.m_SetDefaultStateTime += setDefaultStateTimer.GetDuration();
+#endif
 }
 
 
@@ -3946,6 +3973,12 @@ void CShaderAPIDx8::DrawMesh( CMeshBase *pMesh )
 	if ( ShaderUtil()->GetConfig().m_bSuppressRendering )
 		return;
 
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer shaderAPIDrawTimer;
+	shaderAPIDrawTimer.Start();
+	++s_ShaderAPIDrawPerfStats.m_nDrawMeshes;
+#endif
+
 #if defined( PIX_INSTRUMENTATION ) || defined( NVPERFHUD )
 	PIXifyName( s_pPIXMaterialName, sizeof( s_pPIXMaterialName ), m_pMaterial->GetName() );
 	BeginPIXEvent( PIX_VALVE_ORANGE, s_pPIXMaterialName );
@@ -3953,14 +3986,40 @@ void CShaderAPIDx8::DrawMesh( CMeshBase *pMesh )
 
 	m_pRenderMesh = pMesh;
 	VertexFormat_t vertexFormat = m_pRenderMesh->GetVertexFormat();
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer setVertexDeclTimer;
+	setVertexDeclTimer.Start();
+#endif
 	SetVertexDecl( vertexFormat, m_pRenderMesh->HasColorMesh(), m_pRenderMesh->HasFlexMesh(), m_pMaterial->IsUsingVertexID() );
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	setVertexDeclTimer.End();
+	s_ShaderAPIDrawPerfStats.m_SetVertexDeclTime += setVertexDeclTimer.GetDuration();
+	CFastTimer commitStateChangesTimer;
+	commitStateChangesTimer.Start();
+#endif
 	CommitStateChanges();
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	commitStateChangesTimer.End();
+	s_ShaderAPIDrawPerfStats.m_CommitStateChangesTime += commitStateChangesTimer.GetDuration();
+#endif
 	Assert( m_pRenderMesh && m_pMaterial );
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer materialDrawTimer;
+	materialDrawTimer.Start();
+#endif
 	m_pMaterial->DrawMesh( CompressionType( vertexFormat ) );
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	materialDrawTimer.End();
+	s_ShaderAPIDrawPerfStats.m_MaterialDrawTime += materialDrawTimer.GetDuration();
+#endif
 	m_pRenderMesh = NULL;
 
 #if defined( PIX_INSTRUMENTATION ) || defined( NVPERFHUD )
 	EndPIXEvent();
+#endif
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	shaderAPIDrawTimer.End();
+	s_ShaderAPIDrawPerfStats.m_DrawMeshTime += shaderAPIDrawTimer.GetDuration();
 #endif
 }
 
@@ -3970,6 +4029,12 @@ void CShaderAPIDx8::DrawWithVertexAndIndexBuffers( void )
 	if ( ShaderUtil()->GetConfig().m_bSuppressRendering )
 		return;
 
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer shaderAPIDrawTimer;
+	shaderAPIDrawTimer.Start();
+	++s_ShaderAPIDrawPerfStats.m_nDrawMeshes;
+#endif
+
 #if defined( PIX_INSTRUMENTATION ) || defined( NVPERFHUD )
 	PIXifyName( s_pPIXMaterialName, sizeof( s_pPIXMaterialName ), m_pMaterial->GetName());
 	BeginPIXEvent( PIX_VALVE_ORANGE, s_pPIXMaterialName );
@@ -3978,9 +4043,25 @@ void CShaderAPIDx8::DrawWithVertexAndIndexBuffers( void )
 //	m_pRenderMesh = pMesh;
 	// FIXME: need to make this deal with multiple streams, etc.
 	VertexFormat_t vertexFormat = MeshMgr()->GetCurrentVertexFormat();
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer setVertexDeclTimer;
+	setVertexDeclTimer.Start();
+#endif
 	SetVertexDecl( vertexFormat, false /*m_pRenderMesh->HasColorMesh()*/, 
 		false /*m_pRenderMesh->HasFlexMesh()*/, false /*m_pRenderMesh->IsUsingMorphData()*/ );
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	setVertexDeclTimer.End();
+	s_ShaderAPIDrawPerfStats.m_SetVertexDeclTime += setVertexDeclTimer.GetDuration();
+	CFastTimer commitStateChangesTimer;
+	commitStateChangesTimer.Start();
+#endif
 	CommitStateChanges();
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	commitStateChangesTimer.End();
+	s_ShaderAPIDrawPerfStats.m_CommitStateChangesTime += commitStateChangesTimer.GetDuration();
+	CFastTimer materialDrawTimer;
+	materialDrawTimer.Start();
+#endif
 	if ( m_pMaterial )
 	{
 		m_pMaterial->DrawMesh( CompressionType( vertexFormat ) );
@@ -3989,10 +4070,18 @@ void CShaderAPIDx8::DrawWithVertexAndIndexBuffers( void )
 	{
 		MeshMgr()->RenderPassWithVertexAndIndexBuffers();
 	}
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	materialDrawTimer.End();
+	s_ShaderAPIDrawPerfStats.m_MaterialDrawTime += materialDrawTimer.GetDuration();
+#endif
 //	m_pRenderMesh = NULL;
 
 #if defined( PIX_INSTRUMENTATION ) || defined( NVPERFHUD )
 	EndPIXEvent();
+#endif
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	shaderAPIDrawTimer.End();
+	s_ShaderAPIDrawPerfStats.m_DrawMeshTime += shaderAPIDrawTimer.GetDuration();
 #endif
 }
 
@@ -6353,8 +6442,28 @@ FORCEINLINE void CShaderAPIDx8::SetVertexShaderConstantInternal( int var, float 
 	{
 		Assert( var + numVecs <= g_pHardwareConfig->NumVertexShaderConstants() );
 
-		if ( !bForce && memcmp( pVec, &m_DynamicState.m_pVectorVertexShaderConstant[var], numVecs * 4 * sizeof( float ) ) == 0 )
-			return;
+		if ( !bForce )
+		{
+			// Skip the unchanged head, then submit only the changed tail -
+			// same trick as the pixel-shader path.  Bone matrices and other
+			// large constant blocks get resubmitted every draw with only a
+			// few trailing vectors actually changing; comparing + copying +
+			// uploading the whole range every time was measurable on ARM.
+			const uint32 *pSrc = (const uint32*)pVec;
+			const uint32 *pDst = (const uint32*)&m_DynamicState.m_pVectorVertexShaderConstant[var];
+			int nCmpVecs = numVecs;
+			while ( nCmpVecs && ( pSrc[0] == pDst[0] ) && ( pSrc[1] == pDst[1] ) && ( pSrc[2] == pDst[2] ) && ( pSrc[3] == pDst[3] ) )
+			{
+				pSrc += 4;
+				pDst += 4;
+				nCmpVecs--;
+				var++;
+			}
+			if ( !nCmpVecs )
+				return;
+			pVec = (const float*)pSrc;
+			numVecs = nCmpVecs;
+		}
 
 		Dx9Device()->SetVertexShaderConstantF( var, pVec, numVecs );
 		memcpy( &m_DynamicState.m_pVectorVertexShaderConstant[var], pVec, numVecs * 4 * sizeof(float) );
@@ -6557,13 +6666,6 @@ void CShaderAPIDx8::ExecuteCommandBuffer( uint8 *pCmdBuf )
 				SetPixelShaderFogParams( nReg );			// !! speed fixme
 				break;
 			}
-			case CBCMD_SETPIXELSHADERFOGPARAMS_CSGO:
-			{
-				int nReg = GetData<int>( pCmdBuf + sizeof( int ) );
-				pCmdBuf += 2 * sizeof( int );
-				SetPixelShaderFogParams_CSGO( nReg );			// !! speed fixme
-				break;
-			}
 			case CBCMD_STORE_EYE_POS_IN_PSCONST:
 			{
 				int nReg = GetData<int>( pCmdBuf + sizeof( int ) );
@@ -6654,81 +6756,6 @@ void CShaderAPIDx8::ExecuteCommandBuffer( uint8 *pCmdBuf )
 				int nIdx = GetData<int>( pCmdBuf + sizeof( int ) );
 				ShaderManager()->SetVertexShaderIndex( nIdx );
 				pCmdBuf += 2 * sizeof( int );
-				break;
-			}
-
-		case CBCMD_SET_PIXEL_SHADER_FLASHLIGHT_STATE:
-			{
-				int nLightSampler		= GetData<int>( pCmdBuf + sizeof( int ) );
-				int nDepthSampler		= GetData<int>( pCmdBuf + 2 * sizeof( int ) );
-				int nShadowNoiseSampler = GetData<int>( pCmdBuf + 3 * sizeof( int ) );
-				int nColorConst			= GetData<int>( pCmdBuf + 4 * sizeof( int ) );
-				int nAttenConst			= GetData<int>( pCmdBuf + 5 * sizeof( int ) );
-				int nOriginConst		= GetData<int>( pCmdBuf + 6 * sizeof( int ) );
-				int nDepthTweakConst	= GetData<int>( pCmdBuf + 7 * sizeof( int ) );
-				int nScreenScaleConst	= GetData<int>( pCmdBuf + 8 * sizeof( int ) );
-				int nWorldToTextureConstant = GetData<int>( pCmdBuf + 9 * sizeof( int ) );
-				bool bFlashlightNoLambert = GetData<int>( pCmdBuf + 10 * sizeof( int ) ) != 0;
-				bool bSinglePassFlashlight = GetData<int>( pCmdBuf + 11 * sizeof( int ) ) != 0;
-				pCmdBuf += 12 * sizeof( int );
-
-				ShaderAPITextureHandle_t hTexture = g_pShaderUtil->GetShaderAPITextureBindHandle( m_FlashlightState.m_pSpotlightTexture, m_FlashlightState.m_nSpotlightTextureFrame, 0 );
-				BindTexture( (Sampler_t)nLightSampler, hTexture ); // !!!BUG!!!srgb or not?
-
-				SetPixelShaderConstantInternal( nAttenConst, m_pFlashlightAtten, 1, false );
-				SetPixelShaderConstantInternal( nOriginConst, m_pFlashlightPos, 1, false );
-
-				m_pFlashlightColor[3] = bFlashlightNoLambert ? 2.0f : 0.0f; // This will be added to N.L before saturate to force a 1.0 N.L term
-
-				// DX10 hardware and single pass flashlight require a hack scalar since the flashlight is added in linear space
-				float flashlightColor[4] = { m_pFlashlightColor[0], m_pFlashlightColor[1], m_pFlashlightColor[2], m_pFlashlightColor[3] };
-				if ( ( g_pHardwareConfig->UsesSRGBCorrectBlending() ) || ( bSinglePassFlashlight ) )
-				{
-					// Magic number that works well on the 360 and NVIDIA 8800
-					flashlightColor[0] *= 2.5f;
-					flashlightColor[1] *= 2.5f;
-					flashlightColor[2] *= 2.5f;
-				}
-
-				SetPixelShaderConstantInternal( nColorConst, flashlightColor, 1, false );
-
-				if ( nWorldToTextureConstant >= 0 )
-				{
-					SetPixelShaderConstantInternal( nWorldToTextureConstant, m_FlashlightWorldToTexture.Base(), 4, false );
-				}
-
-				BindStandardTexture( (Sampler_t)nShadowNoiseSampler, TEXTURE_SHADOW_NOISE_2D );
-				if( m_pFlashlightDepthTexture && m_FlashlightState.m_bEnableShadows && ShaderUtil()->GetConfig().ShadowDepthTexture() )
-				{
-					ShaderAPITextureHandle_t hDepthTexture = g_pShaderUtil->GetShaderAPITextureBindHandle( m_pFlashlightDepthTexture, 0, 0 );
-					BindTexture( (Sampler_t)nDepthSampler, hDepthTexture );
-
-					SetPixelShaderConstantInternal( nDepthTweakConst, m_pFlashlightTweaks, 1, false );
-
-					// Dimensions of screen, used for screen-space noise map sampling
-					float vScreenScale[4] = {1280.0f / 32.0f, 720.0f / 32.0f, 0, 0};
-					int nWidth, nHeight;
-					BaseClass::GetBackBufferDimensions( nWidth, nHeight );
-
-					int nTexWidth, nTexHeight;
-					GetStandardTextureDimensions( &nTexWidth, &nTexHeight, TEXTURE_SHADOW_NOISE_2D );
-
-					vScreenScale[0] = (float) nWidth  / nTexWidth;
-					vScreenScale[1] = (float) nHeight / nTexHeight;
-					vScreenScale[2] = 1.0f / m_FlashlightState.m_flShadowMapResolution;
-					vScreenScale[3] = 2.0f / m_FlashlightState.m_flShadowMapResolution;
-					SetPixelShaderConstantInternal( nScreenScaleConst, vScreenScale, 1, false );
-				}
-				else
-				{
-					BindStandardTexture( (Sampler_t)nDepthSampler, TEXTURE_WHITE );
-				}
-
-				if ( IsX360() )
-				{
-					SetBooleanPixelShaderConstant( 0, &m_FlashlightState.m_nShadowQuality, 1 );
-				}
-
 				break;
 			}
 
@@ -10339,11 +10366,6 @@ void CShaderAPIDx8::PopMatrix()
 		m_pMatrixStack[m_CurrStack]->Pop();
 		UpdateMatrixTransform();
 	}
-	else
-	{
-		// Have to pop even while deactivated, otherwise the stack will overflow and we'll crash
-		m_pMatrixStack[m_CurrStack]->Pop();
-	}
 }
 
 void CShaderAPIDx8::LoadIdentity( )
@@ -12486,6 +12508,11 @@ void CShaderAPIDx8::ReadPixels( int x, int y, int width, int height, unsigned ch
 //-----------------------------------------------------------------------------
 void CShaderAPIDx8::Bind( IMaterial* pMaterial )
 {
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	CFastTimer bindTimer;
+	bindTimer.Start();
+	++s_ShaderAPIDrawPerfStats.m_nBinds;
+#endif
 	LOCK_SHADERAPI();
 	IMaterialInternal* pMatInt = static_cast<IMaterialInternal*>( pMaterial );
 
@@ -12520,6 +12547,10 @@ void CShaderAPIDx8::Bind( IMaterial* pMaterial )
 		PIXifyName( s_pPIXMaterialName, sizeof( s_pPIXMaterialName ), m_pMaterial->GetName() );
 #endif
 	}
+#if SHADERAPI_DRAW_PERF_ANALYSIS
+	bindTimer.End();
+	s_ShaderAPIDrawPerfStats.m_BindTime += bindTimer.GetDuration();
+#endif
 }
 
 // Get the currently bound material
@@ -13134,103 +13165,17 @@ void CShaderAPIDx8::SetPixelShaderFogParams( int reg )
 	SetPixelShaderFogParams( reg, m_TransitionTable.CurrentShadowState()->m_FogMode );
 }
 
-void CShaderAPIDx8::SetPixelShaderFogParams_CSGO( int reg, ShaderFogMode_t fogMode )
-{
-	m_DelayedShaderConstants.iPixelShaderFogParams = reg; //save it off in case the ShaderFogMode_t disables fog. We only find out later.
-	float fogParams[4];
-
-	MaterialFogMode_t pixelFogMode = GetSceneFogMode();
-
-	if( (pixelFogMode != MATERIAL_FOG_NONE) && ( fogMode != SHADER_FOGMODE_DISABLED ) )
-	{
-		float ooFogRange = 1.0f;
-
-		float fStart = m_VertexShaderFogParams[0];
-		float fEnd = m_VertexShaderFogParams[1];
-
-		// Check for divide by zero
-		if ( fEnd != fStart )
-		{
-			ooFogRange = 1.0f / ( fEnd - fStart );
-		}
-
-		// Fixed-function-blended per-vertex fog requires some inverted params since a fog factor of 0 means fully fogged and 1 means no fog.
-		// We could implement shader fog the same way, but would require an extra subtract in the vertex and/or pixel shader, which we want to avoid.
-		fogParams[0] = 1.0f - ooFogRange * fEnd; // -start / ( fogEnd - fogStart )
-		fogParams[1] = m_DynamicState.m_FogZ; // water height
-		fogParams[2] = clamp( m_flFogMaxDensity, 0.0f, 1.0f ); // Max fog density
-		fogParams[3] = ooFogRange; // 1 / ( fogEnd - fogStart );
-	}
-	else
-	{
-		// Fixed-function-blended per-vertex fog requires some inverted params since a fog factor of 0 means fully fogged and 1 means no fog.
-		// We could implement shader fog the same way, but would require an extra subtract in the vertex and/or pixel shader, which we want to avoid.
-		//emulating MATERIAL_FOG_NONE by setting the parameters so that CalcRangeFog() always returns 0. Gets rid of a dynamic combo across the ps2x set.
-		fogParams[0] = 0.0f;
-		fogParams[1] = -FLT_MAX;
-		fogParams[2] = 0.0f;
-		fogParams[3] = 0.0f;
-	}
-
-	// cFogEndOverFogRange, cFogOne, unused, cOOFogRange
-	SetPixelShaderConstant( reg, fogParams, 1 );
-}
-
-void CShaderAPIDx8::SetPixelShaderFogParams_CSGO( int reg )
-{
-	ShadowState_t const *pState = m_TransitionTable.CurrentShadowState();
-	if ( pState )
-	{
-		SetPixelShaderFogParams_CSGO( reg, pState->m_FogMode );
-	}
-	else
-	{
-		// Have to do this so that m_DelayedShaderConstants.iPixelShaderFogParams gets updated so that we 
-		// get this set properly when the currnent shadow state is set.  If we don't do this, the 
-		// first draw call of every frame will not get a fog constant set.
-		SetPixelShaderFogParams_CSGO( reg, SHADER_FOGMODE_DISABLED );
-	}
-}
-
 void CShaderAPIDx8::SetFlashlightState( const FlashlightState_t &state, const VMatrix &worldToTexture )
 {
 	LOCK_SHADERAPI();
 	SetFlashlightStateEx( state, worldToTexture, NULL );
 }
 
-FORCEINLINE float ShadowAttenFromState( const FlashlightState_t &state )
-{
-	// DX10 requires some hackery due to sRGB/blend ordering change from DX9, which makes the shadows too light
-	if ( g_pHardwareConfig->UsesSRGBCorrectBlending() )
-		return state.m_flShadowAtten * 0.1f; // magic number
-
-	return state.m_flShadowAtten;
-}
-
-FORCEINLINE float ShadowFilterFromState( const FlashlightState_t &state )
-{
-	// We developed shadow maps at 1024, so we expect the penumbra size to have been tuned relative to that
-	return state.m_flShadowFilterSize / 1024.0f;
-}
-
-FORCEINLINE void HashShadow2DJitter( const float fJitterSeed, float *fU, float* fV )
-{
-	const int nTexRes = 128;
-	int nSeed = fmod (fJitterSeed, 1.0f) * nTexRes * nTexRes;
-
-	int nRow = nSeed / nTexRes;
-	int nCol = nSeed % nTexRes;
-
-	// Div and mod to get an individual texel in the fTexRes x fTexRes grid
-	*fU = nRow / (float) nTexRes;	// Row
-	*fV = nCol / (float) nTexRes;	// Column
-}
-
-ConVar r_flashlightbrightness( "r_flashlightbrightness", "0.25", FCVAR_CHEAT );
 void CShaderAPIDx8::SetFlashlightStateEx( const FlashlightState_t &state, const VMatrix &worldToTexture, ITexture *pFlashlightDepthTexture )
 {
 	LOCK_SHADERAPI();
 	// fixme: do a test here.
+	FlushBufferedPrimitives();
 	m_FlashlightState = state;
 	m_FlashlightWorldToTexture = worldToTexture;
 	m_pFlashlightDepthTexture = pFlashlightDepthTexture;
@@ -13240,45 +13185,6 @@ void CShaderAPIDx8::SetFlashlightStateEx( const FlashlightState_t &state, const 
 		m_FlashlightState.m_bEnableShadows = false;
 		m_pFlashlightDepthTexture = NULL;
 	}
-
-	// FIXME: This is shader specific code, only in here because of the command-buffer
-	// stuff required to make the 360 be fast. We need this to be in the shader DLLs,
-	// callable from shaderapidx8 in a fast way somehow.
-
-	// Cache off pixel shader + vertex shader values
-	m_pFlashlightAtten[0] = m_FlashlightState.m_fConstantAtten;		// Set the flashlight attenuation factors
-	m_pFlashlightAtten[1] = m_FlashlightState.m_fLinearAtten;
-	m_pFlashlightAtten[2] = m_FlashlightState.m_fQuadraticAtten;
-	m_pFlashlightAtten[3] = m_FlashlightState.m_FarZ; // PiMoN: must be m_FarZAtten, but its the same as m_FarZ
-
-	m_pFlashlightPos[0] = m_FlashlightState.m_vecLightOrigin[0];		// Set the flashlight origin
-	m_pFlashlightPos[1] = m_FlashlightState.m_vecLightOrigin[1];
-	m_pFlashlightPos[2] = m_FlashlightState.m_vecLightOrigin[2];
-	m_pFlashlightPos[3] = m_FlashlightState.m_FarZ;
-
-	float flFlashlightScale = r_flashlightbrightness.GetFloat();
-
-	if ( IsPC() && !g_pHardwareConfig->GetHDREnabled() )
-	{
-		// Non-HDR path requires 2.0 flashlight
-		flFlashlightScale = 2.0f;
-	}
-
-	flFlashlightScale *= m_FlashlightState.m_fBrightnessScale;
-
-	// Generate pixel shader constant
-	float const *pFlashlightColor = m_FlashlightState.m_Color;
-	m_pFlashlightColor[0] = flFlashlightScale * pFlashlightColor[0];
-	m_pFlashlightColor[1] = flFlashlightScale * pFlashlightColor[1];
-	m_pFlashlightColor[2] = flFlashlightScale * pFlashlightColor[2];
-	m_pFlashlightColor[3] = pFlashlightColor[3];	// not used, will be whacked by ExecuteCommandBuffer
-
-	// Red flashlight for testing
-	//m_pFlashlightColor[0] = 0.5f; m_pFlashlightColor[1] = 0.0f; m_pFlashlightColor[2] = 0.0f;
-
-	m_pFlashlightTweaks[0] = ShadowFilterFromState( m_FlashlightState );
-	m_pFlashlightTweaks[1] = ShadowAttenFromState( m_FlashlightState );
-	HashShadow2DJitter( m_FlashlightState.m_flShadowJitterSeed, &m_pFlashlightTweaks[2], &m_pFlashlightTweaks[3] );
 }
 
 const FlashlightState_t &CShaderAPIDx8::GetFlashlightState( VMatrix &worldToTexture ) const
@@ -14465,11 +14371,6 @@ bool CShaderAPIDx8::SetRenderTargetInternalXbox( ShaderAPITextureHandle_t hRende
 #endif
 
 	return true;
-}
-
-void CShaderAPIDx8::AddShaderComboInformation( const ShaderComboSemantics_t *pSemantics )
-{
-	ShaderManager()->AddShaderComboInformation( pSemantics );
 }
 
 

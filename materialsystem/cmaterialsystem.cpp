@@ -1766,11 +1766,10 @@ static ConVar mat_showmiplevels(	"mat_showmiplevels", "0", FCVAR_CHEAT, "color-c
 static ConVar mat_specular(			"mat_specular", "1", FCVAR_ALLOWED_IN_COMPETITIVE, "Enable/Disable specularity for perf testing.  Will cause a material reload upon change." );
 static ConVar mat_bumpmap(			"mat_bumpmap", "1", FCVAR_ALLOWED_IN_COMPETITIVE );
 static ConVar mat_phong(			"mat_phong", "1" );
-static ConVar mat_old_phong(		"mat_old_phong", "0", FCVAR_ARCHIVE, "Revert back to the old & stable Phong shader" );
-static ConVar mat_parallaxmap(		"mat_parallaxmap", "1", FCVAR_HIDDEN );
-static ConVar mat_reducefillrate(	"mat_reducefillrate", "0", FCVAR_NONE );
+static ConVar mat_parallaxmap(		"mat_parallaxmap", "1", FCVAR_HIDDEN | FCVAR_ALLOWED_IN_COMPETITIVE );
+static ConVar mat_reducefillrate(	"mat_reducefillrate", "0", FCVAR_ALLOWED_IN_COMPETITIVE );
 
-static ConVar mat_picmip(			"mat_picmip", "2", FCVAR_ARCHIVE, "", true, -32, true, 8 );
+static ConVar mat_picmip(			"mat_picmip", "0", FCVAR_ARCHIVE, "", true, -32, true, 8 );
 static ConVar mat_slopescaledepthbias_normal( "mat_slopescaledepthbias_normal", "0.0f", FCVAR_CHEAT );
 static ConVar mat_depthbias_normal( "mat_depthbias_normal", "0.0f", FCVAR_CHEAT | FCVAR_ALLOWED_IN_COMPETITIVE );
 static ConVar mat_slopescaledepthbias_decal( "mat_slopescaledepthbias_decal", "-0.5", FCVAR_CHEAT );		// Reciprocals of these biases sent to API
@@ -1818,7 +1817,7 @@ static ConVar mat_fastnobump(		"mat_fastnobump", "0", FCVAR_CHEAT ); // Binds 1-
 
 // These are not controlled by the material system, but are limited by settings in the material system
 static ConVar r_shadowrendertotexture(		"r_shadowrendertotexture", "0", FCVAR_ARCHIVE );
-static ConVar r_flashlightdepthtexture(		"r_flashlightdepthtexture", "1", FCVAR_ARCHIVE );
+static ConVar r_flashlightdepthtexture(		"r_flashlightdepthtexture", "1" );
 #ifndef _X360
 static ConVar r_waterforceexpensive(		"r_waterforceexpensive", "0", FCVAR_ARCHIVE );
 #endif
@@ -1845,7 +1844,6 @@ void CMaterialSystem::ReadConfigFromConVars( MaterialSystem_Config_t *pConfig )
 	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_DISABLE_SPECULAR, !mat_specular.GetBool() );
 	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_DISABLE_BUMPMAP, !mat_bumpmap.GetBool() );
 	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_DISABLE_PHONG, !mat_phong.GetBool() );
-	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_OLD_PHONG, mat_old_phong.GetBool() );
 	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_ENABLE_PARALLAX_MAPPING, mat_parallaxmap.GetBool() );
 	pConfig->SetFlag( MATSYS_VIDCFG_FLAGS_REDUCE_FILLRATE, mat_reducefillrate.GetBool() );
 	pConfig->m_nForceAnisotropicLevel = max( mat_forceaniso.GetInt(), 1 );
@@ -1865,11 +1863,7 @@ void CMaterialSystem::ReadConfigFromConVars( MaterialSystem_Config_t *pConfig )
 	pConfig->m_fGammaTVExponent = mat_monitorgamma_tv_exp.GetFloat();
 	pConfig->m_bGammaTVEnabled = mat_monitorgamma_tv_enabled.GetBool();
 
-#ifdef TOGLES
-	pConfig->m_nAASamples = 0;
-#else
 	pConfig->m_nAASamples = mat_antialias.GetInt();
-#endif
 
 	pConfig->m_nAAQuality = mat_aaquality.GetInt();
 	pConfig->bShowDiffuse = mat_diffuse.GetInt() ? true : false;	
@@ -2276,7 +2270,7 @@ bool CMaterialSystem::OverrideConfig( const MaterialSystem_Config_t &_config, bo
 	}
 
 	// toggle bump mapping
-	if ( config.UseBumpmapping() != g_config.UseBumpmapping() || config.UsePhong() != g_config.UsePhong() || config.UseOldPhong() != g_config.UseOldPhong() )
+	if ( config.UseBumpmapping() != g_config.UseBumpmapping() || config.UsePhong() != g_config.UsePhong() )
 	{
 		if( mat_debugalttab.GetBool() )
 		{
@@ -3111,8 +3105,7 @@ void CMaterialSystem::CacheUsedMaterials( )
 	for (MaterialHandle_t i = FirstMaterial(); i != InvalidMaterial(); i = NextMaterial(i) )
 	{
 		IMaterialInternal* pMat = GetMaterialInternal(i);
-		Assert( pMat->GetReferenceCount() >= 0 );
-		if( pMat->GetReferenceCount() > 0 )
+		if( pMat && pMat->GetReferenceCount() > 0 )
 		{
 			pMat->Precache();
 		}
@@ -3524,8 +3517,56 @@ ConVar mat_queue_mode( "mat_queue_mode", "-1", FCVAR_ARCHIVE, "The queue/thread 
 
 ConVar mat_queue_report( "mat_queue_report", "0", FCVAR_ARCHIVE, "Report thread stalls.  Positive number will filter by stalls >= time in ms.  -1 reports all locks." );
 
+#define MAT_WORKER_PERF_ANALYSIS 0
+
+#if MAT_WORKER_PERF_ANALYSIS
+static CThreadFastMutex s_MatWorkerPerfMutex;
+static CCycleCount s_MatWorkerPerfTime;
+static CCycleCount s_MatWorkerEndQueueTime;
+static double s_flMatWorkerPerfResetTime;
+static uint64 s_nMatWorkerPerfJobs;
+static uint64 s_nMatWorkerQueuedCalls;
+static uint64 s_nMatWorkerQueueBytes;
+
+CON_COMMAND( mat_dump_worker_stats, "Print queued material-worker time; pass 1 to reset after printing." )
+{
+	AUTO_LOCK( s_MatWorkerPerfMutex );
+	const double flTotalMS = s_MatWorkerPerfTime.GetMillisecondsF();
+	const double flEndQueueMS = s_MatWorkerEndQueueTime.GetMillisecondsF();
+	const double flElapsedMS = s_flMatWorkerPerfResetTime > 0.0 ?
+		( Plat_FloatTime() - s_flMatWorkerPerfResetTime ) * 1000.0 : 0.0;
+	ConMsg( "Material worker: Jobs: %llu Time: %4.3fms (%4.3fms/job, %4.1f%% capture busy)\n",
+		(unsigned long long)s_nMatWorkerPerfJobs,
+		flTotalMS,
+		s_nMatWorkerPerfJobs ? flTotalMS / s_nMatWorkerPerfJobs : 0.0,
+		flElapsedMS > 0.0 ? 100.0 * flTotalMS / flElapsedMS : 0.0 );
+	ConMsg( "Material worker queue: Calls: %llu (%4.2f/job) Memory: %llu bytes (%4.2f KB/job) EndQueue: %4.3fms (%4.3fms/job)\n",
+		(unsigned long long)s_nMatWorkerQueuedCalls,
+		s_nMatWorkerPerfJobs ? (double)s_nMatWorkerQueuedCalls / s_nMatWorkerPerfJobs : 0.0,
+		(unsigned long long)s_nMatWorkerQueueBytes,
+		s_nMatWorkerPerfJobs ? (double)s_nMatWorkerQueueBytes / ( 1024.0 * s_nMatWorkerPerfJobs ) : 0.0,
+		flEndQueueMS,
+		s_nMatWorkerPerfJobs ? flEndQueueMS / s_nMatWorkerPerfJobs : 0.0 );
+
+	if ( args.ArgC() == 2 && args.Arg(1)[0] != '0' )
+	{
+		s_MatWorkerPerfTime.Init();
+		s_MatWorkerEndQueueTime.Init();
+		s_flMatWorkerPerfResetTime = Plat_FloatTime();
+		s_nMatWorkerPerfJobs = 0;
+		s_nMatWorkerQueuedCalls = 0;
+		s_nMatWorkerQueueBytes = 0;
+	}
+}
+#endif
+
 void CMaterialSystem::ThreadExecuteQueuedContext( CMatQueuedRenderContext *pContext )
 {
+#if MAT_WORKER_PERF_ANALYSIS
+	CFastTimer workerTimer;
+	workerTimer.Start();
+#endif
+
 #ifdef RAD_TELEMETRY_ENABLED
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s-%s", __FUNCTION__, GetMatString( m_ThreadMode ) );
 	CTelemetrySpikeDetector Spike( "ThreadExecuteQueuedContext", 1 );
@@ -3536,9 +3577,30 @@ void CMaterialSystem::ThreadExecuteQueuedContext( CMatQueuedRenderContext *pCont
 	m_nRenderThreadID = ThreadGetCurrentId(); 
 	IMatRenderContextInternal* pSavedRenderContext = m_pRenderContext.Get();
 	m_pRenderContext.Set( &m_HardwareRenderContext );
+#if MAT_WORKER_PERF_ANALYSIS
+	const uint64 nQueuedCalls = pContext->GetCallQueueInternal()->Count();
+	const uint64 nQueueBytes = pContext->GetCallQueueInternal()->GetMemoryUsed();
+	CFastTimer endQueueTimer;
+	endQueueTimer.Start();
+#endif
 	pContext->EndQueue( true );
+#if MAT_WORKER_PERF_ANALYSIS
+	endQueueTimer.End();
+#endif
 	m_pRenderContext.Set( pSavedRenderContext );
 	m_nRenderThreadID = (uintp)-1;
+
+#if MAT_WORKER_PERF_ANALYSIS
+	workerTimer.End();
+	{
+		AUTO_LOCK( s_MatWorkerPerfMutex );
+		s_MatWorkerPerfTime += workerTimer.GetDuration();
+		s_MatWorkerEndQueueTime += endQueueTimer.GetDuration();
+		++s_nMatWorkerPerfJobs;
+		s_nMatWorkerQueuedCalls += nQueuedCalls;
+		s_nMatWorkerQueueBytes += nQueueBytes;
+	}
+#endif
 }
 
 IThreadPool *CMaterialSystem::CreateMatQueueThreadPool()

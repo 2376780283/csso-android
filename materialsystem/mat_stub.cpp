@@ -409,6 +409,7 @@ public:
 	virtual bool FakeSRGBWrite() const				{ return false; }
 	virtual bool CanDoSRGBReadFromRTs() const		{ return true; }
 	virtual bool SupportsGLMixedSizeTargets() const	{ return false; }
+	virtual bool HasFramebufferFetch() const			{ return false; }
 	virtual bool IsAAEnabled() const				{ return false; }
 	virtual int GetVertexTextureCount() const		{ return 0; }
 	virtual int GetMaxVertexTextureDimension() const { return 0; }
@@ -426,8 +427,6 @@ public:
 	virtual bool SupportsBorderColor( void ) const { return true; }
 	virtual bool SupportsFetch4( void ) const { return false; }
 	virtual bool CanStretchRectFromTextures() const { return false; }
-    virtual float GetShadowDepthBias() const { return 0.0f; }
-	virtual float GetShadowSlopeScaleDepthBias() const { return 0.0f; }
 };
 CDummyHardwareConfig g_DummyHardwareConfig;
 

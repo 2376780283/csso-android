@@ -39,6 +39,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef POSIX
+#include <signal.h>
+#endif
 
 //-----------------------------------------------------------------------------
 // Forward declarations
@@ -58,6 +61,65 @@ ConVar engine_no_focus_sleep( "engine_no_focus_sleep", "50", FCVAR_ARCHIVE );
 static int s_nDesiredFPSMax = DEFAULT_FPS_MAX;
 static bool s_bFPSMaxDrivenByPowerSavings = false;
 
+#define ENGINE_FRAME_PERF_ANALYSIS 0
+
+#if ENGINE_FRAME_PERF_ANALYSIS
+struct CEngineFramePerfStats
+{
+	CCycleCount m_FrameTime;
+	CCycleCount m_FrameRateLimitTime;
+	CCycleCount m_AsyncFinishAllTime;
+	CCycleCount m_HostStateFrameTime;
+	double m_flResetTime;
+	uint64 m_nFrames;
+	uint64 m_nAsyncFinishAllCalls;
+
+	void Reset()
+	{
+		m_FrameTime.Init();
+		m_FrameRateLimitTime.Init();
+		m_AsyncFinishAllTime.Init();
+		m_HostStateFrameTime.Init();
+		m_flResetTime = Plat_FloatTime();
+		m_nFrames = 0;
+		m_nAsyncFinishAllCalls = 0;
+	}
+};
+
+static CEngineFramePerfStats s_EngineFramePerfStats;
+
+CON_COMMAND( engine_dump_frame_stats, "Print engine main-thread frame timing; pass 1 to reset after printing." )
+{
+	const double flFrames = (double)s_EngineFramePerfStats.m_nFrames;
+	const double flFrameMS = s_EngineFramePerfStats.m_FrameTime.GetMillisecondsF();
+	const double flLimitMS = s_EngineFramePerfStats.m_FrameRateLimitTime.GetMillisecondsF();
+	const double flAsyncMS = s_EngineFramePerfStats.m_AsyncFinishAllTime.GetMillisecondsF();
+	const double flHostMS = s_EngineFramePerfStats.m_HostStateFrameTime.GetMillisecondsF();
+	const double flElapsedSeconds = s_EngineFramePerfStats.m_flResetTime > 0.0 ?
+		Plat_FloatTime() - s_EngineFramePerfStats.m_flResetTime : 0.0;
+
+	ConMsg( "Engine main: Frames: %llu Wall: %4.3fs (%4.2f calls/sec) CEngine::Frame: %4.3fms (%4.3fms/call)\n",
+		(unsigned long long)s_EngineFramePerfStats.m_nFrames,
+		flElapsedSeconds,
+		flElapsedSeconds > 0.0 ? flFrames / flElapsedSeconds : 0.0,
+		flFrameMS,
+		flFrames ? flFrameMS / flFrames : 0.0 );
+	ConMsg( "Engine main split: FrameRateLimit: %4.3fms (%4.3fms/call) AsyncFinishAll: %llu calls, %4.3fms (%4.3fms/call) HostState_Frame: %4.3fms (%4.3fms/call)\n",
+		flLimitMS,
+		flFrames ? flLimitMS / flFrames : 0.0,
+		(unsigned long long)s_EngineFramePerfStats.m_nAsyncFinishAllCalls,
+		flAsyncMS,
+		s_EngineFramePerfStats.m_nAsyncFinishAllCalls ? flAsyncMS / s_EngineFramePerfStats.m_nAsyncFinishAllCalls : 0.0,
+		flHostMS,
+		flFrames ? flHostMS / flFrames : 0.0 );
+
+	if ( args.ArgC() == 2 && args.Arg(1)[0] != '0' )
+	{
+		s_EngineFramePerfStats.Reset();
+	}
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // ConVars and ConCommands
 //-----------------------------------------------------------------------------
@@ -69,7 +131,7 @@ static void fps_max_callback( IConVar *var, const char *pOldValue, float flOldVa
 		s_nDesiredFPSMax = ( (ConVar *)var)->GetInt();
 	}
 }
-ConVar fps_max( "fps_max", DEFAULT_FPS_MAX_S, 0, "Frame rate limiter", fps_max_callback );
+ConVar fps_max( "fps_max", DEFAULT_FPS_MAX_S, FCVAR_NOT_CONNECTED, "Frame rate limiter, cannot be set while connected to a server.", fps_max_callback );
 
 // When set, this ConVar (typically driven from the advanced video settings) will drive fps_max (see above) to
 // half of the refresh rate, if the user hasn't otherwise set fps_max (via console, commandline etc)
@@ -90,12 +152,6 @@ static void mat_powersavingsmode_callback( IConVar *var, const char *pOldValue, 
 }
 static ConVar mat_powersavingsmode( "mat_powersavingsmode", "0", FCVAR_ARCHIVE, "Power Savings Mode", mat_powersavingsmode_callback );
 
-ConVar sleep_when_meeting_framerate( "sleep_when_meeting_framerate", IsGameConsole() ? "0" : "1", FCVAR_NONE, "Sleep instead of spinning if we're meeting the desired framerate." );
-
-#if !defined( DEDICATED )
-static ConVar fps_max_menu( "fps_max_menu", "120", FCVAR_NONE, "Frame rate limiter, main menu" );
-#endif
-
 #ifndef _RETAIL
 static ConVar async_serialize( "async_serialize", "0", 0, "Force async reads to serialize for profiling" );
 #define ShouldSerializeAsync() async_serialize.GetBool()
@@ -103,6 +159,7 @@ static ConVar async_serialize( "async_serialize", "0", 0, "Force async reads to 
 #define ShouldSerializeAsync() false
 #endif
 
+extern ConVar host_timer_spin_ms;
 extern float host_nexttick;
 extern IVEngineClient *engineClient;
 
@@ -238,7 +295,6 @@ bool CEngine::Load( bool bDedicated, const char *rootdir )
 //-----------------------------------------------------------------------------
 bool CEngine::FilterTime( float dt )
 {
-	// Dedicated servers will lock fps max to tick rate essentially
 	if ( sv.IsDedicated() && !g_bDedicatedServerBenchmarkMode )
 	{
 		m_flMinFrameTime = host_nexttick;
@@ -250,7 +306,7 @@ bool CEngine::FilterTime( float dt )
 	// Dedicated's tic_rate regulates server frame rate.  Don't apply fps filter here.
 	// Only do this restriction on the client. Prevents clients from accomplishing certain
 	// hacks by pausing their client for a period of time.
-	if ( IsPC() && !sv.IsDedicated() && !CanCheat() && ( fps_max.GetFloat() < 30 ) && !Host_IsSinglePlayerGame() )
+	if ( IsPC() && !sv.IsDedicated() && !CanCheat() && fps_max.GetFloat() < 30 )
 	{
 		// Don't do anything if fps_max=0 (which means it's unlimited).
 		if ( fps_max.GetFloat() != 0.0f )
@@ -261,20 +317,11 @@ bool CEngine::FilterTime( float dt )
 	}
 
 	float fps = fps_max.GetFloat();
-
-#if !defined( DEDICATED )
-	extern IVEngineClient *engineClient;
-	if ( engineClient && !engineClient->IsConnected() && ( fps_max_menu.GetFloat() < fps ) )
-	{
-		fps = fps_max_menu.GetFloat();
-	}
-#endif
-
 	if ( fps > 0.0f )
 	{
 		// Limit fps to withing tolerable range
 //		fps = max( MIN_FPS, fps ); // red herring - since we're only checking if dt < 1/fps, clamping against MIN_FPS has no effect
-		fps = MIN( MAX_FPS, fps );
+		fps = min( MAX_FPS, (double)fps );
 
 		float minframetime = 1.0 / fps;
 
@@ -288,7 +335,7 @@ bool CEngine::FilterTime( float dt )
 			dt < minframetime )
 		{
 			// framerate is too high
-			return false;
+			return false;		
 		}
 	}
 
@@ -301,21 +348,26 @@ bool CEngine::FilterTime( float dt )
 //-----------------------------------------------------------------------------
 void CEngine::Frame( void )
 {
+#if ENGINE_FRAME_PERF_ANALYSIS
+	CFastTimer engineFrameTimer;
+	engineFrameTimer.Start();
+#endif
+
 	// yield the CPU for a little while when paused, minimized, or not the focus
 	// FIXME:  Move this to main windows message pump?
-	if ( IsPC() && !game->IsActiveApp() && !sv.IsDedicated()
-		&& engine_no_focus_sleep.GetInt() > 0 )
+	if ( IsPC() && !game->IsActiveApp() && !sv.IsDedicated() && engine_no_focus_sleep.GetInt() > 0 )
 	{
-		g_pInputSystem->SleepUntilInput( engine_no_focus_sleep.GetInt() );
+		VPROF_BUDGET( "Sleep", VPROF_BUDGETGROUP_SLEEPING );
+#if defined( RAD_TELEMETRY_ENABLED )
+		if( !g_Telemetry.Level )
+#endif
+			g_pInputSystem->SleepUntilInput( engine_no_focus_sleep.GetInt() );
 	}
 
-	// Get current time
-	m_flCurrentTime	= Sys_FloatTime();
-
-	// Initialize previous time if it's our first frame, otherwise dt will be huge (equal to system uptime)
-	if ( m_flPreviousTime == 0.0 )
+	if ( m_flPreviousTime == 0 )
 	{
-		m_flPreviousTime = m_flCurrentTime;
+		(void) FilterTime( 0.0f );
+		m_flPreviousTime = Sys_FloatTime() - m_flMinFrameTime;
 	}
 
 	// Watch for data from the CPU frequency monitoring system and print it to the console.
@@ -328,68 +380,83 @@ void CEngine::Frame( void )
 					frequency.m_GHz, frequency.m_percentage, frequency.m_lowestPercentage );
 	}
 
-	// Determine dt since we last checked
-	float dt = m_flCurrentTime - m_flPreviousTime;
-	if ( sv.IsDedicated() && ( dt < 0 ) )
-	{
-		// ... but if the clock ever went backwards due to a bug,
-		// we'd have no idea how much time has elapsed, so just 
-		// catch up to the next scheduled server tick.
-		dt = host_nexttick;
-	}
-
-#ifdef _GAMECONSOLE
-#define XBOX_PROCESS_EVENTS_MAXINTERVAL  0.2 				// 1/5 sec
-		// handle Xbox system messages process xbox events occasionally. every frame is too often -
-		// makes this code add up to something
-		m_flTimeSinceLastXBXProcessEventsCall += MAX( 0, dt );
-		if ( m_flTimeSinceLastXBXProcessEventsCall > XBOX_PROCESS_EVENTS_MAXINTERVAL || vx_do_not_throttle_events.GetBool() )
-		{
-			XBX_ProcessEvents();
-			XBX_DispatchEventsQueue();
-			m_flTimeSinceLastXBXProcessEventsCall = 0.;
-		}
+	// Loop until it is time for our frame. Don't return early because pumping messages
+	// and processing console input is expensive (0.1 ms for each call to ProcessConsoleInput).
+#if ENGINE_FRAME_PERF_ANALYSIS
+	CFastTimer frameRateLimitTimer;
+	frameRateLimitTimer.Start();
 #endif
-
-	// Remember old time
-	m_flPreviousTime = m_flCurrentTime;
-
-	// Accumulate current time delta into the true "frametime"
-	m_flFrameTime += dt;
-
-	// If the time is < 0, that means we've restarted. 
-	// Set the new time high enough so the engine will run a frame
-	if ( m_flFrameTime < 0.0f )
-		return;
-
-	// If the frametime is still too short, don't pass through
-	if ( !FilterTime( m_flFrameTime ) )
 	{
-#ifdef POSIX
-		double fSleepMS = ( m_flMinFrameTime - m_flFrameTime ) * 1000.0;
-		unsigned nSleepMS = (unsigned)floor( fSleepMS );
-		if ( nSleepMS && sleep_when_meeting_framerate.GetInt() )
-		{
-			TM_ZONE( TELEMETRY_LEVEL0, TMZF_NONE, "Engine Sleep" );
-			ThreadSleep( nSleepMS );
-		}
-#else //POSIX
-		float fSleepMS = ( m_flMinFrameTime - m_flFrameTime ) * 1000;
-		unsigned nSleepMS = (unsigned)floor( fSleepMS );
-		if ( nSleepMS && sleep_when_meeting_framerate.GetInt() )
-		{
-			tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "Engine Sleep" );
-			ThreadSleep( nSleepMS );
-		}
-#endif //POSIX
-		m_flFilteredTime += dt;
-		return;
-	}
+		VPROF_BUDGET( "CEngine::FrameRateLimit", VPROF_BUDGETGROUP_SLEEPING );
 
-    tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __PRETTY_FUNCTION__ );
+		for (;;)
+		{
+			// Get current time
+			m_flCurrentTime	= Sys_FloatTime();
+
+			// Determine dt since we last ticked
+			m_flFrameTime = m_flCurrentTime - m_flPreviousTime;
+
+			// This should never happen...
+			Assert( m_flFrameTime >= 0.0f );
+			if ( m_flFrameTime < 0.0f )
+			{
+				// ... but if the clock ever went backwards due to a bug,
+				// we'd have no idea how much time has elapsed, so just
+				// catch up to the next scheduled server tick.
+				m_flFrameTime = host_nexttick;
+			}
+
+			if ( FilterTime( m_flFrameTime )  )
+			{
+				// Time to render our frame.
+				break;
+			}
+
+			if ( IsPC() && ( !sv.IsDedicated() || host_timer_spin_ms.GetFloat() != 0 ) )
+			{
+				// ThreadSleep may be imprecise. On non-dedicated servers, we busy-sleep
+				// for the last one or two milliseconds to ensure very tight timing.
+				float fBusyWaitMS = IsWindows() ? 2.25f : 1.5f;
+				if ( sv.IsDedicated() )
+				{
+					fBusyWaitMS = host_timer_spin_ms.GetFloat();
+					fBusyWaitMS = MAX( fBusyWaitMS, 0.5f );
+				}
+
+				// If we are meeting our frame rate then go idle for a while
+				// to avoid wasting power and to let other threads/processes run.
+				// Calculate how long we need to wait.
+				int nSleepMS = (int)( ( m_flMinFrameTime - m_flFrameTime ) * 1000 - fBusyWaitMS );
+				if ( nSleepMS > 0 )
+					ThreadSleep( nSleepMS );
+
+				// Go back to the top of the loop and see if it is time yet.
+			}
+			else
+			{
+				int nSleepMicrosecs = (int) ceilf( clamp( ( m_flMinFrameTime - m_flFrameTime ) * 1000000.f, 1.f, 1000000.f ) );
+#ifdef POSIX
+				usleep( nSleepMicrosecs );
+#else
+				ThreadSleep( (nSleepMicrosecs + 999) / 1000 );
+#endif
+			}
+		}
+	}
+#if ENGINE_FRAME_PERF_ANALYSIS
+	frameRateLimitTimer.End();
+	s_EngineFramePerfStats.m_FrameRateLimitTime += frameRateLimitTimer.GetDuration();
+#endif
 
 	if ( ShouldSerializeAsync() )
 	{
+		VPROF_BUDGET( "CEngine::AsyncFinishAll", VPROF_BUDGETGROUP_OTHER_UNACCOUNTED );
+
+#if ENGINE_FRAME_PERF_ANALYSIS
+		CFastTimer asyncFinishAllTimer;
+		asyncFinishAllTimer.Start();
+#endif
 		static ConVar *pSyncReportConVar = g_pCVar->FindVar( "fs_report_sync_opens" );
 		bool bReportingSyncOpens = ( pSyncReportConVar && pSyncReportConVar->GetInt() );
 		int reportLevel = 0;
@@ -403,36 +470,45 @@ void CEngine::Frame( void )
 		{
 			pSyncReportConVar->SetValue( reportLevel );
 		}
+#if ENGINE_FRAME_PERF_ANALYSIS
+		asyncFinishAllTimer.End();
+		s_EngineFramePerfStats.m_AsyncFinishAllTime += asyncFinishAllTimer.GetDuration();
+		++s_EngineFramePerfStats.m_nAsyncFinishAllCalls;
+#endif
 	}
 
 #ifdef VPROF_ENABLED
-	PreUpdateProfile( m_flFilteredTime );
+	PreUpdateProfile( m_flFrameTime );
 #endif
 	
 	// Reset swallowed time...
 	m_flFilteredTime = 0.0f;
 
-#ifndef DEDICATED
+#ifndef SWDS
 	if ( !sv.IsDedicated() )
 	{
 		ClientDLL_FrameStageNotify( FRAME_START );
+		ETWRenderFrameMark( false );
 	}
 #endif
 
 #ifdef VPROF_ENABLED
 	PostUpdateProfile();
 #endif
-
 	TelemetryTick();
-
-	ETWRenderFrameMark( sv.IsDedicated() );
 
 	{ // profile scope
 
 	VPROF_BUDGET( "CEngine::Frame", VPROF_BUDGETGROUP_OTHER_UNACCOUNTED );
+	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
+#if ENGINE_FRAME_PERF_ANALYSIS
+	CFastTimer hostStateFrameTimer;
+	hostStateFrameTimer.Start();
+#endif
 #ifdef RAD_TELEMETRY_ENABLED
 	TmU64 time0 = tmFastTime();
 #endif
+
 
 	switch( m_nDLLState )
 	{
@@ -464,27 +540,32 @@ void CEngine::Frame( void )
 			break;
 		}
 	}
-	
+
 #ifdef RAD_TELEMETRY_ENABLED
 	float time = ( tmFastTime() - time0 ) * g_Telemetry.flRDTSCToMilliSeconds;
 	if( time > 0.5f )
 	{
-		tmPlot( TELEMETRY_LEVEL0, TMPT_TIME_MS, 0, time, "CEngine::Frame(ms)" );
+		tmPlot( TELEMETRY_LEVEL0, TMPT_TIME_MS, 0, time, "CEngine::Frame" );
 	}
 #endif
-
+#if ENGINE_FRAME_PERF_ANALYSIS
+	hostStateFrameTimer.End();
+	s_EngineFramePerfStats.m_HostStateFrameTime += hostStateFrameTimer.GetDuration();
+#endif
 	} // profile scope
 
-	// Reset for next frame
-	m_flFrameTime = 0.0f;
 
-#if defined( VPROF_ENABLED ) && defined( VPROF_VXCONSOLE_EXISTS )
+	// Remember old time
+	m_flPreviousTime = m_flCurrentTime;
+
+#if defined( VPROF_ENABLED ) && defined( _X360 )
 	UpdateVXConsoleProfile();
 #endif
-	// reload dlls that are marked for reload; currently for debug purposes only
-#ifdef ENGINE_MANAGES_VJOBS
-	extern void ReloadDlls();
-	ReloadDlls();
+
+#if ENGINE_FRAME_PERF_ANALYSIS
+	engineFrameTimer.End();
+	s_EngineFramePerfStats.m_FrameTime += engineFrameTimer.GetDuration();
+	++s_EngineFramePerfStats.m_nFrames;
 #endif
 }
 

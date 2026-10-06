@@ -15,8 +15,6 @@
 #include "shaderdevicebase.h"
 #include "tier0/icommandline.h"
 
-extern ConVar mat_slopescaledepthbias_shadowmap;
-extern ConVar mat_depthbias_shadowmap;
 
 //-----------------------------------------------------------------------------
 //
@@ -153,6 +151,7 @@ CON_COMMAND_F( ccs_create_convars_from_hwconfig, "Create convars from the curren
 	HWCFG( m_FakeSRGBWrite );						
 	HWCFG( m_CanDoSRGBReadFromRTs );				
 	HWCFG( m_bSupportsGLMixedSizeTargets );			
+	HWCFG( m_bHasFramebufferFetch );
 	HWCFG( m_bCanStretchRectFromTextures );
 
 	HWCFG( m_MaxHDRType );
@@ -782,18 +781,6 @@ bool CHardwareConfig::SupportsFetch4() const
 	return m_Caps.m_bSupportsFetch4;
 }
 
-float CHardwareConfig::GetShadowDepthBias() const
-{
-	// FIXME: Should these not use convars?
-	return mat_depthbias_shadowmap.GetFloat();
-}
-
-float CHardwareConfig::GetShadowSlopeScaleDepthBias() const
-{
-	// FIXME: Should these not use convars?
-	return mat_slopescaledepthbias_shadowmap.GetFloat();
-}
-
 bool CHardwareConfig::CanStretchRectFromTextures() const
 {
 	return m_Caps.m_bCanStretchRectFromTextures;
@@ -946,7 +933,10 @@ bool CHardwareConfig::HasFastVertexTextures() const
 		bDisableHWMorph = ( mat_disablehwmorph.GetInt() != 0 );
 	}
 
-	return m_Caps.m_bDX10Card && ( GetDXSupportLevel() >= 95 ) && ( bEnableFastVertexTextures != 0 ) && ( !bDisableHWMorph );
+	// JasonM - turned this off for Orange Box release...
+	return false;
+
+//	return m_Caps.m_bDX10Card && ( GetDXSupportLevel() >= 95 ) && ( bEnableFastVertexTextures != 0 ) && ( !bDisableHWMorph );
 }
 
 int CHardwareConfig::MaxHWMorphBatchCount() const
@@ -1230,6 +1220,11 @@ bool CHardwareConfig::CanDoSRGBReadFromRTs() const
 bool CHardwareConfig::SupportsGLMixedSizeTargets() const
 {
 	return m_Caps.m_bSupportsGLMixedSizeTargets;
+}
+
+bool CHardwareConfig::HasFramebufferFetch() const
+{
+	return m_Caps.m_bHasFramebufferFetch;
 }
 
 bool CHardwareConfig::IsAAEnabled() const

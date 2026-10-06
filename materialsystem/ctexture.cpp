@@ -3182,6 +3182,24 @@ bool CTexture::ConvertToActualFormat( IVTFTexture *pVTFTexture )
 	ImageFormat fmt = m_ImageFormat;
 
 	ImageFormat dstFormat = ComputeActualFormat( pVTFTexture->Format() );
+#if defined(__aarch64__) || defined(__arm__) || defined(ANDROID)
+	{
+		switch (pVTFTexture->Format())
+			{
+				case IMAGE_FORMAT_DXT1:
+					dstFormat = IMAGE_FORMAT_RGB888;
+					break;
+
+				case IMAGE_FORMAT_DXT3:
+				case IMAGE_FORMAT_DXT5:
+					dstFormat = IMAGE_FORMAT_RGBA8888;
+					break;
+
+				default:
+					break;
+			}
+	}
+#endif
 	if ( fmt != dstFormat )
 	{
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s - conversion from (%d to %d)", __FUNCTION__, fmt, dstFormat );
@@ -3243,7 +3261,6 @@ IVTFTexture *CTexture::LoadTextureBitsFromFile( char *pCacheFileName, char **ppR
 	if ( m_bStreamingFileReadFailed )
 	{
 		Assert( m_pStreamingVTF == NULL );
-		Warning( "Texture not loaded: %s\n", pCacheFileName );
 		return HandleFileLoadFailedTexture( GetScratchVTFTexture() );
 	}
 
@@ -3262,16 +3279,12 @@ IVTFTexture *CTexture::LoadTextureBitsFromFile( char *pCacheFileName, char **ppR
 		FileHandle_t fileHandle = FILESYSTEM_INVALID_HANDLE;
 
 		if ( !GetFileHandle( &fileHandle, pCacheFileName, ppResolvedFilename ) )
-		{
-			Warning( "Texture not loaded: %s\n", pCacheFileName );
-		    return HandleFileLoadFailedTexture( pVTFTexture );
-        }
+			return HandleFileLoadFailedTexture( pVTFTexture );
 
 		TextureLODControlSettings_t settings = m_cachedFileLodSettings;
 		if ( !SLoadTextureBitsFromFile( &pVTFTexture, fileHandle, m_nFlags | nPreserveFlags, &settings, m_nDesiredDimensionLimit, &m_nStreamingMips, GetName(), pCacheFileName, &m_dimsMapping, &m_dimsActual, &m_dimsAllocated, &stripFlags ) )
 		{
 			g_pFullFileSystem->Close( fileHandle );
-			Warning( "Texture not loaded: %s\n", pCacheFileName );
 			return HandleFileLoadFailedTexture( pVTFTexture );
 		}
 
@@ -3439,7 +3452,16 @@ void CTexture::GetDownloadFaceCount( int &nFirstFace, int &nFaceCount )
 	nFirstFace = 0;
 	if ( IsCubeMap() )
 	{
-		nFaceCount = CUBEMAP_FACE_COUNT;
+		if ( HardwareConfig()->SupportsCubeMaps() )
+		{
+			nFaceCount = CUBEMAP_FACE_COUNT-1;
+		}
+		else
+		{
+			// This will cause us to use the spheremap instead of the cube faces
+			// in the case where we don't support cubemaps
+			nFirstFace = CUBEMAP_FACE_SPHEREMAP;
+		}
 	}
 }
 
