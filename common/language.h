@@ -51,7 +51,6 @@ ELanguage PchLanguageICUCodeToELanguage( const char *pchICUCode, ELanguage eDefa
 const char *GetLanguageShortName( ELanguage eLang );
 const char *GetLanguageICUName( ELanguage eLang );
 const char *GetLanguageVGUILocalization( ELanguage eLang );
-const char *GetLanguageCLocaleName( ELanguage eLang );
 const char *GetLanguageName( ELanguage eLang );
 
 #endif /* LANG_H */

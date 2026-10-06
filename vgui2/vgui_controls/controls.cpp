@@ -42,11 +42,10 @@ bool VGui_InitInterfacesList( const char *moduleName, CreateInterfaceFn *factory
 
 	// initialize our locale (must be done for every vgui dll/exe)
 	// "" makes it use the default locale, required to make iswprint() work correctly in different languages
-	// Force UTF-8 locale for modern language support
-	setlocale(LC_CTYPE, "en_US.UTF-8");
-	setlocale(LC_TIME, "en_US.UTF-8");
-	setlocale(LC_COLLATE, "en_US.UTF-8");
-	setlocale(LC_MONETARY, "en_US.UTF-8");
+	setlocale(LC_CTYPE, "");
+	setlocale(LC_TIME, "");
+	setlocale(LC_COLLATE, "");
+	setlocale(LC_MONETARY, "");
 
 	// NOTE: Vgui expects to use these interfaces which are defined in tier3.lib
 	if ( !g_pVGui || !g_pVGuiInput || !g_pVGuiPanel || 

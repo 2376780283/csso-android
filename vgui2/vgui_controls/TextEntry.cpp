@@ -55,7 +55,7 @@ TextEntry::TextEntry(Panel *parent, const char *panelName) : BaseClass(parent, p
 	m_szComposition[ 0 ] = L'\0';
 
 	m_bAllowNumericInputOnly = false;
-	m_bAllowNonAsciiCharacters = true; // Always allow non-ASCII characters for modern language support
+	m_bAllowNonAsciiCharacters = false;
 	_hideText = false;
 	_editable = false;
 	_verticalScrollbar = false;
@@ -376,15 +376,7 @@ int getCharWidth(HFont font, wchar_t ch)
 	{
 		int a, b, c;
 		surface()->GetCharABCwide(font, ch, a, b, c);
-		int wide = a + b + c;
-		// Ensure non-ASCII characters have at least some width to prevent stacking and help with fallback display
-		if ( wide <= 0 && ch > 127 )
-		{
-			// Try to get a default width from a common character like 'M' if the glyph is missing
-			surface()->GetCharABCwide(font, L'M', a, b, c);
-			return (a + b + c);
-		}
-		return wide;
+		return (a + b + c);
 	}
 	return 0;
 }
@@ -3757,7 +3749,7 @@ void TextEntry::ApplySettings( KeyValues *inResourceData )
 	SetEditable((bool)inResourceData->GetInt("editable", 1));
 	SetMaximumCharCount(inResourceData->GetInt("maxchars", -1));
 	SetAllowNumericInputOnly(inResourceData->GetInt("NumericInputOnly", 0));
-	SetAllowNonAsciiCharacters(inResourceData->GetInt("unicode", 1)); // Default to true
+	SetAllowNonAsciiCharacters(inResourceData->GetInt("unicode", 0));
 	SelectAllOnFirstFocus(inResourceData->GetInt("selectallonfirstfocus", 0));
 
 	// label settings

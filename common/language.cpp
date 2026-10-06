@@ -164,7 +164,7 @@ const char *GetLanguageICUName( ELanguage eLang )
 //-----------------------------------------------------------------------------
 // Purpose: return the CLocale name that works with setlocale()
 //-----------------------------------------------------------------------------
-const char *GetLanguageCLocaleName( ELanguage eLang )
+const char *GetLangugeCLocaleName( ELanguage eLang )
 {
 	if ( eLang == k_Lang_None )
 		return "";
@@ -186,14 +186,17 @@ const char *GetLanguageCLocaleName( ELanguage eLang )
 	}
 
 #else
-	static char szLocale[64];
-	const char *pchICU = GetLanguageICUName( eLang );
-	if ( !pchICU || !*pchICU || !Q_stricmp( pchICU, "none" ) )
-		return "";
+	switch ( eLang )
+	{
+	case k_Lang_Simplified_Chinese:
+	case k_Lang_Traditional_Chinese:
+		return "zh_CN";
+	default:
+		;
+	}
 
-	// Most modern POSIX systems (Linux/Android/OSX) require .UTF-8 to handle CJK and other high-range characters correctly
-	Q_snprintf( szLocale, sizeof( szLocale ), "%s.UTF-8", pchICU );
-	return szLocale;
+	// ICU codes work on linux/osx
+	return GetLanguageICUName( eLang );
 #endif
 }
 

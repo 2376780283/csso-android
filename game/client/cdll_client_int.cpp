@@ -1922,20 +1922,13 @@ void CHLClient::PrecacheMaterial( const char *pMaterialName )
 {
 	Assert( pMaterialName );
 
-	// Quick check for already cached materials to avoid redundant system calls and list growth
 	int nLen = Q_strlen( pMaterialName );
 	char *pTempBuf = (char*)stackalloc( nLen + 1 );
 	memcpy( pTempBuf, pMaterialName, nLen + 1 );
-	char *pFound = Q_strstr( pTempBuf, ".vmt" );
+	char *pFound = Q_strstr( pTempBuf, ".vmt\0" );
 	if ( pFound )
 	{
 		*pFound = 0;
-	}
-
-	for ( int i = 0; i < m_CachedMaterials.Count(); ++i )
-	{
-		if ( !Q_stricmp( m_CachedMaterials[i]->GetName(), pTempBuf ) )
-			return;
 	}
 		
 	IMaterial *pMaterial = materials->FindMaterial( pTempBuf, TEXTURE_GROUP_PRECACHED );
