@@ -2219,7 +2219,7 @@ bool EvaluateConditional( const char *str )
 		bNot = true;
 
 	if ( Q_stristr( str, "$DECK" ) )
-		return isGamepadUI() ^ bNot;
+		return IsGamepadUI() ^ bNot;
 
 	if ( Q_stristr( str, "$X360" ) )
 		return IsX360() ^ bNot;
