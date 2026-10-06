@@ -129,7 +129,7 @@ ConVar r_worldlistcache( "r_worldlistcache", "1" );
 //-----------------------------------------------------------------------------
 // Convars related to fog color
 //-----------------------------------------------------------------------------
-static ConVar fog_override( "fog_override", "1", FCVAR_CHEAT ); // 先设置为1暂时抑制3Dskybox变蓝的异常
+static ConVar fog_override( "fog_override", "0", FCVAR_CHEAT );
 // set any of these to use the maps fog
 static ConVar fog_start( "fog_start", "-1", FCVAR_CHEAT );
 static ConVar fog_end( "fog_end", "-1", FCVAR_CHEAT );
