@@ -57,7 +57,6 @@ projects={
 		'filesystem',
 		'game/client',
 		'game/server',
-		# 'gameui',
 		'lunasvg',
 		'inputsystem',
 		'ivp/havana',
@@ -634,6 +633,22 @@ def configure(conf):
 
 def build(bld):
 	os.environ["CCACHE_DIR"] = os.path.abspath('.ccache/'+bld.env.COMPILER_CC+'/'+bld.env.DEST_OS+'/'+bld.env.DEST_CPU)
+	# 构建时添加前缀 csso 目标 libcsso....so	
+	CSSO_LIB_PREFIX = 'csso_'
+	if not getattr(bld, '_csso_prefix_hooked', False):
+		bld._csso_prefix_hooked = True
+		for _meth in ('stlib', 'shlib'):
+			_orig = getattr(bld, _meth)
+			def _wrap(_orig):
+				def _hooked(*args, **kwargs):
+					tgt = kwargs.get('target')
+					if isinstance(tgt, str):
+						kwargs['target'] = CSSO_LIB_PREFIX + tgt
+					elif isinstance(tgt, (list, tuple)):
+						kwargs['target'] = [CSSO_LIB_PREFIX + t for t in tgt]
+					return _orig(*args, **kwargs)
+				return _hooked
+			setattr(bld, _meth, _wrap(_orig))
 
 	if bld.env.DEST_OS in ['win32', 'android']:
 		sdl_name = 'SDL2.dll' if bld.env.DEST_OS == 'win32' else 'libSDL2.so'

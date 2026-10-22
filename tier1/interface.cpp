@@ -275,36 +275,46 @@ static bool s_bRunningWithDebugModules = false;
 #define DEFAULT_LIB_PATH "bin/"
 #endif
 
+#define CSSO_LIB_PREFIX "csso_"
+
 bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize, const char *pPath, const char *pModuleName )
 {
 	char str[1024];
 	Q_strncpy( str, pModuleName, sizeof(str) );
 	V_SetExtension( str, DLL_EXT_STRING, sizeof(str) );
-	bool bFound = false;
 
+	char strPrefixed[1024];
+	Q_snprintf( strPrefixed, sizeof(strPrefixed), CSSO_LIB_PREFIX "%s", str );
+
+	const char *candidates[2] = { strPrefixed, str };
 	struct stat statBuf;
-	Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "lib%s", pPath, str);
-	bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 
-	if( !bFound )
+	for( int i = 0; i < 2; ++i )
 	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
+		const char *name = candidates[i];
+		bool bFound = false;
+		Q_snprintf( pModuleAbsolutePath, AbsolutePathSize,
+		            "%s/" DEFAULT_LIB_PATH "lib%s", pPath, name );
+		bFound = ( stat( pModuleAbsolutePath, &statBuf ) == 0 );
+		if( bFound ) return true;
+
+		Q_snprintf( pModuleAbsolutePath, AbsolutePathSize,
+		            "%s/" DEFAULT_LIB_PATH "%s", pPath, name );
+		bFound = ( stat( pModuleAbsolutePath, &statBuf ) == 0 );
+		if( bFound ) return true;
+
+		Q_snprintf( pModuleAbsolutePath, AbsolutePathSize,
+		            "%s/lib%s", pPath, name );
+		bFound = ( stat( pModuleAbsolutePath, &statBuf ) == 0 );
+		if( bFound ) return true;
+
+		Q_snprintf( pModuleAbsolutePath, AbsolutePathSize,
+		            "%s/%s", pPath, name );
+		bFound = ( stat( pModuleAbsolutePath, &statBuf ) == 0 );
+		if( bFound ) return true;
 	}
 
-	if( !bFound )
-	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
-	}
-
-	if( !bFound )
-	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
-	}
-
-	return bFound;
+	return false;
 }
 
 #endif
