@@ -397,7 +397,41 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 		V_SetExtension( szModuleName, DLL_EXT_STRING, sizeof(szModuleName) );
 
 		struct stat statBuf;
-		bool bFound = stat(szModuleName, &statBuf) == 0;
+		bool bFound = stat( szModuleName, &statBuf ) == 0;
+
+		// 传入的是绝对路径但仍是旧名（如 libfilesystem_stdio.so），
+		// 磁盘上实际只有带前缀的名字（如 libcsso_filesystem_stdio.so），
+		// 在 basename 的 "lib" 后插入 CSSO_LIB_PREFIX 再 stat 一次
+		if( !bFound )
+		{
+			const char *pSlash = strrchr( szModuleName, '/' );
+			const char *pBase  = pSlash ? ( pSlash + 1 ) : szModuleName;
+			size_t      dirLen = (size_t)( pBase - szModuleName );
+
+			char szTry[2048];
+			if( strncmp( pBase, "lib" CSSO_LIB_PREFIX,
+			             sizeof("lib" CSSO_LIB_PREFIX) - 1 ) == 0 )
+			{
+				// 已经是 libcsso_xxx.so，不需要重复加前缀
+				Q_strncpy( szTry, szModuleName, sizeof(szTry) );
+			}
+			else if( strncmp( pBase, "lib", 3 ) == 0 )
+			{
+				Q_snprintf( szTry, sizeof(szTry), "%.*slib" CSSO_LIB_PREFIX "%s",
+				            (int)dirLen, szModuleName, pBase + 3 );
+			}
+			else
+			{
+				Q_snprintf( szTry, sizeof(szTry), "%.*s" CSSO_LIB_PREFIX "%s",
+				            (int)dirLen, szModuleName, pBase );
+			}
+
+			if( stat( szTry, &statBuf ) == 0 )
+			{
+				Q_strncpy( szModuleName, szTry, sizeof(szModuleName) );
+				bFound = true;
+			}
+		}
 
 		if( !bFound )
 		{
@@ -412,8 +446,17 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 
 	if ( !hDLL )
 	{
+#ifdef POSIX
+		// 绝对路径分支下 szModuleName 已经被解析成最终路径（可能带 csso_ 前缀），
+		// 优先用它；相对路径分支下 szModuleName 仍为空，则用原 pModuleName
+		const char *pLoadPath = ( Q_IsAbsolutePath( pModuleName ) && szModuleName[0] )
+		                      ? szModuleName
+		                      : pModuleName;
+#else
+		const char *pLoadPath = pModuleName;
+#endif
 		// full path failed, let LoadLibrary() try to search the PATH now
-		hDLL = Sys_LoadLibrary( pModuleName, flags );
+		hDLL = Sys_LoadLibrary( pLoadPath, flags );
 #if defined( _DEBUG )
 		if ( !hDLL )
 		{
