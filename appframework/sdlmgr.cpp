@@ -77,6 +77,14 @@ t_eglGetDisplay _eglGetDisplay;
 t_eglQueryString _eglQueryString;
 #endif
 
+// -----------------------------------------------------------------------------
+// Host callbacks implemented by the launcher application (main.cpp).
+// Declared as ordinary C++ external symbols so the linker enforces
+// the launcher provides them at build time.
+// -----------------------------------------------------------------------------
+extern void NotifyMouseVisibilityChanged(bool bVisible);
+extern void NotifyCursorChanged(SDL_Cursor *hCursor);
+
 /*
 From Ryan Gordon:
  
@@ -1118,6 +1126,7 @@ void CSDLMgr::SetMouseVisible( bool bState )
 	{
 		m_bCursorVisible = bState;
 		m_bSetMouseVisibleCalled = true;
+		NotifyMouseVisibilityChanged(bState);
 	}
 }
 
@@ -1135,6 +1144,7 @@ void CSDLMgr::SetMouseCursor( SDL_Cursor *hCursor )
 		else
 		{
 			m_hCursor = hCursor;
+			NotifyCursorChanged(hCursor);
 		}
 		m_bSetMouseCursorCalled = true;
 	}
