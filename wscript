@@ -153,6 +153,57 @@ projects={
 	]
 }
 
+# ============================================================
+# csso 构建改造
+# ============================================================
+
+# 所有内部库统一前缀（如 tier0 -> libcsso_tier0.so）
+# 必须与加载器侧 CSSO_LIB_PREFIX 宏一致
+CSSO_LIB_PREFIX = 'csso_'
+
+# 强制静态链接的第三方库（不再出现在 DT_NEEDED 里）
+# 注意：SDL2 不在列表中，保持动态链接
+ANDROID_STATIC_LIBS = [
+	'avcodec', 'avdevice', 'avfilter', 'avformat', 'avutil',
+	'edit', 'ncursesw', 'ogg', 'sharpyuv',
+	'swresample', 'swscale',
+	'vorbis', 'vorbisenc', 'vorbisfile',
+	'webm', 'webp', 'webpmux',
+]
+
+
+def force_static_libs(conf, names):
+	"""把 names 中这些库的链接方式强制改成静态。
+
+	- 优先在 LIBPATH 中找到 lib<name>.a，用绝对路径链接
+	- 找不到则回退到 -l:lib<name>.a（GNU ld 精确文件名语法）
+	- 清空 STLIB_<name>，避免与 LIB_<name> 同时存在导致重复链接
+	"""
+	libpath = []
+	for d in (conf.env['LIBPATH'] or []):
+		if not d:
+			continue
+		libpath.append(d if os.path.isabs(d) else os.path.abspath(d))
+
+	for name in names:
+		found = None
+		for d in libpath:
+			cand = os.path.join(d, 'lib%s.a' % name)
+			if os.path.isfile(cand):
+				found = cand
+				break
+
+		if found:
+			conf.env['LIB_%s' % name] = [found]
+			Logs.pprint('CYAN', '  [static] %-12s <- %s' % (name, found))
+		else:
+			conf.env['LIB_%s' % name] = ['-l:lib%s.a' % name]
+			Logs.pprint('YELLOW', '  [static] %-12s <- -l:lib%s.a (未找到 .a, 依赖 -L 路径)' % (name, name))
+
+		# 清空 STLIB，避免和 LIB 同时出现导致重复链接
+		conf.env['STLIB_%s' % name] = []
+
+
 @Configure.conf
 def check_pkg(conf, package, uselib_store, fragment, *k, **kw):
 	errormsg = '{0} not available! Install {0} development package. Also you may need to set PKG_CONFIG_PATH environment variable'.format(package)
@@ -424,6 +475,12 @@ def check_deps(conf):
 		conf.check(lib='android_support', uselib_store='ANDROID_SUPPORT')
 		conf.check(lib='opus', uselib_store='OPUS')
 
+		# ===== 强制第三方库静态化，从 DT_NEEDED 中移除 =====
+		# SDL2 / freetype2 / jpeg / png / curl / z / opus 等不在此列表，
+		# 保持原有链接方式
+		force_static_libs(conf, ANDROID_STATIC_LIBS)
+		# ==================================================
+
 	if conf.env.DEST_OS == 'win32':
 		conf.check(lib='libz', uselib_store='ZLIB', define_name='USE_ZLIB')
 		# conf.check(lib='nvtc', uselib_store='NVTC')
@@ -633,22 +690,26 @@ def configure(conf):
 
 def build(bld):
 	os.environ["CCACHE_DIR"] = os.path.abspath('.ccache/'+bld.env.COMPILER_CC+'/'+bld.env.DEST_OS+'/'+bld.env.DEST_CPU)
-	# 构建时添加前缀 csso 目标 libcsso....so	
-	CSSO_LIB_PREFIX = 'csso_'
+
+	# ===== 给所有内部 stlib/shlib 的 target 统一加 csso_ 前缀 =====
+	# 只改 target 不改 name，use 依赖关系完全不受影响；
+	# 由于 bld 在整个递归过程中是同一实例，一次 patch 全局生效。
 	if not getattr(bld, '_csso_prefix_hooked', False):
 		bld._csso_prefix_hooked = True
+
+		def _make_hook(orig):
+			def _hooked(*args, **kwargs):
+				tgt = kwargs.get('target')
+				if isinstance(tgt, str):
+					kwargs['target'] = CSSO_LIB_PREFIX + tgt
+				elif isinstance(tgt, (list, tuple)):
+					kwargs['target'] = [CSSO_LIB_PREFIX + t for t in tgt]
+				return orig(*args, **kwargs)
+			return _hooked
+
 		for _meth in ('stlib', 'shlib'):
-			_orig = getattr(bld, _meth)
-			def _wrap(_orig):
-				def _hooked(*args, **kwargs):
-					tgt = kwargs.get('target')
-					if isinstance(tgt, str):
-						kwargs['target'] = CSSO_LIB_PREFIX + tgt
-					elif isinstance(tgt, (list, tuple)):
-						kwargs['target'] = [CSSO_LIB_PREFIX + t for t in tgt]
-					return _orig(*args, **kwargs)
-				return _hooked
-			setattr(bld, _meth, _wrap(_orig))
+			setattr(bld, _meth, _make_hook(getattr(bld, _meth)))
+	# ===== end csso prefix hook =====
 
 	if bld.env.DEST_OS in ['win32', 'android']:
 		sdl_name = 'SDL2.dll' if bld.env.DEST_OS == 'win32' else 'libSDL2.so'
